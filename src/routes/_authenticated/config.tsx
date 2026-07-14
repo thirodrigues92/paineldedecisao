@@ -14,12 +14,13 @@ export const Route = createFileRoute("/_authenticated/config")({
 function ConfigPage() {
   const [busy, setBusy] = useState<string | null>(null);
 
-  const run = async (mode: "today" | "historical" | "support") => {
+  const run = async (mode: "today" | "historical" | "support" | "full") => {
     setBusy(mode);
     try {
-      const { error } = await supabase.functions.invoke("sync-feegow", { body: { mode } });
+      const { data, error } = await supabase.functions.invoke("sync-feegow", { body: { mode } });
       if (error) throw error;
-      toast.success(`Sincronização (${mode}) disparada.`);
+      if (data && data.ok === false) throw new Error(data.error ?? "Falha na sincronização");
+      toast.success(`Sincronização (${mode}) concluída em ${data?.ms ?? "?"}ms.`);
     } catch (err: any) {
       toast.error(err.message ?? "Falha ao disparar sincronização");
     } finally { setBusy(null); }
@@ -36,18 +37,21 @@ function ConfigPage() {
           <CardHeader><CardTitle>Sincronização manual</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             <div className="grid grid-cols-1 gap-2">
-              <Button onClick={() => run("today")} disabled={busy !== null}>
-                {busy === "today" ? "Executando..." : "Sincronizar hoje"}
+              <Button onClick={() => run("full")} disabled={busy !== null}>
+                {busy === "full" ? "Executando carga completa..." : "Carga completa (apoio + histórico + hoje)"}
+              </Button>
+              <Button variant="secondary" onClick={() => run("today")} disabled={busy !== null}>
+                {busy === "today" ? "Executando..." : "Sincronizar hoje (+7 dias)"}
               </Button>
               <Button variant="secondary" onClick={() => run("historical")} disabled={busy !== null}>
-                {busy === "historical" ? "Executando..." : "Carga histórica (12 meses)"}
+                {busy === "historical" ? "Executando..." : "Carga histórica (90 dias)"}
               </Button>
               <Button variant="outline" onClick={() => run("support")} disabled={busy !== null}>
                 {busy === "support" ? "Executando..." : "Atualizar tabelas de apoio"}
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              A sincronização automática ocorre a cada 30 minutos.
+              Na primeira carga, use <strong>Carga completa</strong> para popular tabelas-pai (unidades, profissionais, especialidades) antes dos agendamentos.
             </p>
           </CardContent>
         </Card>

@@ -90,57 +90,7 @@ export type Database = {
           updated_at?: string
           valor_total?: number
         }
-        Relationships: [
-          {
-            foreignKeyName: "agendamentos_convenio_id_fkey"
-            columns: ["convenio_id"]
-            isOneToOne: false
-            referencedRelation: "convenios"
-            referencedColumns: ["convenio_id"]
-          },
-          {
-            foreignKeyName: "agendamentos_especialidade_id_fkey"
-            columns: ["especialidade_id"]
-            isOneToOne: false
-            referencedRelation: "especialidades"
-            referencedColumns: ["especialidade_id"]
-          },
-          {
-            foreignKeyName: "agendamentos_paciente_id_fkey"
-            columns: ["paciente_id"]
-            isOneToOne: false
-            referencedRelation: "pacientes"
-            referencedColumns: ["paciente_id"]
-          },
-          {
-            foreignKeyName: "agendamentos_procedimento_id_fkey"
-            columns: ["procedimento_id"]
-            isOneToOne: false
-            referencedRelation: "procedimentos"
-            referencedColumns: ["procedimento_id"]
-          },
-          {
-            foreignKeyName: "agendamentos_profissional_id_fkey"
-            columns: ["profissional_id"]
-            isOneToOne: false
-            referencedRelation: "profissionais"
-            referencedColumns: ["profissional_id"]
-          },
-          {
-            foreignKeyName: "agendamentos_status_id_fkey"
-            columns: ["status_id"]
-            isOneToOne: false
-            referencedRelation: "status_agendamento"
-            referencedColumns: ["status_id"]
-          },
-          {
-            foreignKeyName: "agendamentos_unidade_id_fkey"
-            columns: ["unidade_id"]
-            isOneToOne: false
-            referencedRelation: "unidades"
-            referencedColumns: ["unidade_id"]
-          },
-        ]
+        Relationships: []
       }
       ceps_geocodificados: {
         Row: {
@@ -263,22 +213,7 @@ export type Database = {
           updated_at?: string
           valor?: number
         }
-        Relationships: [
-          {
-            foreignKeyName: "financeiro_lancamentos_convenio_id_fkey"
-            columns: ["convenio_id"]
-            isOneToOne: false
-            referencedRelation: "convenios"
-            referencedColumns: ["convenio_id"]
-          },
-          {
-            foreignKeyName: "financeiro_lancamentos_unidade_id_fkey"
-            columns: ["unidade_id"]
-            isOneToOne: false
-            referencedRelation: "unidades"
-            referencedColumns: ["unidade_id"]
-          },
-        ]
+        Relationships: []
       }
       pacientes: {
         Row: {
@@ -519,22 +454,7 @@ export type Database = {
           total: number | null
           unidade_id: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "agendamentos_especialidade_id_fkey"
-            columns: ["especialidade_id"]
-            isOneToOne: false
-            referencedRelation: "especialidades"
-            referencedColumns: ["especialidade_id"]
-          },
-          {
-            foreignKeyName: "agendamentos_unidade_id_fkey"
-            columns: ["unidade_id"]
-            isOneToOne: false
-            referencedRelation: "unidades"
-            referencedColumns: ["unidade_id"]
-          },
-        ]
+        Relationships: []
       }
       kpis_mensais: {
         Row: {
@@ -549,15 +469,7 @@ export type Database = {
           total_agendamentos: number | null
           unidade_id: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "agendamentos_unidade_id_fkey"
-            columns: ["unidade_id"]
-            isOneToOne: false
-            referencedRelation: "unidades"
-            referencedColumns: ["unidade_id"]
-          },
-        ]
+        Relationships: []
       }
       pacientes_por_regiao: {
         Row: {
@@ -566,15 +478,7 @@ export type Database = {
           especialidade_id: number | null
           pacientes: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "agendamentos_especialidade_id_fkey"
-            columns: ["especialidade_id"]
-            isOneToOne: false
-            referencedRelation: "especialidades"
-            referencedColumns: ["especialidade_id"]
-          },
-        ]
+        Relationships: []
       }
       vw_heatmap_agenda: {
         Row: {
@@ -586,22 +490,7 @@ export type Database = {
           total: number | null
           unidade_id: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "agendamentos_especialidade_id_fkey"
-            columns: ["especialidade_id"]
-            isOneToOne: false
-            referencedRelation: "especialidades"
-            referencedColumns: ["especialidade_id"]
-          },
-          {
-            foreignKeyName: "agendamentos_unidade_id_fkey"
-            columns: ["unidade_id"]
-            isOneToOne: false
-            referencedRelation: "unidades"
-            referencedColumns: ["unidade_id"]
-          },
-        ]
+        Relationships: []
       }
       vw_kpis_mensais: {
         Row: {
@@ -616,15 +505,7 @@ export type Database = {
           total_agendamentos: number | null
           unidade_id: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "agendamentos_unidade_id_fkey"
-            columns: ["unidade_id"]
-            isOneToOne: false
-            referencedRelation: "unidades"
-            referencedColumns: ["unidade_id"]
-          },
-        ]
+        Relationships: []
       }
       vw_pacientes_por_regiao: {
         Row: {
@@ -633,15 +514,7 @@ export type Database = {
           especialidade_id: number | null
           pacientes: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "agendamentos_especialidade_id_fkey"
-            columns: ["especialidade_id"]
-            isOneToOne: false
-            referencedRelation: "especialidades"
-            referencedColumns: ["especialidade_id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Functions: {

@@ -80,14 +80,26 @@ async function feegow(path: string, params: Record<string, string> = {}): Promis
   return json.content ?? [];
 }
 
+/** Normaliza content do Feegow em Array — endpoints diferentes retornam formatos distintos. */
+function asArray(content: any): any[] {
+  if (Array.isArray(content)) return content;
+  if (!content || typeof content !== "object") return [];
+  // Formatos comuns: { list: [...] }, { data: [...] }, { items: [...] }, { rows: [...] }
+  for (const k of ["list", "data", "items", "rows", "units", "professionals", "specialties", "procedures", "insurances"]) {
+    if (Array.isArray(content[k])) return content[k];
+  }
+  // Objeto único → envolve
+  return [content];
+}
+
 /** Paginação start/offset até vazio (usada em /appoints/search com list_procedures=1) */
 async function feegowPaginated(path: string, baseParams: Record<string, string>): Promise<any[]> {
   const results: any[] = [];
   let start = 0;
   const offset = 50;
-  for (let i = 0; i < 200; i++) { // hard cap 10k reg/janela
+  for (let i = 0; i < 400; i++) { // hard cap
     const page = await feegow(path, { ...baseParams, start: String(start), offset: String(offset) });
-    const rows = Array.isArray(page) ? page : (page?.appointments ?? page?.data ?? []);
+    const rows = Array.isArray(page) ? page : asArray(page?.appointments ?? page?.data ?? page);
     if (!rows.length) break;
     results.push(...rows);
     if (rows.length < offset) break;
@@ -116,7 +128,7 @@ async function syncSupport(supabase: any) {
     // Status
     try {
       const rows = await feegow("/appoints/status");
-      const mapped = (rows as any[]).map((r) => ({
+      const mapped = asArray(rows).map((r) => ({
         status_id: Number(r.id ?? r.status_id),
         descricao: String(r.description ?? r.nome ?? r.name ?? ""),
         categoria: "outro",
@@ -130,7 +142,7 @@ async function syncSupport(supabase: any) {
     // Especialidades
     try {
       const rows = await feegow("/specialties/list");
-      const mapped = (rows as any[]).map((r) => ({
+      const mapped = asArray(rows).map((r) => ({
         especialidade_id: Number(r.id ?? r.especialidade_id),
         nome: String(r.name ?? r.nome ?? ""),
         codigo_tiss: r.tiss_code ?? r.codigo_tiss ?? null,
@@ -141,11 +153,12 @@ async function syncSupport(supabase: any) {
     // Profissionais
     try {
       const rows = await feegow("/professional/list");
-      const mapped = (rows as any[]).map((r) => ({
-        profissional_id: Number(r.id ?? r.professional_id),
-        nome: String(r.name ?? r.nome ?? ""),
+      console.log("DEBUG profissionais raw:", JSON.stringify(rows).slice(0, 500));
+      const mapped = asArray(rows).map((r) => ({
+        profissional_id: Number(r.id ?? r.professional_id ?? r.profissional_id),
+        nome: String(r.name ?? r.nome ?? r.full_name ?? ""),
         especialidades: r.specialties ?? r.especialidades ?? [],
-        ativo: r.active !== false,
+        ativo: r.active !== false && r.ativo !== false,
       })).filter((r) => r.profissional_id);
       if (mapped.length) { await supabase.from("profissionais").upsert(mapped, { onConflict: "profissional_id" }); total += mapped.length; }
     } catch (e) { console.warn("profissionais", e); }
@@ -153,7 +166,7 @@ async function syncSupport(supabase: any) {
     // Convênios
     try {
       const rows = await feegow("/insurance/list");
-      const mapped = (rows as any[]).map((r) => ({
+      const mapped = asArray(rows).map((r) => ({
         convenio_id: Number(r.id ?? r.insurance_id),
         nome: String(r.name ?? r.nome ?? ""),
         planos: r.plans ?? r.planos ?? [],
@@ -161,24 +174,33 @@ async function syncSupport(supabase: any) {
       if (mapped.length) { await supabase.from("convenios").upsert(mapped, { onConflict: "convenio_id" }); total += mapped.length; }
     } catch (e) { console.warn("convenios", e); }
 
-    // Unidades
+    // Unidades — endpoint retorna { matriz: [...], unidades: [...] }
     try {
       const rows = await feegow("/company/list-unity");
-      const mapped = (rows as any[]).map((r) => ({
-        unidade_id: Number(r.id ?? r.unit_id),
-        nome_fantasia: String(r.name ?? r.fantasy_name ?? r.nome_fantasia ?? ""),
-        cidade: r.city ?? r.cidade ?? null,
-        estado: r.state ?? r.estado ?? null,
-        bairro: r.neighborhood ?? r.bairro ?? null,
-        cep: r.zip ?? r.cep ?? null,
-      })).filter((r) => r.unidade_id);
-      if (mapped.length) { await supabase.from("unidades").upsert(mapped, { onConflict: "unidade_id" }); total += mapped.length; }
+      const combined: any[] = [];
+      if (rows && typeof rows === "object" && !Array.isArray(rows)) {
+        if (Array.isArray((rows as any).matriz)) combined.push(...(rows as any).matriz);
+        if (Array.isArray((rows as any).unidades)) combined.push(...(rows as any).unidades);
+      }
+      const source = combined.length ? combined : asArray(rows);
+      const mapped = source.map((r: any) => ({
+        unidade_id: Number(r.unidade_id ?? r.id ?? r.unit_id),
+        nome_fantasia: String(r.nome_fantasia ?? r.name ?? r.fantasy_name ?? r.fantasia ?? ""),
+        cidade: r.cidade ?? r.city ?? null,
+        estado: r.estado ?? r.state ?? null,
+        bairro: r.bairro ?? r.neighborhood ?? null,
+        cep: r.cep ?? r.zip ?? null,
+      })).filter((r: any) => Number.isFinite(r.unidade_id) && r.nome_fantasia);
+      // Dedupe por unidade_id
+      const seen = new Set<number>();
+      const unique = mapped.filter((r) => { if (seen.has(r.unidade_id)) return false; seen.add(r.unidade_id); return true; });
+      if (unique.length) { await supabase.from("unidades").upsert(unique, { onConflict: "unidade_id" }); total += unique.length; }
     } catch (e) { console.warn("unidades", e); }
 
     // Procedimentos
     try {
       const rows = await feegow("/procedures/list");
-      const mapped = (rows as any[]).map((r) => ({
+      const mapped = asArray(rows).map((r) => ({
         procedimento_id: Number(r.id ?? r.procedure_id),
         nome: String(r.name ?? r.nome ?? ""),
         tipo: r.type ?? r.tipo ?? null,
@@ -205,6 +227,7 @@ async function syncAgendamentos(supabase: any, from: Date, to: Date) {
   }
   const id = await logStart(supabase, `agendamentos ${toFeegowDate(from)}→${toFeegowDate(to)}`);
   let total = 0;
+  const errors: string[] = [];
   try {
     for (const [a, b] of chunks) {
       const rows = await feegowPaginated("/appoints/search", {
@@ -236,13 +259,32 @@ async function syncAgendamentos(supabase: any, from: Date, to: Date) {
         agendado_por: r.agendado_por ?? null,
         notas: r.notas ?? r.observacoes ?? null,
       })).filter((r: any) => r.agendamento_id && r.data);
-      // Batch upsert em chunks de 500
+      // Dedupe por agendamento_id (evita "ON CONFLICT ... cannot affect row a second time")
+      const seen = new Set<number>();
+      const unique = mapped.filter((r: any) => {
+        if (seen.has(r.agendamento_id)) return false;
+        seen.add(r.agendamento_id); return true;
+      });
+      mapped.length = 0; mapped.push(...unique);
+      // Batch upsert em chunks de 500 — checando erros
       for (let i = 0; i < mapped.length; i += 500) {
-        await supabase.from("agendamentos").upsert(mapped.slice(i, i + 500), { onConflict: "agendamento_id" });
+        const slice = mapped.slice(i, i + 500);
+        const { error, count } = await supabase
+          .from("agendamentos")
+          .upsert(slice, { onConflict: "agendamento_id", count: "exact" });
+        if (error) {
+          console.error(`upsert agendamentos falhou (chunk ${i}):`, error.message);
+          errors.push(error.message);
+        } else {
+          total += count ?? slice.length;
+        }
       }
-      total += mapped.length;
     }
-    await logEnd(supabase, id, true, total);
+    if (errors.length) {
+      await logEnd(supabase, id, false, total, `Upsert errors: ${errors.slice(0, 3).join(" | ")}`);
+    } else {
+      await logEnd(supabase, id, true, total);
+    }
   } catch (e) {
     await logEnd(supabase, id, false, total, String(e));
     throw e;
@@ -265,18 +307,24 @@ Deno.serve(async (req) => {
   }
 
   const url = new URL(req.url);
-  const mode = url.searchParams.get("mode") ?? "today";
+  // Aceita mode via query string (GET/cron) OU body JSON (POST via supabase.functions.invoke)
+  let mode = url.searchParams.get("mode") ?? "today";
+  if (req.method === "POST") {
+    try {
+      const body = await req.json();
+      if (body && typeof body.mode === "string") mode = body.mode;
+    } catch {
+      // body vazio/não-JSON — mantém default
+    }
+  }
+  console.log(`[sync-feegow] mode=${mode}`);
+
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
 
   const started = Date.now();
   try {
+    // Ordem correta: support (tabelas-pai) antes de agendamentos (FKs)
     if (mode === "support" || mode === "full") await syncSupport(supabase);
-
-    if (mode === "today" || mode === "full") {
-      const now = new Date();
-      const in7 = new Date(); in7.setDate(now.getDate() + 7);
-      await syncAgendamentos(supabase, now, in7);
-    }
 
     if (mode === "historical" || mode === "full") {
       const to = new Date();
@@ -284,8 +332,13 @@ Deno.serve(async (req) => {
       await syncAgendamentos(supabase, from, to);
     }
 
-    // financial: placeholder — endpoints financeiros do Feegow variam por conta;
-    // deixamos preparado para implementação incremental sem quebrar a sync.
+    if (mode === "today" || mode === "full") {
+      const now = new Date();
+      const in7 = new Date(); in7.setDate(now.getDate() + 7);
+      await syncAgendamentos(supabase, now, in7);
+    }
+
+    // financial: placeholder
 
     await refreshViews(supabase);
 
