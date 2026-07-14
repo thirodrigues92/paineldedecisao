@@ -48,10 +48,10 @@ function DashboardPage() {
 
   const rows = query.data ?? [];
   const total = rows.length;
-  const realizados = rows.filter((r: any) => r.status?.categoria === "realizado").length;
-  const noShows = rows.filter((r: any) => r.status?.categoria === "no_show").length;
+  const realizados = rows.filter((r: any) => r.status_agendamento?.categoria === "realizado").length;
+  const noShows = rows.filter((r: any) => r.status_agendamento?.categoria === "no_show").length;
   const receitaPrev = rows.reduce((s: number, r: any) => s + Number(r.valor_total || 0), 0);
-  const realizadosRows = rows.filter((r: any) => r.status?.categoria === "realizado");
+  const realizadosRows = rows.filter((r: any) => r.status_agendamento?.categoria === "realizado");
   const receitaReal = realizadosRows.reduce((s: number, r: any) => s + Number(r.valor_total || 0), 0);
   const ticket = realizados > 0 ? receitaReal / realizados : 0;
   const novos = rows.filter((r: any) => r.primeiro_agendamento).length;
@@ -64,7 +64,7 @@ function DashboardPage() {
   for (const r of rows as any[]) {
     const k = r.data as string;
     const cur = byDay.get(k) ?? { data: k, realizado: 0, no_show: 0, cancelado: 0, agendado: 0 };
-    const cat = r.status?.categoria ?? "agendado";
+    const cat = r.status_agendamento?.categoria ?? "agendado";
     if (cat in cur) (cur as any)[cat] += 1; else cur.agendado += 1;
     byDay.set(k, cur);
   }
@@ -73,7 +73,7 @@ function DashboardPage() {
   // Por especialidade top10
   const byEsp = new Map<string, number>();
   for (const r of rows as any[]) {
-    const nome = r.especialidade?.nome ?? "Sem especialidade";
+    const nome = r.especialidades?.nome ?? "Sem especialidade";
     byEsp.set(nome, (byEsp.get(nome) ?? 0) + 1);
   }
   const topEsp = Array.from(byEsp.entries()).sort((a, b) => b[1] - a[1]).slice(0, 10)
