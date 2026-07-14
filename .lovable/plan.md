@@ -1,79 +1,32 @@
-## Painel de Decisão Clínica — Plano de Construção
+## Diagnóstico
 
-Sistema de BI para clínica que consome a API do Feegow, armazena no Lovable Cloud e exibe dashboards para gestores. Backend 100% no Lovable Cloud (banco, auth, Edge Functions, secrets, cron). Token do Feegow **nunca** aparece no frontend.
+As tabelas estão **todas vazias** (0 registros em `agendamentos`, `unidades`, `profissionais`, `especialidades`, `financeiro_lancamentos`), embora os `sync_logs` mostrem "791 registros" com `sucesso=true`. Encontrei três bugs que, juntos, produzem esse falso positivo:
 
-### Antes de começar — 2 confirmações rápidas
+1. **O `mode` é ignorado.** O frontend envia `{ mode: "support" }` / `{ mode: "historical" }` no **body** JSON, mas a Edge Function lê `url.searchParams.get("mode")` (query string). Resultado: **todas as chamadas rodam como `today`** — as tabelas de apoio (unidades, profissionais, especialidades, status, convênios, procedimentos) **nunca foram populadas** e a carga histórica nunca rodou. A resposta `{"mode":"today"}` em todos os POSTs confirma isso.
 
-1. **Autenticação de usuários:** login por e-mail/senha (nativo do Cloud). Sem cadastro público — apenas usuários criados pelo admin acessam. Correto?
-2. **Token do Feegow:** vou ativar o Lovable Cloud e, na etapa da Edge Function, abrir o formulário seguro para você colar o `FEEGOW_API_TOKEN`. Ok?
+2. **Erros de upsert são silenciados.** O código faz `await supabase.from("agendamentos").upsert(...)` sem checar `.error`. Como as tabelas referenciadas estão vazias e existem **7 FKs** em `agendamentos` (status_id, unidade_id, profissional_id, etc.), todo lote de 791 agendamentos é **rejeitado por violação de FK** — mas o log grava `registros=791, sucesso=true` porque conta o `mapped.length` antes do upsert e não valida o retorno.
 
-Se ambos "sim", sigo direto pela ordem abaixo.
+3. **Ordem de sincronização.** Mesmo com o bug 1 corrigido, o usuário precisa rodar `support` **antes** de `today`/`historical` para popular as tabelas-pai.
 
----
+## Correções propostas
 
-### Fase 1 — Estrutura (entrega inicial)
+### 1. `supabase/functions/sync-feegow/index.ts`
+- Ler `mode` do body JSON (POST) **e** da query string (GET/cron), com fallback para `"today"`.
+- Envolver cada `upsert` em checagem de `error`; se falhar, propagar para o `sync_logs` (`sucesso=false`, `erro=...`) e contar apenas os registros efetivamente gravados.
+- No modo `full`, executar na ordem correta: `support` → `historical` → `today` → `refreshViews`.
+- Adicionar log `console.log` com contadores por tabela para facilitar debug futuro nas Edge Function logs.
 
-**1. Ativar Lovable Cloud + Auth**
-- Habilitar Cloud (Postgres, Auth, Edge Functions, Secrets, cron).
-- Auth e-mail/senha; RLS em todas as tabelas: `SELECT` liberado apenas para `authenticated`.
-- Rota `/auth` pública; demais rotas sob `_authenticated`.
+### 2. `src/routes/_authenticated/config.tsx`
+- Após corrigir a função, alterar o botão "Carga histórica" para chamar `mode: "full"` (support + historical + today numa tacada), ou executar sequencialmente: primeiro `support`, depois `historical`. Isso garante que o usuário não precise lembrar da ordem.
+- Exibir toasts de sucesso/erro com base no `ok` da resposta (hoje o código só espera terminar).
 
-**2. Schema do banco (migração única)**
-Tabelas conforme seção 4 do brief:
-`agendamentos`, `status_agendamento` (com coluna `categoria`), `profissionais`, `especialidades`, `convenios`, `unidades` (com `latitude`/`longitude`), `procedimentos`, `pacientes` (LGPD: só `sexo`, `ano_nascimento`, `cep`, `bairro`, `cidade`, `estado`, `lat/lng`, `convenio_id`, `origem_id`, `metricas jsonb`), `financeiro_lancamentos`, `sync_logs`, `ceps_geocodificados` (cache).
-Views materializadas: `vw_kpis_mensais`, `vw_heatmap_agenda`, `vw_pacientes_por_regiao`.
-GRANTs corretos + RLS + índices em colunas de filtro (data, unidade_id, profissional_id, especialidade_id, status_id).
+### 3. Re-execução da carga
+Depois do deploy, executar **uma vez** o modo `full` (ou `support` + `historical` em sequência) pelo painel de Configurações. Após isso os gráficos passam a exibir dados.
 
-**3. Edge Function `sync-feegow`**
-- Header `x-access-token` lido de `Deno.env.get("FEEGOW_API_TOKEN")`.
-- Utilitários testáveis: `parseFeegowDate` (DD-MM-YYYY → ISO), `parseCurrency` ("R$ 1.234,56" → numeric), `withRetry` (3 tentativas, backoff), `paginate` (start/offset até vazio).
-- Valida `success === true`; grava sucesso/erro em `sync_logs`.
-- Upsert idempotente por `agendamento_id`.
-- Modos: `today` (hoje + 7 dias), `historical` (últimos 90 dias em janelas de 30), `support` (profissionais, especialidades, convênios, unidades, procedimentos, status), `financial`.
-- Ao final, `REFRESH MATERIALIZED VIEW CONCURRENTLY` nas 3 views.
+## Nota (fora do escopo direto, mas relacionado)
 
-**4. Agendamento (pg_cron + pg_net)**
-- `*/30 * * * *` → `sync-feegow?mode=today`
-- `0 3 * * *` → `historical` + `support` + `financial`.
+Os endpoints de **financeiro** ainda são placeholder na Edge Function ("financial: placeholder"). A tela Financeiro ficará zerada mesmo com os agendamentos populados até implementarmos o pull do endpoint financeiro do Feegow — posso fazer isso em seguida se quiser, mas não faz parte desta correção.
 
-**5. Frontend — layout base**
-- Tema escuro (`#0F1117` bg, `#1A1D27` cards, acento `#22D3EE`, âmbar para alertas), Inter, radius 12px — tokens em `src/styles.css`.
-- Sidebar fixa (shadcn `Sidebar`) + barra de filtros globais no topo (período, unidade, profissional, especialidade, convênio/particular) via context/zustand.
-- Recharts para gráficos; números pt-BR (`Intl.NumberFormat`).
-- Skeletons + estados vazios + banner de erro de sync.
+## Resumo
 
-**6. Telas (nesta ordem)**
-1. **Visão Executiva** — 6 KPIs com sparkline + variação; linha de evolução por status; barras empilhadas por especialidade; donut particular vs. convênio; card "Última sincronização" com botão manual.
-2. **Heatmap da Agenda** — matriz dia×hora com toggle (volume / no-show / receita); dois heatmaps menores (unidade, especialidade); insight automático de pico/ociosidade.
-3. **Análise de No-show** — KPI + evolução mensal; rankings horizontais (profissional, especialidade, convênio, canal); tabela detalhada com sparkline.
-4. **Financeiro** — cards (receita realizada/prevista, despesas, resultado); barras mensais receita×despesa; barras por convênio/especialidade; linha de ticket médio; tabela de lançamentos.
-5. **Profissionais** — grid de cards; painel lateral com detalhe (evolução, mix de procedimentos, heatmap individual).
-6. **Comparativo de Unidades** — tabela com destaque melhor/pior; barras agrupadas.
-7. **Configurações** — histórico de `sync_logs`; gestão de usuários; uploader CSV de métricas clínicas (`paciente_id, imc, ...` → `pacientes.metricas`); seção "Métricas clínicas personalizadas [Fase 2]".
-
-**7. Qualidade transversal**
-- "Exportar CSV" em tabelas, "Exportar PNG" em gráficos principais.
-- Nenhuma tela quebra com tabela vazia.
-- Comentários nas Edge Functions explicando regras 3.3.
-
----
-
-### Fase 1.5 — Preparação da Fase 2 (mapa geográfico)
-Entregue já nesta versão, sem construir a tela:
-- Colunas `lat/lng/metricas` em `pacientes` (já no schema).
-- Edge Function `geocode-pacientes` — ViaCEP + Nominatim, 1 req/s, cache em `ceps_geocodificados`, nunca reprocessa CEP.
-- View `vw_pacientes_por_regiao`.
-- Item "Mapa de Pacientes" na sidebar marcado como **Em breve** (desabilitado).
-- Comentário `TODO Fase 2` no lugar da tela, listando: react-leaflet + leaflet.heat, filtros (especialidade/idade/sexo/convênio/IMC), toggle heatmap↔bolhas, marcadores das unidades, card de insight.
-
----
-
-### Detalhes técnicos
-
-- **Stack:** TanStack Start (já configurado) + Lovable Cloud (Supabase por baixo) + shadcn/ui + Recharts + Tailwind v4.
-- **RLS:** todas as tabelas com `ENABLE ROW LEVEL SECURITY` e política `SELECT TO authenticated USING (true)`; escrita apenas via Edge Function com service role.
-- **Leitura no frontend:** apenas das views materializadas e tabelas locais — nunca chama Feegow do browser.
-- **Segurança do token:** `FEEGOW_API_TOKEN` como secret do Cloud (solicitado via `add_secret` no momento certo, com formulário seguro — não peço em chat).
-- **Fase 2 tela do mapa:** fora do escopo desta entrega; só a infraestrutura de dados.
-
-Confirma as 2 perguntas acima que já parto para a construção?
+Corrigir a leitura de `mode`, validar erros de upsert e reordenar a sincronização. Isso resolve o carregamento vazio dos gráficos.
