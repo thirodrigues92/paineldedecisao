@@ -1,10 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { LastSyncCard } from "@/components/LastSyncCard";
+import { useAppSettings, useUpdateSetting } from "@/lib/app-settings";
 
 export const Route = createFileRoute("/_authenticated/config")({
   head: () => ({ meta: [{ title: "Configurações" }] }),
@@ -13,6 +16,20 @@ export const Route = createFileRoute("/_authenticated/config")({
 
 function ConfigPage() {
   const [busy, setBusy] = useState<string | null>(null);
+  const settings = useAppSettings();
+  const update = useUpdateSetting();
+
+  const [ocupacao, setOcupacao] = useState<string>("85");
+  const [noShow, setNoShow] = useState<string>("10");
+  const [cap, setCap] = useState<string>("480");
+
+  useEffect(() => {
+    if (settings.data) {
+      setOcupacao(String(settings.data.meta_ocupacao_pct));
+      setNoShow(String(settings.data.meta_no_show_pct));
+      setCap(String(settings.data.capacidade_diaria_min));
+    }
+  }, [settings.data]);
 
   const run = async (mode: "today" | "historical" | "support" | "financial" | "full") => {
     setBusy(mode);
@@ -26,13 +43,53 @@ function ConfigPage() {
     } finally { setBusy(null); }
   };
 
+  const saveSetting = async (chave: "meta_ocupacao_pct" | "meta_no_show_pct" | "capacidade_diaria_min", value: string) => {
+    const n = Number(value);
+    if (!Number.isFinite(n) || n < 0) { toast.error("Valor inválido"); return; }
+    try {
+      await update.mutateAsync({ chave, valor: n });
+      toast.success("Salvo.");
+    } catch (e: any) {
+      toast.error(e.message ?? "Falha ao salvar (apenas admins podem editar)");
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Configurações</h1>
-        <p className="text-sm text-muted-foreground">Sincronização com Feegow e status do sistema.</p>
+        <p className="text-sm text-muted-foreground">Metas do sistema, sincronização e status.</p>
       </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader><CardTitle>Metas & parâmetros</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-[1fr_auto] gap-2 items-end">
+              <div>
+                <Label htmlFor="ocupacao">Meta de ocupação (%)</Label>
+                <Input id="ocupacao" type="number" value={ocupacao} onChange={(e) => setOcupacao(e.target.value)} />
+              </div>
+              <Button onClick={() => saveSetting("meta_ocupacao_pct", ocupacao)} disabled={update.isPending}>Salvar</Button>
+            </div>
+            <div className="grid grid-cols-[1fr_auto] gap-2 items-end">
+              <div>
+                <Label htmlFor="noshow">Meta máx. de no-show (%)</Label>
+                <Input id="noshow" type="number" value={noShow} onChange={(e) => setNoShow(e.target.value)} />
+              </div>
+              <Button onClick={() => saveSetting("meta_no_show_pct", noShow)} disabled={update.isPending}>Salvar</Button>
+            </div>
+            <div className="grid grid-cols-[1fr_auto] gap-2 items-end">
+              <div>
+                <Label htmlFor="cap">Capacidade diária por profissional (min)</Label>
+                <Input id="cap" type="number" value={cap} onChange={(e) => setCap(e.target.value)} />
+              </div>
+              <Button onClick={() => saveSetting("capacidade_diaria_min", cap)} disabled={update.isPending}>Salvar</Button>
+            </div>
+            <p className="text-xs text-muted-foreground">Somente usuários com papel <strong>admin</strong> podem alterar estas metas.</p>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader><CardTitle>Sincronização manual</CardTitle></CardHeader>
           <CardContent className="space-y-3">
@@ -53,13 +110,11 @@ function ConfigPage() {
                 {busy === "support" ? "Executando..." : "Atualizar tabelas de apoio"}
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Na primeira carga, use <strong>Carga completa</strong> para popular apoio, agenda e financeiro.
-            </p>
           </CardContent>
         </Card>
-        <LastSyncCard />
       </div>
+
+      <LastSyncCard />
     </div>
   );
 }
