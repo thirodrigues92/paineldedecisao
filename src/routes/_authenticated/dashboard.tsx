@@ -30,21 +30,29 @@ function DashboardPage() {
   const query = useQuery({
     queryKey: ["dashboard", f.from.toISOString(), f.to.toISOString(), f.unidadeIds, f.especialidadeIds, f.convenioTipo],
     queryFn: async () => {
-      let q = supabase.from("agendamentos").select(`
-        agendamento_id, data, valor_total, especialidade_id, convenio_id,
-        primeiro_agendamento, status_id,
-        especialidades(nome),
-        status_agendamento(categoria, descricao)
-      `).gte("data", toISO(f.from)).lte("data", toISO(f.to));
+      let q = supabase.from("agendamentos").select(
+        "agendamento_id, data, valor_total, especialidade_id, convenio_id, primeiro_agendamento, status_id, unidade_id"
+      ).gte("data", toISO(f.from)).lte("data", toISO(f.to));
       if (f.unidadeIds.length) q = q.in("unidade_id", f.unidadeIds);
       if (f.especialidadeIds.length) q = q.in("especialidade_id", f.especialidadeIds);
       if (f.convenioTipo === "particular") q = q.is("convenio_id", null);
       if (f.convenioTipo === "convenio") q = q.not("convenio_id", "is", null);
-      const { data, error } = await q.limit(20000);
-      if (error) throw error;
-      return data ?? [];
+      const [ags, esps, sts] = await Promise.all([
+        q.limit(20000),
+        supabase.from("especialidades").select("especialidade_id, nome"),
+        supabase.from("status_agendamento").select("status_id, categoria, descricao"),
+      ]);
+      if (ags.error) throw ags.error;
+      const espMap = new Map((esps.data ?? []).map((e: any) => [e.especialidade_id, e]));
+      const stMap = new Map((sts.data ?? []).map((s: any) => [s.status_id, s]));
+      return (ags.data ?? []).map((r: any) => ({
+        ...r,
+        especialidades: espMap.get(r.especialidade_id) ?? null,
+        status_agendamento: stMap.get(r.status_id) ?? null,
+      }));
     },
   });
+
 
   const rows = query.data ?? [];
   const total = rows.length;
