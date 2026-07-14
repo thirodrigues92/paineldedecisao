@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useFilters } from "@/lib/filters-context";
-import { dashboardQueryKey, fetchDashboardAppointments } from "@/lib/dashboard-data";
+import { dashboardQueryKey, fetchDashboardAppointments, fetchFinancialRows } from "@/lib/dashboard-data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { brl, num, pct } from "@/lib/format";
-import { ArrowDown, ArrowUp, Calendar, DollarSign, UserPlus, UserX, Activity, TrendingUp } from "lucide-react";
+import { Calendar, DollarSign, UserPlus, UserX, Activity, TrendingUp } from "lucide-react";
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid,
   BarChart, Bar, PieChart, Pie, Cell, Legend,
@@ -27,18 +27,24 @@ function DashboardPage() {
 
   const query = useQuery({
     queryKey: dashboardQueryKey("dashboard", f),
-    queryFn: () => fetchDashboardAppointments(f, 20_000),
+    queryFn: async () => {
+      const [appointments, financial] = await Promise.all([
+        fetchDashboardAppointments(f, 30_000),
+        fetchFinancialRows(f, 20_000),
+      ]);
+
+      return { appointments, financial };
+    },
   });
 
 
-  const rows = query.data ?? [];
+  const rows = query.data?.appointments ?? [];
+  const financialRows = query.data?.financial ?? [];
   const total = rows.length;
   const realizados = rows.filter((r: any) => r.status_agendamento?.categoria === "realizado").length;
   const noShows = rows.filter((r: any) => r.status_agendamento?.categoria === "no_show").length;
-  const receitaPrev = rows.reduce((s: number, r: any) => s + Number(r.valor_total || 0), 0);
-  const realizadosRows = rows.filter((r: any) => r.status_agendamento?.categoria === "realizado");
-  const receitaReal = realizadosRows.reduce((s: number, r: any) => s + Number(r.valor_total || 0), 0);
-  const ticket = realizados > 0 ? receitaReal / realizados : 0;
+  const receitaPrev = financialRows.filter((r) => r.tipo === "receita").reduce((s, r) => s + Number(r.valor || 0), 0);
+  const ticket = realizados > 0 ? receitaPrev / realizados : 0;
   const novos = rows.filter((r: any) => r.primeiro_agendamento).length;
   const denom = realizados + noShows;
   const taxaNoShow = denom > 0 ? (noShows * 100) / denom : 0;
@@ -66,8 +72,8 @@ function DashboardPage() {
 
   // Donut particular vs convenio (por valor)
   const donut = [
-    { name: "Particular", value: rows.filter((r: any) => !r.convenio_id).reduce((s: number, r: any) => s + Number(r.valor_total || 0), 0) },
-    { name: "Convênio",   value: rows.filter((r: any) => r.convenio_id).reduce((s: number, r: any) => s + Number(r.valor_total || 0), 0) },
+    { name: "Particular", value: financialRows.filter((r) => r.tipo === "receita" && !r.convenio_id).reduce((s, r) => s + Number(r.valor || 0), 0) },
+    { name: "Convênio",   value: financialRows.filter((r) => r.tipo === "receita" && r.convenio_id).reduce((s, r) => s + Number(r.valor || 0), 0) },
   ];
 
   const kpis = [
