@@ -14,13 +14,550 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      agendamentos: {
+        Row: {
+          agendado_em: string | null
+          agendado_por: string | null
+          agendamento_id: number
+          canal_id: number | null
+          convenio_id: number | null
+          created_at: string
+          data: string
+          encaixe: boolean
+          especialidade_id: number | null
+          horario: string | null
+          local_id: number | null
+          notas: string | null
+          paciente_id: number | null
+          plano_id: number | null
+          primeiro_agendamento: boolean
+          procedimento_id: number | null
+          profissional_id: number | null
+          retorno: boolean
+          status_id: number | null
+          telemedicina: boolean
+          unidade_id: number | null
+          updated_at: string
+          valor_total: number
+        }
+        Insert: {
+          agendado_em?: string | null
+          agendado_por?: string | null
+          agendamento_id: number
+          canal_id?: number | null
+          convenio_id?: number | null
+          created_at?: string
+          data: string
+          encaixe?: boolean
+          especialidade_id?: number | null
+          horario?: string | null
+          local_id?: number | null
+          notas?: string | null
+          paciente_id?: number | null
+          plano_id?: number | null
+          primeiro_agendamento?: boolean
+          procedimento_id?: number | null
+          profissional_id?: number | null
+          retorno?: boolean
+          status_id?: number | null
+          telemedicina?: boolean
+          unidade_id?: number | null
+          updated_at?: string
+          valor_total?: number
+        }
+        Update: {
+          agendado_em?: string | null
+          agendado_por?: string | null
+          agendamento_id?: number
+          canal_id?: number | null
+          convenio_id?: number | null
+          created_at?: string
+          data?: string
+          encaixe?: boolean
+          especialidade_id?: number | null
+          horario?: string | null
+          local_id?: number | null
+          notas?: string | null
+          paciente_id?: number | null
+          plano_id?: number | null
+          primeiro_agendamento?: boolean
+          procedimento_id?: number | null
+          profissional_id?: number | null
+          retorno?: boolean
+          status_id?: number | null
+          telemedicina?: boolean
+          unidade_id?: number | null
+          updated_at?: string
+          valor_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agendamentos_convenio_id_fkey"
+            columns: ["convenio_id"]
+            isOneToOne: false
+            referencedRelation: "convenios"
+            referencedColumns: ["convenio_id"]
+          },
+          {
+            foreignKeyName: "agendamentos_especialidade_id_fkey"
+            columns: ["especialidade_id"]
+            isOneToOne: false
+            referencedRelation: "especialidades"
+            referencedColumns: ["especialidade_id"]
+          },
+          {
+            foreignKeyName: "agendamentos_paciente_id_fkey"
+            columns: ["paciente_id"]
+            isOneToOne: false
+            referencedRelation: "pacientes"
+            referencedColumns: ["paciente_id"]
+          },
+          {
+            foreignKeyName: "agendamentos_procedimento_id_fkey"
+            columns: ["procedimento_id"]
+            isOneToOne: false
+            referencedRelation: "procedimentos"
+            referencedColumns: ["procedimento_id"]
+          },
+          {
+            foreignKeyName: "agendamentos_profissional_id_fkey"
+            columns: ["profissional_id"]
+            isOneToOne: false
+            referencedRelation: "profissionais"
+            referencedColumns: ["profissional_id"]
+          },
+          {
+            foreignKeyName: "agendamentos_status_id_fkey"
+            columns: ["status_id"]
+            isOneToOne: false
+            referencedRelation: "status_agendamento"
+            referencedColumns: ["status_id"]
+          },
+          {
+            foreignKeyName: "agendamentos_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades"
+            referencedColumns: ["unidade_id"]
+          },
+        ]
+      }
+      ceps_geocodificados: {
+        Row: {
+          bairro: string | null
+          cep: string
+          cidade: string | null
+          estado: string | null
+          geocoded_at: string
+          latitude: number | null
+          longitude: number | null
+        }
+        Insert: {
+          bairro?: string | null
+          cep: string
+          cidade?: string | null
+          estado?: string | null
+          geocoded_at?: string
+          latitude?: number | null
+          longitude?: number | null
+        }
+        Update: {
+          bairro?: string | null
+          cep?: string
+          cidade?: string | null
+          estado?: string | null
+          geocoded_at?: string
+          latitude?: number | null
+          longitude?: number | null
+        }
+        Relationships: []
+      }
+      convenios: {
+        Row: {
+          convenio_id: number
+          created_at: string
+          nome: string
+          planos: Json
+          updated_at: string
+        }
+        Insert: {
+          convenio_id: number
+          created_at?: string
+          nome: string
+          planos?: Json
+          updated_at?: string
+        }
+        Update: {
+          convenio_id?: number
+          created_at?: string
+          nome?: string
+          planos?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      especialidades: {
+        Row: {
+          codigo_tiss: string | null
+          created_at: string
+          especialidade_id: number
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          codigo_tiss?: string | null
+          created_at?: string
+          especialidade_id: number
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          codigo_tiss?: string | null
+          created_at?: string
+          especialidade_id?: number
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      financeiro_lancamentos: {
+        Row: {
+          categoria: string | null
+          centro_custo: string | null
+          convenio_id: number | null
+          created_at: string
+          data_pagamento: string | null
+          data_vencimento: string | null
+          id: number
+          status: string | null
+          tipo: string
+          unidade_id: number | null
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          categoria?: string | null
+          centro_custo?: string | null
+          convenio_id?: number | null
+          created_at?: string
+          data_pagamento?: string | null
+          data_vencimento?: string | null
+          id: number
+          status?: string | null
+          tipo: string
+          unidade_id?: number | null
+          updated_at?: string
+          valor?: number
+        }
+        Update: {
+          categoria?: string | null
+          centro_custo?: string | null
+          convenio_id?: number | null
+          created_at?: string
+          data_pagamento?: string | null
+          data_vencimento?: string | null
+          id?: number
+          status?: string | null
+          tipo?: string
+          unidade_id?: number | null
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financeiro_lancamentos_convenio_id_fkey"
+            columns: ["convenio_id"]
+            isOneToOne: false
+            referencedRelation: "convenios"
+            referencedColumns: ["convenio_id"]
+          },
+          {
+            foreignKeyName: "financeiro_lancamentos_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades"
+            referencedColumns: ["unidade_id"]
+          },
+        ]
+      }
+      pacientes: {
+        Row: {
+          ano_nascimento: number | null
+          bairro: string | null
+          cep: string | null
+          cidade: string | null
+          convenio_id: number | null
+          created_at: string
+          estado: string | null
+          latitude: number | null
+          longitude: number | null
+          metricas: Json
+          origem_id: number | null
+          paciente_id: number
+          sexo: string | null
+          updated_at: string
+        }
+        Insert: {
+          ano_nascimento?: number | null
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
+          convenio_id?: number | null
+          created_at?: string
+          estado?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          metricas?: Json
+          origem_id?: number | null
+          paciente_id: number
+          sexo?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ano_nascimento?: number | null
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
+          convenio_id?: number | null
+          created_at?: string
+          estado?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          metricas?: Json
+          origem_id?: number | null
+          paciente_id?: number
+          sexo?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pacientes_convenio_id_fkey"
+            columns: ["convenio_id"]
+            isOneToOne: false
+            referencedRelation: "convenios"
+            referencedColumns: ["convenio_id"]
+          },
+        ]
+      }
+      procedimentos: {
+        Row: {
+          created_at: string
+          grupo: string | null
+          nome: string
+          procedimento_id: number
+          tipo: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          grupo?: string | null
+          nome: string
+          procedimento_id: number
+          tipo?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          grupo?: string | null
+          nome?: string
+          procedimento_id?: number
+          tipo?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profissionais: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          especialidades: Json
+          nome: string
+          profissional_id: number
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          especialidades?: Json
+          nome: string
+          profissional_id: number
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          especialidades?: Json
+          nome?: string
+          profissional_id?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      status_agendamento: {
+        Row: {
+          categoria: string
+          created_at: string
+          descricao: string
+          status_id: number
+          updated_at: string
+        }
+        Insert: {
+          categoria?: string
+          created_at?: string
+          descricao: string
+          status_id: number
+          updated_at?: string
+        }
+        Update: {
+          categoria?: string
+          created_at?: string
+          descricao?: string
+          status_id?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      sync_logs: {
+        Row: {
+          endpoint: string
+          erro: string | null
+          finalizado_em: string | null
+          id: number
+          iniciado_em: string
+          registros: number
+          sucesso: boolean
+        }
+        Insert: {
+          endpoint: string
+          erro?: string | null
+          finalizado_em?: string | null
+          id?: number
+          iniciado_em?: string
+          registros?: number
+          sucesso?: boolean
+        }
+        Update: {
+          endpoint?: string
+          erro?: string | null
+          finalizado_em?: string | null
+          id?: number
+          iniciado_em?: string
+          registros?: number
+          sucesso?: boolean
+        }
+        Relationships: []
+      }
+      unidades: {
+        Row: {
+          bairro: string | null
+          cep: string | null
+          cidade: string | null
+          created_at: string
+          estado: string | null
+          latitude: number | null
+          longitude: number | null
+          nome_fantasia: string
+          unidade_id: number
+          updated_at: string
+        }
+        Insert: {
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
+          created_at?: string
+          estado?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          nome_fantasia: string
+          unidade_id: number
+          updated_at?: string
+        }
+        Update: {
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
+          created_at?: string
+          estado?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          nome_fantasia?: string
+          unidade_id?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
-      [_ in never]: never
+      vw_heatmap_agenda: {
+        Row: {
+          dia_semana: number | null
+          especialidade_id: number | null
+          faixa_horaria: number | null
+          no_shows: number | null
+          receita: number | null
+          total: number | null
+          unidade_id: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agendamentos_especialidade_id_fkey"
+            columns: ["especialidade_id"]
+            isOneToOne: false
+            referencedRelation: "especialidades"
+            referencedColumns: ["especialidade_id"]
+          },
+          {
+            foreignKeyName: "agendamentos_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades"
+            referencedColumns: ["unidade_id"]
+          },
+        ]
+      }
+      vw_kpis_mensais: {
+        Row: {
+          mes: string | null
+          no_shows: number | null
+          pacientes_novos: number | null
+          realizados: number | null
+          receita_prevista: number | null
+          receita_realizada: number | null
+          taxa_no_show: number | null
+          ticket_medio: number | null
+          total_agendamentos: number | null
+          unidade_id: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agendamentos_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades"
+            referencedColumns: ["unidade_id"]
+          },
+        ]
+      }
+      vw_pacientes_por_regiao: {
+        Row: {
+          bairro: string | null
+          cidade: string | null
+          especialidade_id: number | null
+          pacientes: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agendamentos_especialidade_id_fkey"
+            columns: ["especialidade_id"]
+            isOneToOne: false
+            referencedRelation: "especialidades"
+            referencedColumns: ["especialidade_id"]
+          },
+        ]
+      }
     }
     Functions: {
-      [_ in never]: never
+      refresh_dashboard_views: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
