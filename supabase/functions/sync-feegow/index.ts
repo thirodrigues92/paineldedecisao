@@ -52,6 +52,40 @@ export function parseCurrency(v: unknown): number {
   return Number(s) || 0;
 }
 
+function parseFinancialCurrency(v: unknown): number {
+  const n = parseCurrency(v);
+  if (typeof v === "number" && Number.isInteger(v) && Math.abs(v) >= 1000) return n / 100;
+  const s = String(v ?? "").trim();
+  if (/^-?\d+$/.test(s) && Math.abs(n) >= 1000) return n / 100;
+  return n;
+}
+
+function statusCategory(statusId: number, description: string) {
+  const known: Record<number, string> = {
+    1: "agendado",
+    2: "em_atendimento",
+    3: "realizado",
+    4: "em_atendimento",
+    5: "em_atendimento",
+    6: "no_show",
+    7: "agendado",
+    11: "cancelado",
+    15: "remarcado",
+    16: "cancelado",
+    101: "triagem",
+    103: "triagem",
+    105: "triagem",
+  };
+  if (known[statusId]) return known[statusId];
+  const text = description.toLowerCase();
+  if (text.includes("realiz") || text.includes("atendid") || text.includes("execut")) return "realizado";
+  if (text.includes("no-show") || text.includes("no show") || text.includes("falt")) return "no_show";
+  if (text.includes("cancel")) return "cancelado";
+  if (text.includes("confirm") || text.includes("agend")) return "agendado";
+  if (text.includes("triagem")) return "triagem";
+  return "outro";
+}
+
 /** Retry com backoff exponencial (3 tentativas). */
 export async function withRetry<T>(fn: () => Promise<T>, attempts = 3): Promise<T> {
   let lastErr: unknown;
@@ -132,7 +166,8 @@ async function syncSupport(supabase: any) {
         status_id: Number(r.id ?? r.status_id),
         descricao: String(r.description ?? r.nome ?? r.name ?? ""),
         categoria: "outro",
-      })).filter((r) => r.status_id);
+      })).filter((r) => r.status_id)
+        .map((r) => ({ ...r, categoria: statusCategory(r.status_id, r.descricao) }));
       if (mapped.length) {
         await supabase.from("status_agendamento").upsert(mapped, { onConflict: "status_id", ignoreDuplicates: false });
         total += mapped.length;
@@ -325,7 +360,7 @@ async function syncFinancial(supabase: any, from: Date, to: Date) {
         const pagamentos = asArray(invoice.pagamentos ?? invoice.payments ?? []);
         const base = detalhes.length ? detalhes : [invoice];
         base.forEach((det: any, detailIndex: number) => {
-          const valor = parseCurrency(det.valor ?? det.value ?? invoice.valor ?? invoice.value);
+          const valor = parseFinancialCurrency(det.valor ?? det.value ?? invoice.valor ?? invoice.value);
           const movementId = Number(det.movement_id ?? det.movimentacao_id ?? det.id ?? det.invoice_id ?? invoice.invoice_id ?? invoice.id);
           const invoiceId = Number(det.invoice_id ?? invoice.invoice_id ?? invoice.id);
           const dataVencimento = parseFeegowDate(det.data_vencimento ?? det.vencimento ?? det.data ?? invoice.data_vencimento ?? invoice.vencimento ?? invoice.data);
