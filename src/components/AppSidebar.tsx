@@ -1,0 +1,76 @@
+import { Link, useRouterState } from "@tanstack/react-router";
+import {
+  LayoutDashboard, CalendarClock, UserX, DollarSign,
+  Stethoscope, Building2, MapPinned, Settings, LogOut,
+} from "lucide-react";
+import {
+  Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
+  SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarFooter,
+} from "@/components/ui/sidebar";
+import { supabase } from "@/integrations/supabase/client";
+
+const nav = [
+  { title: "Visão Executiva", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Heatmap da Agenda", url: "/heatmap", icon: CalendarClock },
+  { title: "Análise de No-show", url: "/no-show", icon: UserX },
+  { title: "Financeiro", url: "/financeiro", icon: DollarSign },
+  { title: "Profissionais", url: "/profissionais", icon: Stethoscope },
+  { title: "Unidades", url: "/unidades", icon: Building2 },
+  { title: "Mapa de Pacientes", url: "/mapa", icon: MapPinned, badge: "Em breve" },
+  { title: "Configurações", url: "/config", icon: Settings },
+];
+
+export function AppSidebar() {
+  const pathname = useRouterState({ select: (r) => r.location.pathname });
+
+  return (
+    <Sidebar collapsible="icon">
+      <SidebarHeader className="border-b border-sidebar-border px-3 py-4">
+        <div className="flex items-center gap-2">
+          <div className="h-8 w-8 rounded-md bg-primary/20 grid place-items-center">
+            <span className="text-primary font-bold">P</span>
+          </div>
+          <div className="min-w-0">
+            <div className="text-sm font-semibold truncate">Painel de Decisão</div>
+            <div className="text-[11px] text-muted-foreground truncate">Clínica</div>
+          </div>
+        </div>
+      </SidebarHeader>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>Navegação</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {nav.map((item) => {
+                const active = pathname === item.url;
+                return (
+                  <SidebarMenuItem key={item.url}>
+                    <SidebarMenuButton asChild isActive={active}>
+                      <Link to={item.url} className="flex items-center gap-2">
+                        <item.icon className="h-4 w-4" />
+                        <span className="flex-1">{item.title}</span>
+                        {item.badge && (
+                          <span className="ml-auto text-[10px] rounded-full bg-warning/20 text-warning px-2 py-0.5">
+                            {item.badge}
+                          </span>
+                        )}
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+      <SidebarFooter className="border-t border-sidebar-border p-2">
+        <SidebarMenuButton
+          onClick={async () => { await supabase.auth.signOut(); window.location.href = "/auth"; }}
+        >
+          <LogOut className="h-4 w-4" />
+          <span>Sair</span>
+        </SidebarMenuButton>
+      </SidebarFooter>
+    </Sidebar>
+  );
+}
