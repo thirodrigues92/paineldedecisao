@@ -81,9 +81,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "Painel de Decisão Clínica" },
       { name: "description", content: "Business Intelligence para clínicas: KPIs, agenda, no-show e financeiro em tempo real." },
       { property: "og:title", content: "Painel de Decisão Clínica" },
-      { property: "og:description", content: "BI para clínicas integrado ao Feegow." },
+      { property: "og:description", content: "Business Intelligence para clínicas: KPIs, agenda, no-show e financeiro em tempo real." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Painel de Decisão Clínica" },
+      { name: "twitter:description", content: "Business Intelligence para clínicas: KPIs, agenda, no-show e financeiro em tempo real." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/b646ade1-cc80-4075-b962-b011dc4aca0e/id-preview-966898cc--2e9e2a82-c0ca-4add-8986-cb93df44e804.lovable.app-1784069105105.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/b646ade1-cc80-4075-b962-b011dc4aca0e/id-preview-966898cc--2e9e2a82-c0ca-4add-8986-cb93df44e804.lovable.app-1784069105105.png" },
     ],
     links: [
       {
