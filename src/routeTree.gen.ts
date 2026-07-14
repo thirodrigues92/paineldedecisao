@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedUnidadesRouteImport } from './routes/_authenticated/unidades'
 import { Route as AuthenticatedProfissionaisRouteImport } from './routes/_authenticated/profissionais'
 import { Route as AuthenticatedNoShowRouteImport } from './routes/_authenticated/no-show'
 import { Route as AuthenticatedHeatmapRouteImport } from './routes/_authenticated/heatmap'
@@ -31,6 +32,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedUnidadesRoute = AuthenticatedUnidadesRouteImport.update({
+  id: '/unidades',
+  path: '/unidades',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedProfissionaisRoute =
   AuthenticatedProfissionaisRouteImport.update({
@@ -67,6 +73,7 @@ export interface FileRoutesByFullPath {
   '/heatmap': typeof AuthenticatedHeatmapRoute
   '/no-show': typeof AuthenticatedNoShowRoute
   '/profissionais': typeof AuthenticatedProfissionaisRoute
+  '/unidades': typeof AuthenticatedUnidadesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -76,6 +83,7 @@ export interface FileRoutesByTo {
   '/heatmap': typeof AuthenticatedHeatmapRoute
   '/no-show': typeof AuthenticatedNoShowRoute
   '/profissionais': typeof AuthenticatedProfissionaisRoute
+  '/unidades': typeof AuthenticatedUnidadesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -87,6 +95,7 @@ export interface FileRoutesById {
   '/_authenticated/heatmap': typeof AuthenticatedHeatmapRoute
   '/_authenticated/no-show': typeof AuthenticatedNoShowRoute
   '/_authenticated/profissionais': typeof AuthenticatedProfissionaisRoute
+  '/_authenticated/unidades': typeof AuthenticatedUnidadesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -98,6 +107,7 @@ export interface FileRouteTypes {
     | '/heatmap'
     | '/no-show'
     | '/profissionais'
+    | '/unidades'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -107,6 +117,7 @@ export interface FileRouteTypes {
     | '/heatmap'
     | '/no-show'
     | '/profissionais'
+    | '/unidades'
   id:
     | '__root__'
     | '/'
@@ -117,6 +128,7 @@ export interface FileRouteTypes {
     | '/_authenticated/heatmap'
     | '/_authenticated/no-show'
     | '/_authenticated/profissionais'
+    | '/_authenticated/unidades'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -147,6 +159,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/unidades': {
+      id: '/_authenticated/unidades'
+      path: '/unidades'
+      fullPath: '/unidades'
+      preLoaderRoute: typeof AuthenticatedUnidadesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/profissionais': {
       id: '/_authenticated/profissionais'
@@ -192,6 +211,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedHeatmapRoute: typeof AuthenticatedHeatmapRoute
   AuthenticatedNoShowRoute: typeof AuthenticatedNoShowRoute
   AuthenticatedProfissionaisRoute: typeof AuthenticatedProfissionaisRoute
+  AuthenticatedUnidadesRoute: typeof AuthenticatedUnidadesRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -200,6 +220,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedHeatmapRoute: AuthenticatedHeatmapRoute,
   AuthenticatedNoShowRoute: AuthenticatedNoShowRoute,
   AuthenticatedProfissionaisRoute: AuthenticatedProfissionaisRoute,
+  AuthenticatedUnidadesRoute: AuthenticatedUnidadesRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
