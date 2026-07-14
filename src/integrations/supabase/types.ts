@@ -488,6 +488,73 @@ export type Database = {
       }
     }
     Views: {
+      heatmap_agenda: {
+        Row: {
+          dia_semana: number | null
+          especialidade_id: number | null
+          faixa_horaria: number | null
+          no_shows: number | null
+          receita: number | null
+          total: number | null
+          unidade_id: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agendamentos_especialidade_id_fkey"
+            columns: ["especialidade_id"]
+            isOneToOne: false
+            referencedRelation: "especialidades"
+            referencedColumns: ["especialidade_id"]
+          },
+          {
+            foreignKeyName: "agendamentos_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades"
+            referencedColumns: ["unidade_id"]
+          },
+        ]
+      }
+      kpis_mensais: {
+        Row: {
+          mes: string | null
+          no_shows: number | null
+          pacientes_novos: number | null
+          realizados: number | null
+          receita_prevista: number | null
+          receita_realizada: number | null
+          taxa_no_show: number | null
+          ticket_medio: number | null
+          total_agendamentos: number | null
+          unidade_id: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agendamentos_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades"
+            referencedColumns: ["unidade_id"]
+          },
+        ]
+      }
+      pacientes_por_regiao: {
+        Row: {
+          bairro: string | null
+          cidade: string | null
+          especialidade_id: number | null
+          pacientes: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agendamentos_especialidade_id_fkey"
+            columns: ["especialidade_id"]
+            isOneToOne: false
+            referencedRelation: "especialidades"
+            referencedColumns: ["especialidade_id"]
+          },
+        ]
+      }
       vw_heatmap_agenda: {
         Row: {
           dia_semana: number | null
