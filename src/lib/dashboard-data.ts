@@ -18,6 +18,17 @@ export type DashboardAppointment = {
   status_agendamento: { status_id: number; categoria: string; descricao: string | null } | null;
 };
 
+export type FinancialRow = {
+  tipo: string | null;
+  valor: number | string | null;
+  data_vencimento: string | null;
+  data_pagamento: string | null;
+  status: string | null;
+  categoria: string | null;
+  unidade_id: number | null;
+  convenio_id: number | null;
+};
+
 function toISO(d: Date) {
   return d.toISOString().substring(0, 10);
 }
@@ -32,6 +43,34 @@ export function dashboardQueryKey(scope: string, f: DashboardFilters) {
     f.especialidadeIds,
     f.convenioTipo,
   ];
+}
+
+export const financialQueryKey = (scope: string, f: DashboardFilters) => dashboardQueryKey(scope, f);
+
+export async function fetchFinancialRows(f: DashboardFilters, limit = 20_000): Promise<FinancialRow[]> {
+  const pageSize = 1_000;
+  const all: FinancialRow[] = [];
+
+  for (let from = 0; from < limit; from += pageSize) {
+    let q = supabase
+      .from("financeiro_lancamentos")
+      .select("tipo, valor, data_vencimento, data_pagamento, status, categoria, unidade_id, convenio_id")
+      .gte("data_vencimento", toISO(f.from))
+      .lte("data_vencimento", toISO(f.to))
+      .order("data_vencimento", { ascending: true })
+      .range(from, Math.min(from + pageSize - 1, limit - 1));
+
+    if (f.unidadeIds.length) q = q.in("unidade_id", f.unidadeIds);
+    if (f.convenioTipo === "particular") q = q.is("convenio_id", null);
+    if (f.convenioTipo === "convenio") q = q.not("convenio_id", "is", null);
+
+    const { data, error } = await q;
+    if (error) throw error;
+    all.push(...((data ?? []) as FinancialRow[]));
+    if (!data || data.length < pageSize) break;
+  }
+
+  return all;
 }
 
 export async function fetchDashboardAppointments(
