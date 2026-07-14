@@ -33,8 +33,8 @@ function DashboardPage() {
       let q = supabase.from("agendamentos").select(`
         agendamento_id, data, valor_total, especialidade_id, convenio_id,
         primeiro_agendamento, status_id,
-        especialidade:especialidades!agendamentos_especialidade_id_fkey(nome),
-        status:status_agendamento!agendamentos_status_id_fkey(categoria, descricao)
+        especialidades(nome),
+        status_agendamento(categoria, descricao)
       `).gte("data", toISO(f.from)).lte("data", toISO(f.to));
       if (f.unidadeIds.length) q = q.in("unidade_id", f.unidadeIds);
       if (f.especialidadeIds.length) q = q.in("especialidade_id", f.especialidadeIds);
