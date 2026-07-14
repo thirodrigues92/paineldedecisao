@@ -23,6 +23,7 @@ export type Database = {
           convenio_id: number | null
           created_at: string
           data: string
+          duracao_min: number
           encaixe: boolean
           especialidade_id: number | null
           horario: string | null
@@ -48,6 +49,7 @@ export type Database = {
           convenio_id?: number | null
           created_at?: string
           data: string
+          duracao_min?: number
           encaixe?: boolean
           especialidade_id?: number | null
           horario?: string | null
@@ -73,6 +75,7 @@ export type Database = {
           convenio_id?: number | null
           created_at?: string
           data?: string
+          duracao_min?: number
           encaixe?: boolean
           especialidade_id?: number | null
           horario?: string | null
