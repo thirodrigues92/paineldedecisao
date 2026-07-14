@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useFilters } from "@/lib/filters-context";
 import { brl, num } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend, PieChart, Pie, Cell } from "recharts";
+import { fetchFinancialRows, financialQueryKey } from "@/lib/dashboard-data";
 
 export const Route = createFileRoute("/_authenticated/financeiro")({
   head: () => ({ meta: [{ title: "Financeiro" }] }),
@@ -15,27 +15,8 @@ export const Route = createFileRoute("/_authenticated/financeiro")({
 function FinPage() {
   const f = useFilters();
   const q = useQuery({
-    queryKey: ["fin", f.from.toISOString(), f.to.toISOString(), f.unidadeIds, f.convenioTipo],
-    queryFn: async () => {
-      const all: any[] = [];
-      const pageSize = 1_000;
-      const maxRows = 20_000;
-      for (let from = 0; from < maxRows; from += pageSize) {
-        let query = supabase.from("financeiro_lancamentos").select("tipo, valor, data_vencimento, data_pagamento, status, categoria, unidade_id, convenio_id")
-          .gte("data_vencimento", f.from.toISOString().slice(0, 10))
-          .lte("data_vencimento", f.to.toISOString().slice(0, 10))
-          .order("data_vencimento", { ascending: true })
-          .range(from, from + pageSize - 1);
-        if (f.unidadeIds.length) query = query.in("unidade_id", f.unidadeIds);
-        if (f.convenioTipo === "particular") query = query.is("convenio_id", null);
-        if (f.convenioTipo === "convenio") query = query.not("convenio_id", "is", null);
-        const { data, error } = await query;
-        if (error) throw error;
-        all.push(...(data ?? []));
-        if (!data || data.length < pageSize) break;
-      }
-      return all;
-    },
+    queryKey: financialQueryKey("fin", f),
+    queryFn: () => fetchFinancialRows(f),
   });
 
   const rows = (q.data ?? []) as any[];
