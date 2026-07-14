@@ -285,7 +285,7 @@ async function syncAgendamentos(supabase: any, from: Date, to: Date) {
         canal_id: r.canal_id ? Number(r.canal_id) : null,
         convenio_id: r.convenio_id ? Number(r.convenio_id) : null,
         plano_id: r.plano_id ? Number(r.plano_id) : null,
-        valor_total: parseCurrency(r.valor_total ?? r.total_value ?? 0),
+        valor_total: parseCurrency(r.valor_total ?? r.valor_total_agendamento ?? r.total_value ?? r.valor ?? 0),
         telemedicina: Boolean(r.telemedicina),
         encaixe: Boolean(r.encaixe),
         retorno: Boolean(r.retorno),
@@ -293,6 +293,8 @@ async function syncAgendamentos(supabase: any, from: Date, to: Date) {
         agendado_em: r.agendado_em ?? null,
         agendado_por: r.agendado_por ?? null,
         notas: r.notas ?? r.observacoes ?? null,
+        // Duração: Feegow devolve 0 na maioria dos slots → cai no default de 30 min.
+        duracao_min: (() => { const d = Number(r.duracao ?? r.duration ?? 0); return d > 0 ? d : 30; })(),
       })).filter((r: any) => r.agendamento_id && r.data);
       // Dedupe por agendamento_id (evita "ON CONFLICT ... cannot affect row a second time")
       const seen = new Set<number>();
