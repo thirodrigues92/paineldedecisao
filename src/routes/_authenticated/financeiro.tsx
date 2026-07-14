@@ -17,15 +17,24 @@ function FinPage() {
   const q = useQuery({
     queryKey: ["fin", f.from.toISOString(), f.to.toISOString(), f.unidadeIds, f.convenioTipo],
     queryFn: async () => {
-      let query = supabase.from("financeiro_lancamentos").select("tipo, valor, data_vencimento, data_pagamento, status, categoria, unidade_id, convenio_id")
-        .gte("data_vencimento", f.from.toISOString().slice(0, 10))
-        .lte("data_vencimento", f.to.toISOString().slice(0, 10));
-      if (f.unidadeIds.length) query = query.in("unidade_id", f.unidadeIds);
-      if (f.convenioTipo === "particular") query = query.is("convenio_id", null);
-      if (f.convenioTipo === "convenio") query = query.not("convenio_id", "is", null);
-      const { data, error } = await query.limit(20000);
-      if (error) throw error;
-      return data ?? [];
+      const all: any[] = [];
+      const pageSize = 1_000;
+      const maxRows = 20_000;
+      for (let from = 0; from < maxRows; from += pageSize) {
+        let query = supabase.from("financeiro_lancamentos").select("tipo, valor, data_vencimento, data_pagamento, status, categoria, unidade_id, convenio_id")
+          .gte("data_vencimento", f.from.toISOString().slice(0, 10))
+          .lte("data_vencimento", f.to.toISOString().slice(0, 10))
+          .order("data_vencimento", { ascending: true })
+          .range(from, from + pageSize - 1);
+        if (f.unidadeIds.length) query = query.in("unidade_id", f.unidadeIds);
+        if (f.convenioTipo === "particular") query = query.is("convenio_id", null);
+        if (f.convenioTipo === "convenio") query = query.not("convenio_id", "is", null);
+        const { data, error } = await query;
+        if (error) throw error;
+        all.push(...(data ?? []));
+        if (!data || data.length < pageSize) break;
+      }
+      return all;
     },
   });
 
