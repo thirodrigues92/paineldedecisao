@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useFilters } from "@/lib/filters-context";
+import { dashboardQueryKey, fetchDashboardAppointments } from "@/lib/dashboard-data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -16,18 +16,8 @@ const HORAS = Array.from({ length: 13 }, (_, i) => 7 + i); // 7h..19h
 function HeatmapPage() {
   const f = useFilters();
   const q = useQuery({
-    queryKey: ["heatmap", f.from.toISOString(), f.to.toISOString(), f.unidadeIds],
-    queryFn: async () => {
-      let query = supabase
-        .from("agendamentos")
-        .select("data, horario, status_agendamento(categoria)")
-        .gte("data", f.from.toISOString().slice(0, 10))
-        .lte("data", f.to.toISOString().slice(0, 10));
-      if (f.unidadeIds.length) query = query.in("unidade_id", f.unidadeIds);
-      const { data, error } = await query.limit(30000);
-      if (error) throw error;
-      return data ?? [];
-    },
+    queryKey: dashboardQueryKey("heatmap", f),
+    queryFn: () => fetchDashboardAppointments(f, 30_000),
   });
 
   const grid: Record<string, { total: number; realizado: number }> = {};

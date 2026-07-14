@@ -14,7 +14,7 @@ export const Route = createFileRoute("/_authenticated/config")({
 function ConfigPage() {
   const [busy, setBusy] = useState<string | null>(null);
 
-  const run = async (mode: "today" | "historical" | "support" | "full") => {
+  const run = async (mode: "today" | "historical" | "support" | "financial" | "full") => {
     setBusy(mode);
     try {
       const { data, error } = await supabase.functions.invoke("sync-feegow", { body: { mode } });
@@ -46,12 +46,15 @@ function ConfigPage() {
               <Button variant="secondary" onClick={() => run("historical")} disabled={busy !== null}>
                 {busy === "historical" ? "Executando..." : "Carga histórica (90 dias)"}
               </Button>
+              <Button variant="secondary" onClick={() => run("financial")} disabled={busy !== null}>
+                {busy === "financial" ? "Executando financeiro..." : "Sincronizar financeiro"}
+              </Button>
               <Button variant="outline" onClick={() => run("support")} disabled={busy !== null}>
                 {busy === "support" ? "Executando..." : "Atualizar tabelas de apoio"}
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Na primeira carga, use <strong>Carga completa</strong> para popular tabelas-pai (unidades, profissionais, especialidades) antes dos agendamentos.
+              Na primeira carga, use <strong>Carga completa</strong> para popular apoio, agenda e financeiro.
             </p>
           </CardContent>
         </Card>

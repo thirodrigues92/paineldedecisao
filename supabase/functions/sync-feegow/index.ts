@@ -52,6 +52,40 @@ export function parseCurrency(v: unknown): number {
   return Number(s) || 0;
 }
 
+function parseFinancialCurrency(v: unknown): number {
+  const n = parseCurrency(v);
+  if (typeof v === "number" && Number.isInteger(v) && Math.abs(v) >= 1000) return n / 100;
+  const s = String(v ?? "").trim();
+  if (/^-?\d+$/.test(s) && Math.abs(n) >= 1000) return n / 100;
+  return n;
+}
+
+function statusCategory(statusId: number, description: string) {
+  const known: Record<number, string> = {
+    1: "agendado",
+    2: "em_atendimento",
+    3: "realizado",
+    4: "em_atendimento",
+    5: "em_atendimento",
+    6: "no_show",
+    7: "agendado",
+    11: "cancelado",
+    15: "remarcado",
+    16: "cancelado",
+    101: "triagem",
+    103: "triagem",
+    105: "triagem",
+  };
+  if (known[statusId]) return known[statusId];
+  const text = description.toLowerCase();
+  if (text.includes("realiz") || text.includes("atendid") || text.includes("execut")) return "realizado";
+  if (text.includes("no-show") || text.includes("no show") || text.includes("falt")) return "no_show";
+  if (text.includes("cancel")) return "cancelado";
+  if (text.includes("confirm") || text.includes("agend")) return "agendado";
+  if (text.includes("triagem")) return "triagem";
+  return "outro";
+}
+
 /** Retry com backoff exponencial (3 tentativas). */
 export async function withRetry<T>(fn: () => Promise<T>, attempts = 3): Promise<T> {
   let lastErr: unknown;
@@ -132,7 +166,8 @@ async function syncSupport(supabase: any) {
         status_id: Number(r.id ?? r.status_id),
         descricao: String(r.description ?? r.nome ?? r.name ?? ""),
         categoria: "outro",
-      })).filter((r) => r.status_id);
+      })).filter((r) => r.status_id)
+        .map((r) => ({ ...r, categoria: statusCategory(r.status_id, r.descricao) }));
       if (mapped.length) {
         await supabase.from("status_agendamento").upsert(mapped, { onConflict: "status_id", ignoreDuplicates: false });
         total += mapped.length;
@@ -291,6 +326,92 @@ async function syncAgendamentos(supabase: any, from: Date, to: Date) {
   }
 }
 
+function makeFinancialId(tipoTransacao: "C" | "D", sourceId: number, fallbackIndex: number) {
+  const prefix = tipoTransacao === "C" ? 1 : 2;
+  const safeId = Number.isFinite(sourceId) && sourceId > 0 ? sourceId : fallbackIndex + 1;
+  return prefix * 1_000_000_000_000 + safeId;
+}
+
+function financialStatus(valor: number, pagamentos: any[], fallback: any) {
+  const explicit = String(fallback.status ?? fallback.situacao ?? "").toLowerCase();
+  if (explicit.includes("pago") || explicit.includes("quit")) return "pago";
+  if (explicit.includes("cancel")) return "cancelado";
+  const pago = pagamentos.reduce((sum, p) => sum + parseCurrency(p.valor ?? p.value), 0);
+  if (valor > 0 && pago >= valor) return "pago";
+  if (pago > 0) return "parcial";
+  return "em_aberto";
+}
+
+async function syncFinancial(supabase: any, from: Date, to: Date) {
+  const id = await logStart(supabase, `financeiro ${toFeegowDate(from)}→${toFeegowDate(to)}`);
+  let total = 0;
+  const errors: string[] = [];
+  try {
+    const mapped: any[] = [];
+    for (const tipoTransacao of ["C", "D"] as const) {
+      const content = await feegow("/financial/list-invoice", {
+        data_start: toFeegowDate(from),
+        data_end: toFeegowDate(to),
+        tipo_transacao: tipoTransacao,
+      });
+      const invoices = asArray(content);
+      invoices.forEach((invoice: any, invoiceIndex: number) => {
+        const detalhes = asArray(invoice.detalhes ?? invoice.details ?? invoice.itens ?? invoice.items ?? invoice);
+        const pagamentos = asArray(invoice.pagamentos ?? invoice.payments ?? []);
+        const base = detalhes.length ? detalhes : [invoice];
+        base.forEach((det: any, detailIndex: number) => {
+          const valor = parseFinancialCurrency(det.valor ?? det.value ?? invoice.valor ?? invoice.value);
+          const movementId = Number(det.movement_id ?? det.movimentacao_id ?? det.id ?? det.invoice_id ?? invoice.invoice_id ?? invoice.id);
+          const invoiceId = Number(det.invoice_id ?? invoice.invoice_id ?? invoice.id);
+          const dataVencimento = parseFeegowDate(det.data_vencimento ?? det.vencimento ?? det.data ?? invoice.data_vencimento ?? invoice.vencimento ?? invoice.data);
+          const dataPagamento = parseFeegowDate(
+            det.data_pagamento ?? det.pagamento_em ?? pagamentos[0]?.data ?? pagamentos[0]?.data_pagamento ?? invoice.data_pagamento,
+          );
+          if (!valor || !dataVencimento) return;
+          mapped.push({
+            id: makeFinancialId(tipoTransacao, movementId || invoiceId, invoiceIndex * 1000 + detailIndex),
+            tipo: tipoTransacao === "C" ? "receita" : "despesa",
+            categoria: det.descricao ?? invoice.descricao ?? det.categoria ?? invoice.categoria ?? null,
+            centro_custo: det.centro_custo ?? invoice.centro_custo ?? null,
+            unidade_id: det.unidade_id || invoice.unidade_id ? Number(det.unidade_id ?? invoice.unidade_id) : null,
+            convenio_id: det.convenio_id || invoice.convenio_id ? Number(det.convenio_id ?? invoice.convenio_id) : null,
+            valor,
+            data_vencimento: dataVencimento,
+            data_pagamento: dataPagamento,
+            status: financialStatus(valor, pagamentos, det),
+          });
+        });
+      });
+    }
+
+    const seen = new Set<number>();
+    const unique = mapped.filter((r) => {
+      if (seen.has(r.id)) return false;
+      seen.add(r.id);
+      return true;
+    });
+
+    for (let i = 0; i < unique.length; i += 500) {
+      const slice = unique.slice(i, i + 500);
+      const { error, count } = await supabase
+        .from("financeiro_lancamentos")
+        .upsert(slice, { onConflict: "id", count: "exact" });
+      if (error) {
+        console.error(`upsert financeiro falhou (chunk ${i}):`, error.message);
+        errors.push(error.message);
+      } else {
+        total += count ?? slice.length;
+      }
+    }
+
+    if (errors.length) await logEnd(supabase, id, false, total, `Upsert errors: ${errors.slice(0, 3).join(" | ")}`);
+    else await logEnd(supabase, id, true, total);
+  } catch (e) {
+    await logEnd(supabase, id, false, total, String(e));
+    throw e;
+  }
+}
+
 async function refreshViews(supabase: any) {
   try { await supabase.rpc("refresh_dashboard_views"); } catch (e) { console.warn("refresh", e); }
 }
@@ -338,7 +459,11 @@ Deno.serve(async (req) => {
       await syncAgendamentos(supabase, now, in7);
     }
 
-    // financial: placeholder
+    if (mode === "financial" || mode === "full") {
+      const to = new Date(); to.setDate(to.getDate() + 30);
+      const from = new Date(); from.setDate(from.getDate() - 90);
+      await syncFinancial(supabase, from, to);
+    }
 
     await refreshViews(supabase);
 

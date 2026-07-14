@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useFilters } from "@/lib/filters-context";
+import { dashboardQueryKey, fetchDashboardAppointments } from "@/lib/dashboard-data";
 import { pct, num } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
@@ -15,17 +15,8 @@ export const Route = createFileRoute("/_authenticated/no-show")({
 function NoShowPage() {
   const f = useFilters();
   const q = useQuery({
-    queryKey: ["noshow", f.from.toISOString(), f.to.toISOString()],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("agendamentos")
-        .select("data, especialidade_id, especialidades(nome), profissional_id, profissionais(nome), status_agendamento(categoria)")
-        .gte("data", f.from.toISOString().slice(0, 10))
-        .lte("data", f.to.toISOString().slice(0, 10))
-        .limit(30000);
-      if (error) throw error;
-      return data ?? [];
-    },
+    queryKey: dashboardQueryKey("noshow", f),
+    queryFn: () => fetchDashboardAppointments(f, 30_000),
   });
 
   const rows = (q.data ?? []) as any[];
