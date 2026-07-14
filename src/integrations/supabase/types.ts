@@ -95,6 +95,24 @@ export type Database = {
         }
         Relationships: []
       }
+      app_settings: {
+        Row: {
+          chave: string
+          updated_at: string
+          valor: Json
+        }
+        Insert: {
+          chave: string
+          updated_at?: string
+          valor: Json
+        }
+        Update: {
+          chave?: string
+          updated_at?: string
+          valor?: Json
+        }
+        Relationships: []
+      }
       ceps_geocodificados: {
         Row: {
           bairro: string | null
@@ -480,6 +498,54 @@ export type Database = {
           cidade: string | null
           especialidade_id: number | null
           pacientes: number | null
+        }
+        Relationships: []
+      }
+      vw_analytics_abc_procedimentos: {
+        Row: {
+          classe: string | null
+          pct_acumulado: number | null
+          procedimento: string | null
+          procedimento_id: number | null
+          receita: number | null
+          volume: number | null
+        }
+        Relationships: []
+      }
+      vw_analytics_lead_time: {
+        Row: {
+          data: string | null
+          especialidade: string | null
+          especialidade_id: number | null
+          lead_days: number | null
+        }
+        Relationships: []
+      }
+      vw_analytics_ocupacao_prof: {
+        Row: {
+          agendamentos: number | null
+          data: string | null
+          minutos_ocupados: number | null
+          profissional: string | null
+          profissional_id: number | null
+        }
+        Relationships: []
+      }
+      vw_analytics_receita_mensal: {
+        Row: {
+          despesa: number | null
+          mes: string | null
+          receita: number | null
+        }
+        Relationships: []
+      }
+      vw_analytics_ticket_medio_esp: {
+        Row: {
+          especialidade: string | null
+          especialidade_id: number | null
+          receita: number | null
+          ticket_medio: number | null
+          volume: number | null
         }
         Relationships: []
       }
