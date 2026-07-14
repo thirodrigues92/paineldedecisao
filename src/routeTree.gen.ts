@@ -15,6 +15,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedUnidadesRouteImport } from './routes/_authenticated/unidades'
 import { Route as AuthenticatedProfissionaisRouteImport } from './routes/_authenticated/profissionais'
 import { Route as AuthenticatedNoShowRouteImport } from './routes/_authenticated/no-show'
+import { Route as AuthenticatedMapaRouteImport } from './routes/_authenticated/mapa'
 import { Route as AuthenticatedHeatmapRouteImport } from './routes/_authenticated/heatmap'
 import { Route as AuthenticatedFinanceiroRouteImport } from './routes/_authenticated/financeiro'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -50,6 +51,11 @@ const AuthenticatedNoShowRoute = AuthenticatedNoShowRouteImport.update({
   path: '/no-show',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedMapaRoute = AuthenticatedMapaRouteImport.update({
+  id: '/mapa',
+  path: '/mapa',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedHeatmapRoute = AuthenticatedHeatmapRouteImport.update({
   id: '/heatmap',
   path: '/heatmap',
@@ -78,6 +84,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/financeiro': typeof AuthenticatedFinanceiroRoute
   '/heatmap': typeof AuthenticatedHeatmapRoute
+  '/mapa': typeof AuthenticatedMapaRoute
   '/no-show': typeof AuthenticatedNoShowRoute
   '/profissionais': typeof AuthenticatedProfissionaisRoute
   '/unidades': typeof AuthenticatedUnidadesRoute
@@ -89,6 +96,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/financeiro': typeof AuthenticatedFinanceiroRoute
   '/heatmap': typeof AuthenticatedHeatmapRoute
+  '/mapa': typeof AuthenticatedMapaRoute
   '/no-show': typeof AuthenticatedNoShowRoute
   '/profissionais': typeof AuthenticatedProfissionaisRoute
   '/unidades': typeof AuthenticatedUnidadesRoute
@@ -102,6 +110,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/financeiro': typeof AuthenticatedFinanceiroRoute
   '/_authenticated/heatmap': typeof AuthenticatedHeatmapRoute
+  '/_authenticated/mapa': typeof AuthenticatedMapaRoute
   '/_authenticated/no-show': typeof AuthenticatedNoShowRoute
   '/_authenticated/profissionais': typeof AuthenticatedProfissionaisRoute
   '/_authenticated/unidades': typeof AuthenticatedUnidadesRoute
@@ -115,6 +124,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/financeiro'
     | '/heatmap'
+    | '/mapa'
     | '/no-show'
     | '/profissionais'
     | '/unidades'
@@ -126,6 +136,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/financeiro'
     | '/heatmap'
+    | '/mapa'
     | '/no-show'
     | '/profissionais'
     | '/unidades'
@@ -138,6 +149,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/financeiro'
     | '/_authenticated/heatmap'
+    | '/_authenticated/mapa'
     | '/_authenticated/no-show'
     | '/_authenticated/profissionais'
     | '/_authenticated/unidades'
@@ -193,6 +205,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedNoShowRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/mapa': {
+      id: '/_authenticated/mapa'
+      path: '/mapa'
+      fullPath: '/mapa'
+      preLoaderRoute: typeof AuthenticatedMapaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/heatmap': {
       id: '/_authenticated/heatmap'
       path: '/heatmap'
@@ -229,6 +248,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedFinanceiroRoute: typeof AuthenticatedFinanceiroRoute
   AuthenticatedHeatmapRoute: typeof AuthenticatedHeatmapRoute
+  AuthenticatedMapaRoute: typeof AuthenticatedMapaRoute
   AuthenticatedNoShowRoute: typeof AuthenticatedNoShowRoute
   AuthenticatedProfissionaisRoute: typeof AuthenticatedProfissionaisRoute
   AuthenticatedUnidadesRoute: typeof AuthenticatedUnidadesRoute
@@ -239,6 +259,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedFinanceiroRoute: AuthenticatedFinanceiroRoute,
   AuthenticatedHeatmapRoute: AuthenticatedHeatmapRoute,
+  AuthenticatedMapaRoute: AuthenticatedMapaRoute,
   AuthenticatedNoShowRoute: AuthenticatedNoShowRoute,
   AuthenticatedProfissionaisRoute: AuthenticatedProfissionaisRoute,
   AuthenticatedUnidadesRoute: AuthenticatedUnidadesRoute,
