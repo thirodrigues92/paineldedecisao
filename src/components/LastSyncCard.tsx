@@ -30,14 +30,15 @@ export function LastSyncCard() {
         {(q.data ?? []).map((l: any) => (
           <div key={l.id} className="flex items-start justify-between rounded-md border border-border p-2 text-xs">
             <div>
-              <div className="font-medium">{l.tipo}</div>
+              <div className="font-medium">{l.endpoint}</div>
               <div className="text-muted-foreground">
                 {new Date(l.iniciado_em).toLocaleString("pt-BR")}
               </div>
-              {l.mensagem && <div className="text-muted-foreground mt-1">{l.mensagem}</div>}
+              <div className="text-muted-foreground mt-1">{l.registros ?? 0} registros</div>
+              {l.erro && <div className="text-destructive mt-1">{l.erro}</div>}
             </div>
-            <Badge variant={l.status === "sucesso" ? "default" : l.status === "erro" ? "destructive" : "secondary"}>
-              {l.status}
+            <Badge variant={l.sucesso ? "default" : l.finalizado_em ? "destructive" : "secondary"}>
+              {l.sucesso ? "sucesso" : l.finalizado_em ? "erro" : "rodando"}
             </Badge>
           </div>
         ))}
