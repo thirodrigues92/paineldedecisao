@@ -429,6 +429,13 @@ async function syncFinancial(supabase: any, from: Date, to: Date) {
             det.data_pagamento ?? det.pagamento_em ?? pagamentos[0]?.data ?? pagamentos[0]?.data_pagamento ?? invoice.data_pagamento,
           );
           if (!valor || !dataVencimento) return;
+          // Item da fatura correspondente (quando houver 1:1 com os detalhes)
+          const item = itens[detailIndex] ?? (itens.length === 1 ? itens[0] : undefined) ?? itemComCategoria ?? {};
+          const procId = Number(
+            det.procedimento_id ?? det.procedure_id ?? item?.procedimento_id ?? item?.procedure_id ?? item?.item_id ?? 0,
+          );
+          const descricaoItem =
+            String(item?.descricao ?? item?.description ?? item?.nome ?? det.descricao ?? det.historico ?? "").trim() || null;
           mapped.push({
             id: makeFinancialId(tipoTransacao, movementId || invoiceId, invoiceIndex * 1000 + detailIndex),
             tipo: tipoTransacao === "C" ? "receita" : "despesa",
@@ -436,12 +443,15 @@ async function syncFinancial(supabase: any, from: Date, to: Date) {
             centro_custo: centroNome,
             unidade_id: det.unidade_id || invoice.unidade_id ? Number(det.unidade_id ?? invoice.unidade_id) : null,
             convenio_id: det.convenio_id || invoice.convenio_id ? Number(det.convenio_id ?? invoice.convenio_id) : null,
+            procedimento_id: Number.isFinite(procId) && procId > 0 ? procId : null,
+            descricao_item: descricaoItem,
             valor,
             data_vencimento: dataVencimento,
             data_pagamento: dataPagamento,
             status: financialStatus(valor, pagamentos, det),
           });
         });
+
       });
     }
 
