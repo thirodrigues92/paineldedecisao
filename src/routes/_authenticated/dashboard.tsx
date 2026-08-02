@@ -101,13 +101,22 @@ function DashboardPage() {
   }));
   const menores = [...categorias].slice(-3).reverse();
 
-  // Faturamento por categoria de serviço (derivado do procedimento do agendamento)
-  const byServico = new Map<string, { nome: string; valor: number; qtd: number }>();
-  let comValor = 0;
+  // Faturamento por tipo de serviço — sobre a RECEITA REAL (financeiro_lancamentos),
+  // para bater com o KPI de receita. O procedimento vem do item da fatura; quando a
+  // Feegow não envia o item, tentamos o nome pelo procedimento do agendamento.
+  const procNomes = new Map<number, string>();
   for (const r of rows as any[]) {
-    const valor = Number(r.valor_total || 0);
-    if (valor > 0) comValor += 1;
-    const nome = categoriaServico(r.procedimentos?.nome);
+    if (r.procedimento_id && r.procedimentos?.nome) procNomes.set(Number(r.procedimento_id), r.procedimentos.nome);
+  }
+  const receitas = financialRows.filter((r) => r.tipo === "receita");
+  const byServico = new Map<string, { nome: string; valor: number; qtd: number }>();
+  let classificado = 0;
+  for (const r of receitas) {
+    const valor = Number(r.valor || 0);
+    const nomeProc =
+      (r.procedimento_id ? procNomes.get(Number(r.procedimento_id)) : null) ?? r.descricao_item ?? null;
+    const nome = nomeProc ? categoriaServico(nomeProc) : "Não identificado";
+    if (nomeProc) classificado += valor;
     const cur = byServico.get(nome) ?? { nome, valor: 0, qtd: 0 };
     cur.valor += valor;
     cur.qtd += 1;
@@ -116,6 +125,9 @@ function DashboardPage() {
   const servicosBase = Array.from(byServico.values()).filter((c) => c.valor > 0).sort((a, b) => b.valor - a.valor);
   const totalServicos = servicosBase.reduce((s, c) => s + c.valor, 0);
   const servicos = servicosBase.map((c) => ({ ...c, share: totalServicos > 0 ? (c.valor * 100) / totalServicos : 0 }));
+  const naoIdentificado = Math.max(receitaPrev - classificado, 0);
+  const coberturaServico = receitaPrev > 0 ? (classificado * 100) / receitaPrev : 0;
+
 
 
 
