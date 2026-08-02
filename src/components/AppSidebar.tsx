@@ -17,7 +17,7 @@ const navMain = [
   { title: "Financeiro", url: "/financeiro", icon: DollarSign },
   { title: "Profissionais", url: "/profissionais", icon: Stethoscope },
   { title: "Unidades", url: "/unidades", icon: Building2 },
-  { title: "Mapa de Pacientes", url: "/mapa", icon: MapPinned, badge: "Em breve" },
+  
 ];
 
 const navAnalytics = [
@@ -25,6 +25,7 @@ const navAnalytics = [
   { title: "Rentabilidade", url: "/analytics/rentabilidade", icon: PieChart },
   { title: "Capacidade", url: "/analytics/capacidade", icon: Activity },
   { title: "Previsões & Alertas", url: "/analytics/previsoes", icon: LineIcon },
+  { title: "Mapa de Pacientes", url: "/mapa", icon: MapPinned },
 ];
 
 const navFooter = [
