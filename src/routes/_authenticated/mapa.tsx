@@ -351,7 +351,7 @@ function MetricasUploader({ onDone }: { onDone: () => void }) {
         const cols = lines[i].split(sep);
         const pid = Number(cols[idIdx]);
         if (!Number.isFinite(pid)) continue;
-        const metricas: Record<string, unknown> = {};
+        const metricas: Record<string, string | number> = {};
         header.forEach((h, idx) => {
           if (idx === idIdx) return;
           const raw = (cols[idx] ?? "").trim();
