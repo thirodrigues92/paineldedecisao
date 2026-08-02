@@ -1,0 +1,1 @@
+ALTER TABLE public.pacientes DROP CONSTRAINT IF EXISTS pacientes_convenio_id_fkey;

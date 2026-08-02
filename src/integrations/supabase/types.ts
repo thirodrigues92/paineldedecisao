@@ -321,15 +321,7 @@ export type Database = {
           sexo?: string | null
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "pacientes_convenio_id_fkey"
-            columns: ["convenio_id"]
-            isOneToOne: false
-            referencedRelation: "convenios"
-            referencedColumns: ["convenio_id"]
-          },
-        ]
+        Relationships: []
       }
       procedimentos: {
         Row: {
