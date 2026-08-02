@@ -35,14 +35,16 @@ function DashboardPage() {
   const query = useQuery({
     queryKey: dashboardQueryKey("dashboard", f),
     queryFn: async () => {
-      const [appointments, financial] = await Promise.all([
+      const [appointments, financial, procNomes] = await Promise.all([
         fetchDashboardAppointments(f, 30_000),
         fetchFinancialRows(f, 20_000),
+        fetchProcedimentoNomes(),
       ]);
 
-      return { appointments, financial };
+      return { appointments, financial, procNomes };
     },
   });
+
 
 
   const rows = query.data?.appointments ?? [];
