@@ -140,6 +140,10 @@ function DashboardPage() {
   const servicos = servicosBase.map((c) => ({ ...c, share: totalServicos > 0 ? (c.valor * 100) / totalServicos : 0 }));
   const receitaLote = byServico.get("Faturamento em lote (convênio)")?.valor ?? 0;
   const semDetalhe = byServico.get("Sem detalhamento da Feegow")?.valor ?? 0;
+  const detalheBucket = detalhe ? byServico.get(detalhe) ?? null : null;
+  const detalheItens: ItemServico[] = detalheBucket
+    ? Array.from(detalheBucket.itens.values()).sort((a, b) => b.valor - a.valor).slice(0, 80)
+    : [];
   const coberturaServico = receitaPrev > 0 ? (classificado * 100) / receitaPrev : 0;
 
 
