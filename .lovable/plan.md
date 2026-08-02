@@ -1,32 +1,34 @@
-## Diagnóstico
+## Objetivo
 
-As tabelas estão **todas vazias** (0 registros em `agendamentos`, `unidades`, `profissionais`, `especialidades`, `financeiro_lancamentos`), embora os `sync_logs` mostrem "791 registros" com `sucesso=true`. Encontrei três bugs que, juntos, produzem esse falso positivo:
+Adicionar na Visão Executiva um gráfico de **faturamento por categoria de serviço** — Consultas, Exames laboratoriais, Imagem/Ultrassom, Cardiologia diagnóstica, Aplicações injetáveis, Ocupacional/Atestados, Outros — mostrando quanto cada uma faturou e quanto representa do total.
 
-1. **O `mode` é ignorado.** O frontend envia `{ mode: "support" }` / `{ mode: "historical" }` no **body** JSON, mas a Edge Function lê `url.searchParams.get("mode")` (query string). Resultado: **todas as chamadas rodam como `today`** — as tabelas de apoio (unidades, profissionais, especialidades, status, convênios, procedimentos) **nunca foram populadas** e a carga histórica nunca rodou. A resposta `{"mode":"today"}` em todos os POSTs confirma isso.
+## Por que não usar a categoria financeira
 
-2. **Erros de upsert são silenciados.** O código faz `await supabase.from("agendamentos").upsert(...)` sem checar `.error`. Como as tabelas referenciadas estão vazias e existem **7 FKs** em `agendamentos` (status_id, unidade_id, profissional_id, etc.), todo lote de 791 agendamentos é **rejeitado por violação de FK** — mas o log grava `registros=791, sucesso=true` porque conta o `mapped.length` antes do upsert e não valida o retorno.
+Já verifiquei no banco: 5.610 das receitas (R$ 1,39 mi) estão como "Não classificado" porque a Feegow não devolve a categoria nessas faturas. Ela não serve para responder "quanto consultas faturaram".
 
-3. **Ordem de sincronização.** Mesmo com o bug 1 corrigido, o usuário precisa rodar `support` **antes** de `today`/`historical` para popular as tabelas-pai.
+A fonte que responde é o **procedimento do agendamento** (`agendamentos.valor_total` + `procedimentos.nome`), que já está na base e cobre R$ 1,09 mi em 15.089 agendamentos. Confirmei também:
+- 5.926 agendamentos são de consulta, 3.408 de imagem/ultrassom, 154 de aplicações injetáveis;
+- **nenhum procedimento cadastrado tem "vacina" no nome** — se a clínica aplica vacinas, elas estão registradas com outro nome ou fora da agenda, então essa fatia não vai aparecer enquanto não houver esse cadastro;
+- 10.010 agendamentos estão com valor zero (não precificados na agenda), então o gráfico mostra o faturamento capturado na agenda, não o caixa total — isso ficará escrito no card.
 
-## Correções propostas
+## O que será construído
 
-### 1. `supabase/functions/sync-feegow/index.ts`
-- Ler `mode` do body JSON (POST) **e** da query string (GET/cron), com fallback para `"today"`.
-- Envolver cada `upsert` em checagem de `error`; se falhar, propagar para o `sync_logs` (`sucesso=false`, `erro=...`) e contar apenas os registros efetivamente gravados.
-- No modo `full`, executar na ordem correta: `support` → `historical` → `today` → `refreshViews`.
-- Adicionar log `console.log` com contadores por tabela para facilitar debug futuro nas Edge Function logs.
+1. **Classificador de categorias de serviço** (novo arquivo em `src/lib/`), no mesmo estilo do que já existe para aplicações injetáveis: regras por nome do procedimento devolvendo a categoria. Regras iniciais:
+   - Consultas: nome começa com/contém "consulta", "retorno"
+   - Exames laboratoriais: hemograma, glicose, colesterol, TSH, urina, cultura, sorologia, toxicológico laboratorial etc.
+   - Imagem e ultrassom: USG, ultrassom, ecocardiograma, doppler, raio-x, densitometria
+   - Cardiologia diagnóstica: ECG, holter, MAPA, teste ergométrico
+   - Aplicações injetáveis e vacinas: reaproveita as regras já existentes de injetáveis + termos de vacina/imunização
+   - Procedimentos e cirurgias: biópsia, cauterização, sutura, exérese, infiltração
+   - Ocupacional e atestados: ASO, admissional, demissional, toxicológico CNH, laudo
+   - Outros: o que não casar
+2. **Gráfico novo na Visão Executiva**: barras horizontais por categoria, ordenadas por faturamento, com valor em reais, % do total e nº de atendimentos no tooltip; a categoria de menor faturamento destacada, no mesmo padrão do gráfico de categoria financeira que já está lá.
+3. **Card lateral "Composição do faturamento"**: lista compacta categoria → valor → % com barra de participação, para leitura rápida de quem representa quanto.
+4. Ambos respeitam os filtros globais (período, unidade, especialidade, profissional, convênio) e reaproveitam os dados já carregados pela tela — sem consulta extra ao banco e sem migração.
+5. Nota no rodapé do card informando a cobertura: quantos agendamentos do período têm valor lançado, para o gestor saber que a base é a agenda precificada.
 
-### 2. `src/routes/_authenticated/config.tsx`
-- Após corrigir a função, alterar o botão "Carga histórica" para chamar `mode: "full"` (support + historical + today numa tacada), ou executar sequencialmente: primeiro `support`, depois `historical`. Isso garante que o usuário não precise lembrar da ordem.
-- Exibir toasts de sucesso/erro com base no `ok` da resposta (hoje o código só espera terminar).
+## Detalhes técnicos
 
-### 3. Re-execução da carga
-Depois do deploy, executar **uma vez** o modo `full` (ou `support` + `historical` em sequência) pelo painel de Configurações. Após isso os gráficos passam a exibir dados.
-
-## Nota (fora do escopo direto, mas relacionado)
-
-Os endpoints de **financeiro** ainda são placeholder na Edge Function ("financial: placeholder"). A tela Financeiro ficará zerada mesmo com os agendamentos populados até implementarmos o pull do endpoint financeiro do Feegow — posso fazer isso em seguida se quiser, mas não faz parte desta correção.
-
-## Resumo
-
-Corrigir a leitura de `mode`, validar erros de upsert e reordenar a sincronização. Isso resolve o carregamento vazio dos gráficos.
+- Edição em `src/routes/_authenticated/dashboard.tsx`, reutilizando `fetchDashboardAppointments` (já traz `procedimentos.nome` e `valor_total`).
+- Novo `src/lib/service-categories.ts` com a função de classificação, exportada para reuso em outras telas depois.
+- Cores via `var(--chart-1..5)` e `chart-theme.ts`, como nos demais gráficos.
