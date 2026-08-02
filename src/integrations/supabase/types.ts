@@ -236,6 +236,42 @@ export type Database = {
         }
         Relationships: []
       }
+      geo_bairros: {
+        Row: {
+          bairro: string
+          cidade: string
+          created_at: string
+          estado: string
+          geocoded_at: string
+          id: string
+          latitude: number | null
+          longitude: number | null
+          updated_at: string
+        }
+        Insert: {
+          bairro: string
+          cidade: string
+          created_at?: string
+          estado?: string
+          geocoded_at?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          updated_at?: string
+        }
+        Update: {
+          bairro?: string
+          cidade?: string
+          created_at?: string
+          estado?: string
+          geocoded_at?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pacientes: {
         Row: {
           ano_nascimento: number | null
@@ -549,6 +585,18 @@ export type Database = {
         }
         Relationships: []
       }
+      vw_demanda_especialidade_por_regiao: {
+        Row: {
+          atendimentos: number | null
+          bairro: string | null
+          cidade: string | null
+          demanda: number | null
+          especialidade: string | null
+          estado: string | null
+          no_shows: number | null
+        }
+        Relationships: []
+      }
       vw_heatmap_agenda: {
         Row: {
           dia_semana: number | null
@@ -558,6 +606,16 @@ export type Database = {
           receita: number | null
           total: number | null
           unidade_id: number | null
+        }
+        Relationships: []
+      }
+      vw_heatmap_pacientes: {
+        Row: {
+          bairros: string[] | null
+          cidade: string | null
+          densidade: number | null
+          latitude: number | null
+          longitude: number | null
         }
         Relationships: []
       }
