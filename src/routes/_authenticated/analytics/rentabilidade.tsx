@@ -141,9 +141,10 @@ function RentabilidadePage() {
             {tmQ.isLoading ? <Skeleton className="h-full w-full" /> : (
               <ResponsiveContainer width="100%" height="100%">
                 <ScatterChart>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                  <XAxis type="number" dataKey="x" name="Volume" />
-                  <YAxis type="number" dataKey="y" name="Ticket" tickFormatter={(v) => brl(v)} />
+                  <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
+                  <XAxis type="number" dataKey="x" name="Volume" stroke="var(--muted-foreground)" fontSize={11} />
+                  <YAxis type="number" dataKey="y" name="Ticket" width={70} stroke="var(--muted-foreground)" fontSize={11} tickFormatter={compactBrl} />
+
                   <Tooltip
                     cursor={{ strokeDasharray: "3 3" }}
                     formatter={(v: any, k: any) => k === "y" ? brl(v) : num(v)}
