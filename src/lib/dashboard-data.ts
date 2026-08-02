@@ -5,7 +5,9 @@ export type DashboardAppointment = {
   agendamento_id: number;
   data: string;
   horario: string | null;
+  paciente_id: number | null;
   valor_total: number | string | null;
+
   especialidade_id: number | null;
   profissional_id: number | null;
   procedimento_id: number | null;
