@@ -23,6 +23,10 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
 });
 
+const compactBrl = (n: number) =>
+  Math.abs(n) >= 1000 ? `R$ ${(n / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 0 })}k` : brl(n);
+
+
 function DashboardPage() {
   const f = useFilters();
 
