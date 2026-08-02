@@ -536,9 +536,9 @@ function AplicacoesPage() {
               <Vazio>Sem bairro cadastrado nos pacientes destas aplicações.</Vazio>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={regiaoPorTipo.dados} margin={{ bottom: 60 }}>
+                <BarChart data={regiaoPorTipo.dados} margin={{ bottom: 90 }}>
                   <CartesianGrid {...gridProps} />
-                  <XAxis {...axisProps} dataKey="bairro" interval={0} angle={-35} textAnchor="end" height={70} />
+                  <XAxis {...axisProps} dataKey="bairro" interval={0} angle={-35} textAnchor="end" height={100} />
                   <YAxis {...axisProps} tickFormatter={(v) => (metricaRegiao === "receita" ? compactBrl(Number(v)) : num(Number(v)))} width={70} />
                   <Tooltip
                     {...tooltipProps}
