@@ -204,6 +204,32 @@ function AplicacoesPage() {
       .slice(0, 10);
   }, [filtradas, regioes]);
 
+  // ---- região × tipo de aplicação (empilhado) ----
+  const regiaoPorTipo = useMemo(() => {
+    // 5 aplicações mais relevantes viram séries; o resto agrupa em "Outras".
+    const tops = [...porAplicacao]
+      .sort((a, b) => (metricaRegiao === "receita" ? b.receita - a.receita : b.volume - a.volume))
+      .slice(0, 5)
+      .map((a) => a.nome);
+    const series = [...tops, "Outras"];
+
+    const map = new Map<string, Record<string, number> & { bairro: string; _total: number }>();
+    for (const r of filtradas) {
+      const bairro = (r.paciente_id != null ? regioes?.get(r.paciente_id)?.bairro : null) ?? null;
+      if (!bairro) continue;
+      const nome = r.procedimentos?.nome ?? "Sem procedimento";
+      const key = tops.includes(nome) ? nome : "Outras";
+      const cur = map.get(bairro) ?? ({ bairro, _total: 0 } as Record<string, number> & { bairro: string; _total: number });
+      const inc = metricaRegiao === "receita" ? Number(r.valor_total || 0) : 1;
+      cur[key] = (cur[key] ?? 0) + inc;
+      cur._total += inc;
+      map.set(bairro, cur);
+    }
+    const dados = Array.from(map.values()).sort((a, b) => b._total - a._total).slice(0, 10);
+    const usadas = series.filter((s) => dados.some((d) => (d[s] ?? 0) > 0));
+    return { dados, series: usadas };
+  }, [filtradas, regioes, porAplicacao, metricaRegiao]);
+
   // ---- profissionais ----
   const porProfissional = useMemo(() => {
     const map = new Map<string, { profissional: string; total: number; receita: number; realizadas: number; noShows: number }>();
