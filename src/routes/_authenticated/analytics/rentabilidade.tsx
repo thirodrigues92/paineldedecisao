@@ -162,7 +162,7 @@ function RentabilidadePage() {
                       );
                     }}
                   />
-                  <Scatter data={scatterData} fill="hsl(var(--primary))" />
+                  <Scatter data={scatterData} fill="var(--chart-1)" />
                 </ScatterChart>
               </ResponsiveContainer>
             )}
