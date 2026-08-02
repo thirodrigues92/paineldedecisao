@@ -544,7 +544,7 @@ function AplicacoesPage() {
                     {...tooltipProps}
                     formatter={(v: number, n: string) => [metricaRegiao === "receita" ? brl(Number(v)) : num(Number(v)), n]}
                   />
-                  <Legend wrapperStyle={{ fontSize: 11, paddingTop: 12 }} verticalAlign="bottom" />
+                  <Legend wrapperStyle={{ fontSize: 11, paddingBottom: 8 }} verticalAlign="top" align="left" />
                   {regiaoPorTipo.series.map((s, i) => (
                     <Bar key={s} dataKey={s} stackId="a" fill={`var(--chart-${(i % 5) + 1})`} />
                   ))}
