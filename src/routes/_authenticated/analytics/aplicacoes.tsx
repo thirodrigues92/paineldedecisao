@@ -72,6 +72,7 @@ function AplicacoesPage() {
   const [bairroFiltro, setBairroFiltro] = useState<string>("todos");
   const [ticketRange, setTicketRange] = useState<[number, number]>([0, 1000]);
   const [ordenacao, setOrdenacao] = useState<Ordenacao>("receita");
+  const [metricaRegiao, setMetricaRegiao] = useState<"volume" | "receita">("volume");
 
   const regioes = regioesQ.data;
 
