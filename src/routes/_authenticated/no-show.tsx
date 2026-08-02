@@ -6,6 +6,7 @@ import { dashboardQueryKey, fetchDashboardAppointments } from "@/lib/dashboard-d
 import { pct, num } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import { axisProps, gridProps, tooltipProps } from "@/lib/chart-theme";
 
 export const Route = createFileRoute("/_authenticated/no-show")({
   head: () => ({ meta: [{ title: "Análise de No-show" }] }),
@@ -55,9 +56,9 @@ function NoShowPage() {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={esp} layout="vertical" margin={{ left: 60 }}>
                 <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
-                <XAxis type="number" stroke="var(--muted-foreground)" fontSize={11} />
-                <YAxis dataKey="nome" type="category" width={140} stroke="var(--muted-foreground)" fontSize={11} />
-                <Tooltip formatter={(v: any) => pct(Number(v))} contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8 }} />
+                <XAxis {...axisProps} type="number" stroke="var(--muted-foreground)" fontSize={11} />
+                <YAxis {...axisProps} dataKey="nome" type="category" width={140} stroke="var(--muted-foreground)" fontSize={11} />
+                <Tooltip {...tooltipProps} formatter={(v: any) => pct(Number(v))} {...tooltipProps} />
                 <Bar dataKey="taxa" fill="var(--chart-5)" radius={[0, 6, 6, 0]} />
               </BarChart>
             </ResponsiveContainer>

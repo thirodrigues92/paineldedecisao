@@ -9,6 +9,7 @@ import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid,
   BarChart, Bar, PieChart, Pie, Cell, Legend,
 } from "recharts";
+import { axisProps, gridProps, tooltipProps } from "@/lib/chart-theme";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LastSyncCard } from "@/components/LastSyncCard";
 
@@ -121,10 +122,10 @@ function DashboardPage() {
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={daily}>
                   <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
-                  <XAxis dataKey="data" stroke="var(--muted-foreground)" fontSize={11} />
-                  <YAxis stroke="var(--muted-foreground)" fontSize={11} />
-                  <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8 }} />
-                  <Legend />
+                  <XAxis {...axisProps} dataKey="data" stroke="var(--muted-foreground)" fontSize={11} />
+                  <YAxis {...axisProps} stroke="var(--muted-foreground)" fontSize={11} />
+                  <Tooltip {...tooltipProps} />
+                  <Legend wrapperStyle={{ fontSize: 12, color: "var(--muted-foreground)" }} />
                   <Line type="monotone" dataKey="realizado" stroke="var(--chart-2)" strokeWidth={2} dot={false} />
                   <Line type="monotone" dataKey="no_show" stroke="var(--chart-5)" strokeWidth={2} dot={false} />
                   <Line type="monotone" dataKey="cancelado" stroke="var(--chart-4)" strokeWidth={2} dot={false} />
@@ -144,8 +145,8 @@ function DashboardPage() {
                   <Pie data={donut} dataKey="value" nameKey="name" innerRadius={55} outerRadius={90}>
                     {donut.map((_, i) => <Cell key={i} fill={i === 0 ? "var(--chart-1)" : "var(--chart-2)"} />)}
                   </Pie>
-                  <Tooltip formatter={(v: any) => brl(Number(v))} contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8 }} />
-                  <Legend />
+                  <Tooltip {...tooltipProps} formatter={(v: any) => brl(Number(v))} {...tooltipProps} />
+                  <Legend wrapperStyle={{ fontSize: 12, color: "var(--muted-foreground)" }} />
                 </PieChart>
               </ResponsiveContainer>
             )}
@@ -161,9 +162,9 @@ function DashboardPage() {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={topEsp} layout="vertical" margin={{ left: 40 }}>
                   <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
-                  <XAxis type="number" stroke="var(--muted-foreground)" fontSize={11} />
-                  <YAxis dataKey="nome" type="category" width={140} stroke="var(--muted-foreground)" fontSize={11} />
-                  <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8 }} />
+                  <XAxis {...axisProps} type="number" stroke="var(--muted-foreground)" fontSize={11} />
+                  <YAxis {...axisProps} dataKey="nome" type="category" width={140} stroke="var(--muted-foreground)" fontSize={11} />
+                  <Tooltip {...tooltipProps} />
                   <Bar dataKey="total" fill="var(--chart-1)" radius={[0, 6, 6, 0]} />
                 </BarChart>
               </ResponsiveContainer>
