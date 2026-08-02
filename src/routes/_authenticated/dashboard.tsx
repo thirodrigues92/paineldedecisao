@@ -262,8 +262,10 @@ function DashboardPage() {
           <CardHeader>
             <CardTitle>Faturamento por tipo de serviço</CardTitle>
             <p className="text-xs text-muted-foreground">
-              Consultas, exames, imagem, aplicações e vacinas — classificados pelo procedimento do agendamento.
+              Soma a receita real do período ({brl(receitaPrev)}) — classificada {brl(classificado)} ({pct(coberturaServico)})
+              {naoIdentificado > 0 ? ` · não identificada ${brl(naoIdentificado)}` : ""}.
             </p>
+
           </CardHeader>
           <CardContent className="h-96">
             {query.isLoading ? <Skeleton className="h-full w-full" /> : servicos.length === 0 ? <EmptyState /> : (
