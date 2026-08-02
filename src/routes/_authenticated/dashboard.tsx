@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useFilters } from "@/lib/filters-context";
-import { dashboardQueryKey, fetchDashboardAppointments, fetchFinancialRows } from "@/lib/dashboard-data";
+import { dashboardQueryKey, fetchDashboardAppointments, fetchFinancialRows, fetchProcedimentoNomes } from "@/lib/dashboard-data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { brl, num, pct } from "@/lib/format";
 import { Calendar, DollarSign, UserPlus, UserX, Activity, TrendingUp } from "lucide-react";
