@@ -10,6 +10,7 @@ import { AlertCircle } from "lucide-react";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
 } from "recharts";
+import { axisProps, gridProps, tooltipProps } from "@/lib/chart-theme";
 
 export const Route = createFileRoute("/_authenticated/analytics/comercial")({
   head: () => ({ meta: [{ title: "Comercial — Análises" }] }),
@@ -119,11 +120,11 @@ function ComercialPage() {
             {q.isLoading ? <Skeleton className="h-full w-full" /> : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={funil} layout="vertical" margin={{ left: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                  <XAxis type="number" />
-                  <YAxis type="category" dataKey="etapa" width={90} />
-                  <Tooltip formatter={(v: any) => num(v)} />
-                  <Bar dataKey="valor" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                  <CartesianGrid {...gridProps} />
+                  <XAxis {...axisProps} type="number" />
+                  <YAxis {...axisProps} type="category" dataKey="etapa" width={90} />
+                  <Tooltip {...tooltipProps} formatter={(v: any) => num(v)} />
+                  <Bar dataKey="valor" fill="var(--chart-1)" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -140,11 +141,11 @@ function ComercialPage() {
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={leadChart} layout="vertical" margin={{ left: 120 }}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                  <XAxis type="number" />
-                  <YAxis type="category" dataKey="nome" width={110} />
-                  <Tooltip formatter={(v: any) => `${Number(v).toFixed(1)} dias`} />
-                  <Bar dataKey="media" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                  <CartesianGrid {...gridProps} />
+                  <XAxis {...axisProps} type="number" />
+                  <YAxis {...axisProps} type="category" dataKey="nome" width={110} />
+                  <Tooltip {...tooltipProps} formatter={(v: any) => `${Number(v).toFixed(1)} dias`} />
+                  <Bar dataKey="media" fill="var(--chart-1)" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}

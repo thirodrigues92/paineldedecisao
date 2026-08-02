@@ -5,6 +5,7 @@ import { useFilters } from "@/lib/filters-context";
 import { brl, num } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend, PieChart, Pie, Cell } from "recharts";
+import { axisProps, gridProps, tooltipProps } from "@/lib/chart-theme";
 import { fetchFinancialRows, financialQueryKey } from "@/lib/dashboard-data";
 
 export const Route = createFileRoute("/_authenticated/financeiro")({
@@ -67,10 +68,10 @@ function FinPage() {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chart}>
                   <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
-                  <XAxis dataKey="mes" stroke="var(--muted-foreground)" fontSize={11} />
-                  <YAxis stroke="var(--muted-foreground)" fontSize={11} />
-                  <Tooltip formatter={(v: any) => brl(Number(v))} contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8 }} />
-                  <Legend />
+                  <XAxis {...axisProps} dataKey="mes" stroke="var(--muted-foreground)" fontSize={11} />
+                  <YAxis {...axisProps} stroke="var(--muted-foreground)" fontSize={11} />
+                  <Tooltip {...tooltipProps} formatter={(v: any) => brl(Number(v))} />
+                  <Legend wrapperStyle={{ fontSize: 12, color: "var(--muted-foreground)" }} />
                   <Bar dataKey="receita" fill="var(--chart-2)" />
                   <Bar dataKey="despesa" fill="var(--chart-5)" />
                 </BarChart>
@@ -89,8 +90,8 @@ function FinPage() {
                   <Pie data={categories} dataKey="value" nameKey="name" innerRadius={55} outerRadius={88}>
                     {categories.map((_, i) => <Cell key={i} fill={`var(--chart-${(i % 5) + 1})`} />)}
                   </Pie>
-                  <Tooltip formatter={(v: any) => brl(Number(v))} contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8 }} />
-                  <Legend />
+                  <Tooltip {...tooltipProps} formatter={(v: any) => brl(Number(v))} />
+                  <Legend wrapperStyle={{ fontSize: 12, color: "var(--muted-foreground)" }} />
                 </PieChart>
               </ResponsiveContainer>
             )}

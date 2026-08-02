@@ -9,6 +9,7 @@ import { AlertTriangle, TrendingUp, TrendingDown, Info } from "lucide-react";
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
 } from "recharts";
+import { axisProps, gridProps, tooltipProps } from "@/lib/chart-theme";
 import { useFilters } from "@/lib/filters-context";
 import { fetchDashboardAppointments, dashboardQueryKey } from "@/lib/dashboard-data";
 
@@ -115,13 +116,13 @@ function PrevisoesPage() {
           {receitaQ.isLoading ? <Skeleton className="h-full w-full" /> : (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={projecao}>
-                <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                <XAxis dataKey="mes" />
-                <YAxis tickFormatter={(v) => brl(v)} />
-                <Tooltip formatter={(v: any) => v == null ? "-" : brl(v)} />
-                <Legend />
-                <Line type="monotone" dataKey="receita" name="Realizado" stroke="hsl(var(--primary))" strokeWidth={2} />
-                <Line type="monotone" dataKey="projecao" name="Projeção" stroke="hsl(var(--warning))" strokeWidth={2} strokeDasharray="5 5" />
+                <CartesianGrid {...gridProps} />
+                <XAxis {...axisProps} dataKey="mes" />
+                <YAxis {...axisProps} tickFormatter={(v) => brl(v)} />
+                <Tooltip {...tooltipProps} formatter={(v: any) => v == null ? "-" : brl(v)} />
+                <Legend wrapperStyle={{ fontSize: 12, color: "var(--muted-foreground)" }} />
+                <Line type="monotone" dataKey="receita" name="Realizado" stroke="var(--chart-1)" strokeWidth={2} />
+                <Line type="monotone" dataKey="projecao" name="Projeção" stroke="var(--chart-3)" strokeWidth={2} strokeDasharray="5 5" />
               </LineChart>
             </ResponsiveContainer>
           )}
