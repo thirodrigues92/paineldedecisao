@@ -13,6 +13,8 @@ import { axisProps, gridProps, tooltipProps } from "@/lib/chart-theme";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LastSyncCard } from "@/components/LastSyncCard";
 import { categoriaServico } from "@/lib/service-categories";
+import { useState } from "react";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -28,9 +30,15 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 const compactBrl = (n: number) =>
   Math.abs(n) >= 1000 ? `R$ ${(n / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 0 })}k` : brl(n);
 
+type ItemServico = { nome: string; valor: number; qtd: number };
+type ServicoBucket = { nome: string; valor: number; qtd: number; itens: Map<string, ItemServico> };
+
+
+
 
 function DashboardPage() {
   const f = useFilters();
+  const [detalhe, setDetalhe] = useState<string | null>(null);
 
   const query = useQuery({
     queryKey: dashboardQueryKey("dashboard", f),
@@ -105,28 +113,39 @@ function DashboardPage() {
 
   // Faturamento por tipo de serviço — sobre a RECEITA REAL (financeiro_lancamentos),
   // para bater com o KPI de receita. O procedimento vem do item da fatura; quando a
-  // Feegow não envia o item, cai em "Não identificado".
+  // Feegow não envia o item, cai em "Sem detalhamento da Feegow".
   const procNomes = query.data?.procNomes ?? new Map<number, string>();
 
   const receitas = financialRows.filter((r) => r.tipo === "receita");
-  const byServico = new Map<string, { nome: string; valor: number; qtd: number }>();
+  const byServico = new Map<string, ServicoBucket>();
   let classificado = 0;
   for (const r of receitas) {
     const valor = Number(r.valor || 0);
     const nomeProc =
       (r.procedimento_id ? procNomes.get(Number(r.procedimento_id)) : null) ?? r.descricao_item ?? null;
-    const nome = nomeProc ? categoriaServico(nomeProc) : "Não identificado";
-    if (nomeProc) classificado += valor;
-    const cur = byServico.get(nome) ?? { nome, valor: 0, qtd: 0 };
+    const nome = categoriaServico(nomeProc);
+    if (nomeProc && nome !== "Faturamento em lote (convênio)") classificado += valor;
+    const cur = byServico.get(nome) ?? { nome, valor: 0, qtd: 0, itens: new Map<string, { nome: string; valor: number; qtd: number }>() };
     cur.valor += valor;
     cur.qtd += 1;
+    const itemNome = (nomeProc ?? "").trim() || "Sem descrição na fatura";
+    const it = cur.itens.get(itemNome) ?? { nome: itemNome, valor: 0, qtd: 0 };
+    it.valor += valor;
+    it.qtd += 1;
+    cur.itens.set(itemNome, it);
     byServico.set(nome, cur);
   }
   const servicosBase = Array.from(byServico.values()).filter((c) => c.valor > 0).sort((a, b) => b.valor - a.valor);
   const totalServicos = servicosBase.reduce((s, c) => s + c.valor, 0);
   const servicos = servicosBase.map((c) => ({ ...c, share: totalServicos > 0 ? (c.valor * 100) / totalServicos : 0 }));
-  const naoIdentificado = Math.max(receitaPrev - classificado, 0);
+  const receitaLote = byServico.get("Faturamento em lote (convênio)")?.valor ?? 0;
+  const semDetalhe = byServico.get("Sem detalhamento da Feegow")?.valor ?? 0;
+  const detalheBucket = detalhe ? byServico.get(detalhe) ?? null : null;
+  const detalheItens: ItemServico[] = detalheBucket
+    ? Array.from(detalheBucket.itens.values()).sort((a, b) => b.valor - a.valor).slice(0, 80)
+    : [];
   const coberturaServico = receitaPrev > 0 ? (classificado * 100) / receitaPrev : 0;
+
 
 
 
@@ -262,10 +281,11 @@ function DashboardPage() {
           <CardHeader>
             <CardTitle>Faturamento por tipo de serviço</CardTitle>
             <p className="text-xs text-muted-foreground">
-              Soma a receita real do período ({brl(receitaPrev)}) — classificada {brl(classificado)} ({pct(coberturaServico)})
-              {naoIdentificado > 0 ? ` · não identificada ${brl(naoIdentificado)}` : ""}.
+              Receita real do período ({brl(receitaPrev)}) — classificada por procedimento {brl(classificado)} ({pct(coberturaServico)})
+              {receitaLote > 0 ? ` · faturas em lote de convênio ${brl(receitaLote)}` : ""}
+              {semDetalhe > 0 ? ` · sem detalhamento da Feegow ${brl(semDetalhe)}` : ""}.
+              Clique numa barra para ver o que há dentro da categoria.
             </p>
-
           </CardHeader>
           <CardContent className="h-96">
             {query.isLoading ? <Skeleton className="h-full w-full" /> : servicos.length === 0 ? <EmptyState /> : (
@@ -273,12 +293,17 @@ function DashboardPage() {
                 <BarChart data={servicos} layout="vertical" margin={{ left: 8, right: 24 }}>
                   <CartesianGrid {...gridProps} />
                   <XAxis {...axisProps} type="number" tickFormatter={(v) => compactBrl(Number(v))} />
-                  <YAxis {...axisProps} dataKey="nome" type="category" width={175} interval={0} />
+                  <YAxis {...axisProps} dataKey="nome" type="category" width={195} interval={0} />
                   <Tooltip
                     {...tooltipProps}
-                    formatter={(v: any, _n: any, p: any) => [`${brl(Number(v))} · ${pct(p?.payload?.share ?? 0)} · ${num(p?.payload?.qtd ?? 0)} atend.`, "Faturamento"]}
+                    formatter={(v: any, _n: any, p: any) => [`${brl(Number(v))} · ${pct(p?.payload?.share ?? 0)} · ${num(p?.payload?.qtd ?? 0)} lanç.`, "Faturamento"]}
                   />
-                  <Bar dataKey="valor" radius={[0, 6, 6, 0]}>
+                  <Bar
+                    dataKey="valor"
+                    radius={[0, 6, 6, 0]}
+                    cursor="pointer"
+                    onClick={(d: any) => setDetalhe(d?.payload?.nome ?? null)}
+                  >
                     {servicos.map((c, i) => (
                       <Cell key={c.nome} fill={i === servicos.length - 1 ? "var(--chart-5)" : "var(--chart-2)"} />
                     ))}
@@ -300,7 +325,12 @@ function DashboardPage() {
             ) : (
               <>
                 {servicos.map((c, i) => (
-                  <div key={c.nome} className="space-y-1">
+                  <button
+                    key={c.nome}
+                    type="button"
+                    onClick={() => setDetalhe(c.nome)}
+                    className="w-full space-y-1 text-left rounded-md px-1 py-0.5 hover:bg-muted/50 transition-colors"
+                  >
                     <div className="flex items-baseline justify-between gap-2 text-sm">
                       <span className="truncate" title={c.nome}>{c.nome}</span>
                       <span className="font-medium shrink-0">{brl(c.valor)}</span>
@@ -312,20 +342,47 @@ function DashboardPage() {
                       />
                     </div>
                     <div className="text-xs text-muted-foreground">{pct(c.share)} do total · {num(c.qtd)} lançamentos</div>
-                  </div>
+                  </button>
                 ))}
                 <p className="pt-2 text-[11px] leading-snug text-muted-foreground border-t border-border">
                   Total confere com a receita do período: {brl(totalServicos)} de {brl(receitaPrev)}.
-                  {naoIdentificado > 0
-                    ? ` ${brl(naoIdentificado)} ainda sem procedimento na fatura (Feegow) — rode a sincronização financeira para reduzir.`
+                  {receitaLote > 0
+                    ? ` ${brl(receitaLote)} vêm de faturas em lote de convênio (a Feegow não abre o procedimento nesse formato).`
+                    : ""}
+                  {semDetalhe > 0
+                    ? ` ${brl(semDetalhe)} sem item na fatura — rode a sincronização financeira para reduzir.`
                     : ""}
                 </p>
-
               </>
             )}
           </CardContent>
         </Card>
       </div>
+
+      <Sheet open={detalhe !== null} onOpenChange={(o) => !o && setDetalhe(null)}>
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>{detalhe ?? ""}</SheetTitle>
+            <SheetDescription>
+              {detalheBucket
+                ? `${brl(detalheBucket.valor)} · ${num(detalheBucket.qtd)} lançamentos · ${num(detalheItens.length)} itens distintos`
+                : "Sem itens."}
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-4 space-y-2">
+            {detalheItens.map((it) => (
+              <div key={it.nome} className="rounded-lg border border-border p-3">
+                <div className="text-sm font-medium break-words">{it.nome}</div>
+                <div className="mt-1 flex items-baseline justify-between text-xs text-muted-foreground">
+                  <span className="text-sm font-semibold text-foreground">{brl(it.valor)}</span>
+                  <span>{num(it.qtd)} lanç. · ticket {brl(it.qtd > 0 ? it.valor / it.qtd : 0)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </SheetContent>
+      </Sheet>
+
 
 
 

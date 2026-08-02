@@ -1,39 +1,46 @@
-## O que está acontecendo
+## Diagnóstico (queries já rodadas no banco)
 
-Os dois números vêm de **fontes diferentes**, por isso nunca batem:
+O gráfico "Faturamento por tipo de serviço" **não usa especialidade** — ele usa a receita real de `financeiro_lancamentos` classificada pelo **nome do procedimento do item da fatura**. Por isso o problema não está nas especialidades (só 41 agendamentos sem especialidade, R$ 4,8k — irrelevante).
 
-| Bloco | Fonte | Total no banco |
-|---|---|---|
-| KPI "Receita prevista" / Faturamento por categoria | `financeiro_lancamentos` (faturas Feegow), tipo = receita | **R$ 2.033.733** (5.704 lançamentos) |
-| Faturamento por tipo de serviço | `agendamentos.valor_total` (agenda precificada) | **R$ 1.092.113** (5.079 agendamentos com valor) |
+O "Outros" (~R$ 1,08 mi de R$ 2,03 mi de receita) é composto por **três coisas bem distintas**:
 
-Ou seja, faltam ~R$ 941 mil (46%) no gráfico por serviço, porque:
-- só 5.079 dos 15.089 agendamentos têm `valor_total` preenchido pela Feegow;
-- receitas que não nascem de agendamento (balcão, avulsos, parcelas, pacotes) não existem na agenda;
-- o gráfico ignora linhas com valor 0.
+| Bloco | Lançamentos | Receita | Causa |
+|---|---|---|---|
+| Faturas em lote de convênio (`Lote(s): 2501…2529`) | 66 | R$ 541,8k | Fatura agregada, sem procedimento — 1 linha por lote mensal |
+| Sem nenhum detalhe (sem `procedimento_id` e sem descrição) | 816 | R$ 220,1k | Feegow não devolveu o item da fatura |
+| Nomes reais que as regras atuais não reconhecem | 733 | R$ 320,6k | Falta de regra de classificação (não é problema de dados) |
 
-Não é bug de cálculo — é ausência do vínculo entre a fatura e o procedimento faturado.
+Exemplos do terceiro bloco (os maiores): `Faturamento Autogestão` R$ 79,5k, exames de laboratório com sigla (`Shbg`, `Dehidrotestosterona Dht`, `Testosterona Livre`, `Dimero D`, `Cortisol Basal`, `Anti Ccp`, `Zinco`, `Paratormônio`, `Lipidograma`, `Sangue Oculto`, `Ca-15/3`), protocolos injetáveis (`PROTOCOLO PARA ANSIEDADE E DEPRESSÃO - IM`, `PROTOCOLO ARTICULAÇÕES`, `PROTOCOLO DETOX`), estética/derma (`INTRADERMOTERAPIA CAPILAR`, `TOXINA BOTULÍNICA`, `CONOPLASTIA`), contracepção (`MIRENA / KYLEENA`, `IMPLANOM`), diagnósticos (`POLISSONOGRAFIA`, `MAPEAMENTO DE RETINA`, `MICROSCOPIA`, `RISCO CIRÚRGICO`, `POOL COGNITIVO-MEMORIA`, `BIOIMPEDÂNCIA`).
 
-## Correção proposta
+**Conclusão:** ~30% do "Outros" é falta de regra (fácil de resolver), ~50% é faturamento em lote de convênio (é legítimo, mas precisa de rótulo próprio) e ~20% é dado incompleto vindo da Feegow.
 
-**1. Trazer o procedimento de cada fatura (raiz do problema)**
-O endpoint `/financial/list-invoice` já retorna `itens` na resposta, mas a sincronização hoje descarta esse bloco. Vou:
-- adicionar as colunas `procedimento_id` e `descricao_item` em `financeiro_lancamentos`;
-- gravar o item da fatura na Edge Function `sync-feegow` (modo `financial`);
-- rodar re-sync do período para preencher o histórico.
+## O que fazer
 
-**2. Recalcular "Faturamento por tipo de serviço" com receita real**
-O gráfico passa a somar `financeiro_lancamentos` (tipo = receita), classificando pelo nome do procedimento do item; o que continuar sem item vira "Não identificado", explicitamente visível.
-Resultado: soma do gráfico = KPI de receita, sempre.
+### 1. Separar o "Outros" em três rótulos honestos
+Em vez de um balde único, o gráfico passa a mostrar:
+- **Faturamento em lote (convênio)** — as faturas `Lote(s):` e `Faturamento Autogestão`/`Repasse`
+- **Sem detalhamento da Feegow** — lançamentos sem item nem procedimento
+- **Outros serviços** — só o que sobrar de verdade
 
-**3. Card de conciliação**
-Abaixo do gráfico, uma linha curta: `Receita total R$ X · classificada R$ Y (Z%) · não identificada R$ W`, para o número nunca mais parecer "faltando" sem explicação.
+### 2. Ampliar as regras de classificação
+Atualizar `src/lib/service-categories.ts` para cobrir os nomes encontrados:
+- Laboratório: siglas e hormônios (shbg, dht, testosterona, cortisol, dímero d, zinco, anti-ccp, anti-trab, paratormônio, androstenediona, lipidograma, sangue oculto, complemento, ca-15/3, sexagem fetal, microscopia)
+- Cardiologia/diagnóstico: polissonografia, risco cirúrgico, mapeamento de retina, bioimpedância, pool cognitivo, patch test
+- Aplicações e vacinas: `PROTOCOLO … IM/EV`, viscosuplementação, intradermoterapia, toxina botulínica
+- Procedimentos e cirurgias: conoplastia, Mirena/Kyleena, Implanon, DIU
+Isso tira ~R$ 200k do "Outros" e joga nas categorias corretas.
 
-**4. Fallback se a Feegow não devolver itens**
-Se após o re-sync a maioria das faturas vier sem item, mantenho o gráfico na receita real e faço o rateio pelo procedimento do agendamento do mesmo paciente/dia quando houver correspondência; o restante fica em "Não identificado" com a nota de cobertura.
+### 3. Drill-down: clicar na categoria e ver o que tem dentro
+Ao clicar numa barra do gráfico, abre um painel lateral com os itens que compõem aquela categoria (nome, quantidade, receita, ticket médio), ordenados por receita. Resolve a dúvida "o que tem em Outros?" de forma permanente, sem precisar de SQL.
+
+### 4. Nota de cobertura no rodapé
+Mostrar explicitamente quanto da receita está classificada por procedimento, quanto veio em lote de convênio e quanto a Feegow não detalhou.
 
 ## Detalhes técnicos
-- Migração: `ALTER TABLE public.financeiro_lancamentos ADD COLUMN procedimento_id integer, ADD COLUMN descricao_item text;` (grants/RLS já existentes permanecem).
-- `supabase/functions/sync-feegow/index.ts`: mapear `invoice.itens[]` para as linhas de detalhe (fallback para `detalhes[].procedimento_id`).
-- `src/lib/dashboard-data.ts`: incluir os novos campos no select financeiro.
-- `src/routes/_authenticated/dashboard.tsx`: trocar a base do gráfico de serviço e adicionar a linha de conciliação; `src/lib/service-categories.ts` continua sendo o classificador.
+
+- `src/lib/service-categories.ts`: novas regex + duas categorias novas (`Faturamento em lote`, `Sem detalhamento`), mantendo a assinatura `categoriaServico(nome)` e adicionando um caminho que também considera lançamento sem nome.
+- `src/routes/_authenticated/dashboard.tsx`: agregação por categoria passa a guardar também a lista de itens (nome → valor/qtd) para o drill-down; painel usa `Sheet` do shadcn e o tema de cores central (`src/lib/chart-theme.ts`).
+- Sem migração de banco e sem mudança na Edge Function nesta etapa — a soma continua batendo com o KPI de Receita total.
+
+## Opcional (fase seguinte)
+Para abrir o que tem dentro das faturas em lote de convênio (R$ 541,8k), seria preciso chamar o endpoint de itens/vendas da Feegow por fatura na sincronização. Fica como etapa separada, se você quiser esse nível de detalhe.
