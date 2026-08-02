@@ -490,10 +490,17 @@ async function selectAllColumn(supabase: any, table: string, columns: string, ap
   return out;
 }
 
+/** Normaliza texto livre (bairro/cidade) para Title Case, evitando duplicatas por caixa. */
 const cleanText = (v: unknown) => {
   const s = String(v ?? "").replace(/\s+/g, " ").trim();
-  return s.length ? s : null;
+  if (!s) return null;
+  const minor = new Set(["de", "da", "do", "das", "dos", "e"]);
+  return s.toLocaleLowerCase("pt-BR").split(" ").map((w, i) => {
+    if (i > 0 && minor.has(w)) return w;
+    return w.charAt(0).toLocaleUpperCase("pt-BR") + w.slice(1);
+  }).join(" ");
 };
+
 
 /**
  * Sincroniza pacientes que aparecem na agenda, buscando o detalhe (/patient/search),
