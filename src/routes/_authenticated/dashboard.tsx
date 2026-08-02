@@ -13,6 +13,8 @@ import { axisProps, gridProps, tooltipProps } from "@/lib/chart-theme";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LastSyncCard } from "@/components/LastSyncCard";
 import { categoriaServico } from "@/lib/service-categories";
+import { useState } from "react";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
