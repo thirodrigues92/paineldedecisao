@@ -28,41 +28,55 @@ const compactBrl = (v: number) =>
 function RentabilidadePage() {
   const f = useFilters();
 
-  const abcQ = useQuery({
-    queryKey: ["vw_abc_proc", f.from.toISOString()],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("vw_analytics_abc_procedimentos")
-        .select("*")
-        .limit(200);
-      if (error) throw error;
-      return data as any[];
-    },
+  const q = useQuery({
+    queryKey: dashboardQueryKey("analytics-rentabilidade", f),
+    queryFn: () => fetchDashboardAppointments(f, 30_000),
   });
 
-  const tmQ = useQuery({
-    queryKey: ["vw_ticket_esp", f.from.toISOString()],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("vw_analytics_ticket_medio_esp")
-        .select("*")
-        .limit(100);
-      if (error) throw error;
-      return data as any[];
-    },
+  const rows = q.data ?? [];
+
+  // Curva ABC por procedimento (calculada sobre o período/filtros ativos)
+  const porProc = new Map<string, { procedimento: string; receita: number; volume: number }>();
+  for (const r of rows) {
+    const nome = r.procedimentos?.nome ?? "Sem procedimento";
+    const key = String(r.procedimento_id ?? nome);
+    const cur = porProc.get(key) ?? { procedimento: nome, receita: 0, volume: 0 };
+    cur.receita += Number(r.valor_total || 0);
+    cur.volume += 1;
+    porProc.set(key, cur);
+  }
+  const ordenados = Array.from(porProc.values()).sort((a, b) => b.receita - a.receita);
+  const totalReceita = ordenados.reduce((s, r) => s + r.receita, 0);
+  let acumulado = 0;
+  const abc = ordenados.map((r) => {
+    acumulado += r.receita;
+    const share = totalReceita ? acumulado / totalReceita : 0;
+    const classe = share <= 0.8 ? "A" : share <= 0.95 ? "B" : "C";
+    return { ...r, classe, procedimento_id: r.procedimento };
   });
 
-  const abc = abcQ.data ?? [];
+  const abcQ = q;
+  const tmQ = q;
+
   const contA = abc.filter((r) => r.classe === "A").length;
   const contB = abc.filter((r) => r.classe === "B").length;
   const contC = abc.filter((r) => r.classe === "C").length;
   const receitaA = abc.filter((r) => r.classe === "A").reduce((s, r) => s + Number(r.receita || 0), 0);
 
-  const scatterData = (tmQ.data ?? []).map((r) => ({
-    x: Number(r.volume),
-    y: Number(r.ticket_medio ?? 0),
-    z: Number(r.receita || 0),
-    nome: r.especialidade,
+  // Ticket médio × volume por especialidade
+  const porEsp = new Map<string, { receita: number; volume: number }>();
+  for (const r of rows) {
+    const nome = r.especialidades?.nome ?? "Sem especialidade";
+    const cur = porEsp.get(nome) ?? { receita: 0, volume: 0 };
+    cur.receita += Number(r.valor_total || 0);
+    cur.volume += 1;
+    porEsp.set(nome, cur);
+  }
+  const scatterData = Array.from(porEsp.entries()).map(([nome, v]) => ({
+    x: v.volume,
+    y: v.volume ? v.receita / v.volume : 0,
+    z: v.receita,
+    nome,
   }));
 
   return (
