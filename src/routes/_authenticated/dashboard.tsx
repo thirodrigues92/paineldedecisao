@@ -77,6 +77,25 @@ function DashboardPage() {
     { name: "Convênio",   value: financialRows.filter((r) => r.tipo === "receita" && r.convenio_id).reduce((s, r) => s + Number(r.valor || 0), 0) },
   ];
 
+  // Faturamento por categoria (receitas)
+  const byCategoria = new Map<string, { nome: string; valor: number; qtd: number }>();
+  for (const r of financialRows) {
+    if (r.tipo !== "receita") continue;
+    const nome = (r.categoria ?? "").trim() || "Não classificado";
+    const cur = byCategoria.get(nome) ?? { nome, valor: 0, qtd: 0 };
+    cur.valor += Number(r.valor || 0);
+    cur.qtd += 1;
+    byCategoria.set(nome, cur);
+  }
+  const categorias = Array.from(byCategoria.values()).filter((c) => c.valor > 0).sort((a, b) => b.valor - a.valor);
+  const totalCategorias = categorias.reduce((s, c) => s + c.valor, 0);
+  const topCategorias = categorias.slice(0, 12).map((c) => ({
+    ...c,
+    share: totalCategorias > 0 ? (c.valor * 100) / totalCategorias : 0,
+  }));
+  const menores = [...categorias].slice(-3).reverse();
+
+
   const kpis = [
     { label: "Agendamentos", value: num(total), icon: Calendar },
     { label: "Ocupação", value: pct(ocupacao), icon: Activity },
