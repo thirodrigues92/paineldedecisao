@@ -99,6 +99,23 @@ function DashboardPage() {
   }));
   const menores = [...categorias].slice(-3).reverse();
 
+  // Faturamento por categoria de serviço (derivado do procedimento do agendamento)
+  const byServico = new Map<string, { nome: string; valor: number; qtd: number }>();
+  let comValor = 0;
+  for (const r of rows as any[]) {
+    const valor = Number(r.valor_total || 0);
+    if (valor > 0) comValor += 1;
+    const nome = categoriaServico(r.procedimentos?.nome);
+    const cur = byServico.get(nome) ?? { nome, valor: 0, qtd: 0 };
+    cur.valor += valor;
+    cur.qtd += 1;
+    byServico.set(nome, cur);
+  }
+  const servicosBase = Array.from(byServico.values()).filter((c) => c.valor > 0).sort((a, b) => b.valor - a.valor);
+  const totalServicos = servicosBase.reduce((s, c) => s + c.valor, 0);
+  const servicos = servicosBase.map((c) => ({ ...c, share: totalServicos > 0 ? (c.valor * 100) / totalServicos : 0 }));
+
+
 
   const kpis = [
     { label: "Agendamentos", value: num(total), icon: Calendar },
