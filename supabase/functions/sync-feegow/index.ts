@@ -658,10 +658,12 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   // Aceita mode via query string (GET/cron) OU body JSON (POST via supabase.functions.invoke)
   let mode = url.searchParams.get("mode") ?? "today";
+  let limit = Number(url.searchParams.get("limit") ?? 0) || 0;
   if (req.method === "POST") {
     try {
       const body = await req.json();
       if (body && typeof body.mode === "string") mode = body.mode;
+      if (body && Number(body.limit) > 0) limit = Number(body.limit);
     } catch {
       // body vazio/não-JSON — mantém default
     }
@@ -693,11 +695,16 @@ Deno.serve(async (req) => {
       await syncFinancial(supabase, from, to);
     }
 
+    let extra: Record<string, unknown> = {};
+    if (mode === "pacientes") extra = { ...extra, pacientes: await syncPacientes(supabase, limit || 400) };
+    if (mode === "geocode") extra = { ...extra, geocode: await geocodeBairros(supabase, limit || 30) };
+
     await refreshViews(supabase);
 
-    return new Response(JSON.stringify({ ok: true, mode, ms: Date.now() - started }), {
+    return new Response(JSON.stringify({ ok: true, mode, ms: Date.now() - started, ...extra }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+
   } catch (e) {
     console.error(e);
     return new Response(JSON.stringify({ ok: false, error: String(e), mode }), {
