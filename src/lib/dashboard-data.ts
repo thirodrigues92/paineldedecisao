@@ -31,7 +31,10 @@ export type FinancialRow = {
   categoria: string | null;
   unidade_id: number | null;
   convenio_id: number | null;
+  procedimento_id: number | null;
+  descricao_item: string | null;
 };
+
 
 function toISO(d: Date) {
   return d.toISOString().substring(0, 10);
