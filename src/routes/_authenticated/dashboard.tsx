@@ -28,6 +28,11 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 const compactBrl = (n: number) =>
   Math.abs(n) >= 1000 ? `R$ ${(n / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 0 })}k` : brl(n);
 
+type ItemServico = { nome: string; valor: number; qtd: number };
+type ServicoBucket = { nome: string; valor: number; qtd: number; itens: Map<string, ItemServico> };
+
+
+
 
 function DashboardPage() {
   const f = useFilters();
