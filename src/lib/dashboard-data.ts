@@ -84,7 +84,7 @@ export async function fetchFinancialRows(f: DashboardFilters, limit = 20_000): P
   for (let from = 0; from < limit; from += pageSize) {
     let q = supabase
       .from("financeiro_lancamentos")
-      .select("tipo, valor, data_vencimento, data_pagamento, status, categoria, unidade_id, convenio_id")
+      .select("tipo, valor, data_vencimento, data_pagamento, status, categoria, unidade_id, convenio_id, procedimento_id, descricao_item")
       .gte("data_vencimento", toISO(f.from))
       .lte("data_vencimento", toISO(f.to))
       .order("data_vencimento", { ascending: true })
