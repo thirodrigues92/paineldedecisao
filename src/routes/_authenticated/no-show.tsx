@@ -58,7 +58,7 @@ function NoShowPage() {
                 <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
                 <XAxis {...axisProps} type="number" stroke="var(--muted-foreground)" fontSize={11} />
                 <YAxis {...axisProps} dataKey="nome" type="category" width={140} stroke="var(--muted-foreground)" fontSize={11} />
-                <Tooltip {...tooltipProps} formatter={(v: any) => pct(Number(v))} {...tooltipProps} />
+                <Tooltip {...tooltipProps} formatter={(v: any) => pct(Number(v))} />
                 <Bar dataKey="taxa" fill="var(--chart-5)" radius={[0, 6, 6, 0]} />
               </BarChart>
             </ResponsiveContainer>

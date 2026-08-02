@@ -70,7 +70,7 @@ function FinPage() {
                   <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
                   <XAxis {...axisProps} dataKey="mes" stroke="var(--muted-foreground)" fontSize={11} />
                   <YAxis {...axisProps} stroke="var(--muted-foreground)" fontSize={11} />
-                  <Tooltip {...tooltipProps} formatter={(v: any) => brl(Number(v))} {...tooltipProps} />
+                  <Tooltip {...tooltipProps} formatter={(v: any) => brl(Number(v))} />
                   <Legend wrapperStyle={{ fontSize: 12, color: "var(--muted-foreground)" }} />
                   <Bar dataKey="receita" fill="var(--chart-2)" />
                   <Bar dataKey="despesa" fill="var(--chart-5)" />
@@ -90,7 +90,7 @@ function FinPage() {
                   <Pie data={categories} dataKey="value" nameKey="name" innerRadius={55} outerRadius={88}>
                     {categories.map((_, i) => <Cell key={i} fill={`var(--chart-${(i % 5) + 1})`} />)}
                   </Pie>
-                  <Tooltip {...tooltipProps} formatter={(v: any) => brl(Number(v))} {...tooltipProps} />
+                  <Tooltip {...tooltipProps} formatter={(v: any) => brl(Number(v))} />
                   <Legend wrapperStyle={{ fontSize: 12, color: "var(--muted-foreground)" }} />
                 </PieChart>
               </ResponsiveContainer>

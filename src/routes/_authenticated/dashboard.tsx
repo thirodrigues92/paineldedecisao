@@ -145,7 +145,7 @@ function DashboardPage() {
                   <Pie data={donut} dataKey="value" nameKey="name" innerRadius={55} outerRadius={90}>
                     {donut.map((_, i) => <Cell key={i} fill={i === 0 ? "var(--chart-1)" : "var(--chart-2)"} />)}
                   </Pie>
-                  <Tooltip {...tooltipProps} formatter={(v: any) => brl(Number(v))} {...tooltipProps} />
+                  <Tooltip {...tooltipProps} formatter={(v: any) => brl(Number(v))} />
                   <Legend wrapperStyle={{ fontSize: 12, color: "var(--muted-foreground)" }} />
                 </PieChart>
               </ResponsiveContainer>
