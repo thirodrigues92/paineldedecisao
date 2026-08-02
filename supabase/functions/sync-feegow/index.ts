@@ -354,11 +354,49 @@ function financialStatus(valor: number, pagamentos: any[], fallback: any) {
   return "em_aberto";
 }
 
+/** POST em endpoints "core" do Feegow (paginação {data,count,pages}) */
+async function feegowCore(path: string, body: Record<string, unknown>): Promise<any[]> {
+  const res = await withRetry(() =>
+    fetch(FEEGOW_BASE + path, {
+      method: "POST",
+      headers: { "x-access-token": FEEGOW_TOKEN, "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    })
+  );
+  if (!res.ok) throw new Error(`Feegow ${path} → HTTP ${res.status}`);
+  const json = await res.json();
+  return Array.isArray(json?.data) ? json.data : [];
+}
+
+/** Plano de contas (categoria_id → nome) e centros de custo (centro_custo_id → nome) */
+async function loadFinancialLookups() {
+  const categorias = new Map<number, string>();
+  const centros = new Map<number, string>();
+  try {
+    const rows = await feegowCore("/core/financial/base/financial-category", { page: 1, perPage: 1000 });
+    for (const r of rows) {
+      const cid = Number(r.id);
+      if (Number.isFinite(cid) && r.name) categorias.set(cid, String(r.name).trim());
+    }
+    console.log(`[SYNC] categorias financeiras: ${categorias.size}`);
+  } catch (e) { console.warn("financial-category", e); }
+  try {
+    const rows = await feegowCore("/core/financial/base/cost-center", { page: 1, perPage: 500 });
+    for (const r of rows) {
+      const cid = Number(r.id);
+      if (Number.isFinite(cid) && r.name) centros.set(cid, String(r.name).trim());
+    }
+    console.log(`[SYNC] centros de custo: ${centros.size}`);
+  } catch (e) { console.warn("cost-center", e); }
+  return { categorias, centros };
+}
+
 async function syncFinancial(supabase: any, from: Date, to: Date) {
   const id = await logStart(supabase, `financeiro ${toFeegowDate(from)}→${toFeegowDate(to)}`);
   let total = 0;
   const errors: string[] = [];
   try {
+    const { categorias, centros } = await loadFinancialLookups();
     const mapped: any[] = [];
     for (const tipoTransacao of ["C", "D"] as const) {
       const content = await feegow("/financial/list-invoice", {
@@ -368,8 +406,19 @@ async function syncFinancial(supabase: any, from: Date, to: Date) {
       });
       const invoices = asArray(content);
       invoices.forEach((invoice: any, invoiceIndex: number) => {
-        const detalhes = asArray(invoice.detalhes ?? invoice.details ?? invoice.itens ?? invoice.items ?? invoice);
+        const detalhes = asArray(invoice.detalhes ?? invoice.details ?? invoice);
         const pagamentos = asArray(invoice.pagamentos ?? invoice.payments ?? []);
+        const itens = asArray(invoice.itens ?? invoice.items ?? []);
+        // A categoria/centro de custo vive nos itens da fatura, não em detalhes.
+        const itemComCategoria = itens.find((i: any) => Number(i?.categoria_id) > 0) ?? itens[0] ?? {};
+        const categoriaId = Number(itemComCategoria.categoria_id ?? 0);
+        const centroId = Number(itemComCategoria.centro_custo_id ?? 0);
+        const categoriaNome =
+          categorias.get(categoriaId) ??
+          (categoriaId > 0 ? `Categoria ${categoriaId}` : null) ??
+          (String(itemComCategoria.descricao ?? "").trim() || null) ??
+          "Não classificado";
+        const centroNome = centros.get(centroId) ?? (centroId > 0 ? `Centro ${centroId}` : null);
         const base = detalhes.length ? detalhes : [invoice];
         base.forEach((det: any, detailIndex: number) => {
           const valor = parseFinancialCurrency(det.valor ?? det.value ?? invoice.valor ?? invoice.value);
@@ -383,8 +432,8 @@ async function syncFinancial(supabase: any, from: Date, to: Date) {
           mapped.push({
             id: makeFinancialId(tipoTransacao, movementId || invoiceId, invoiceIndex * 1000 + detailIndex),
             tipo: tipoTransacao === "C" ? "receita" : "despesa",
-            categoria: det.descricao ?? invoice.descricao ?? det.categoria ?? invoice.categoria ?? null,
-            centro_custo: det.centro_custo ?? invoice.centro_custo ?? null,
+            categoria: categoriaNome,
+            centro_custo: centroNome,
             unidade_id: det.unidade_id || invoice.unidade_id ? Number(det.unidade_id ?? invoice.unidade_id) : null,
             convenio_id: det.convenio_id || invoice.convenio_id ? Number(det.convenio_id ?? invoice.convenio_id) : null,
             valor,
@@ -395,6 +444,7 @@ async function syncFinancial(supabase: any, from: Date, to: Date) {
         });
       });
     }
+
 
     const seen = new Set<number>();
     const unique = mapped.filter((r) => {
