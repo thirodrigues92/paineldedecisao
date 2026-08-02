@@ -236,11 +236,16 @@ async function syncSupport(supabase: any) {
     try {
       const rows = await feegow("/procedures/list");
       const mapped = asArray(rows).map((r) => ({
-        procedimento_id: Number(r.id ?? r.procedure_id),
-        nome: String(r.name ?? r.nome ?? ""),
-        tipo: r.type ?? r.tipo ?? null,
-        grupo: r.group ?? r.grupo ?? null,
-      })).filter((r) => r.procedimento_id);
+        procedimento_id: Number(r.procedimento_id ?? r.id ?? r.procedure_id),
+        nome: String(r.nome ?? r.name ?? "").trim() || "Sem nome",
+        tipo: r.tipo ?? r.type ?? (r.tipo_procedimento != null ? String(r.tipo_procedimento) : null),
+        grupo: r.grupo ?? r.group ?? (r.grupo_procedimento != null ? String(r.grupo_procedimento) : null),
+      })).filter((r) => Number.isFinite(r.procedimento_id) && r.procedimento_id > 0);
+      // Dedupe por procedimento_id
+      const seenProc = new Set<number>();
+      const uniqueProc = mapped.filter((r) => { if (seenProc.has(r.procedimento_id)) return false; seenProc.add(r.procedimento_id); return true; });
+      console.log(`[SYNC] procedimentos: ${uniqueProc.length} mapeados`);
+
       if (mapped.length) { await supabase.from("procedimentos").upsert(mapped, { onConflict: "procedimento_id" }); total += mapped.length; }
     } catch (e) { console.warn("procedimentos", e); }
 
