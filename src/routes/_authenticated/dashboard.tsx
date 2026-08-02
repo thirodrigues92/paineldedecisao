@@ -247,6 +247,72 @@ function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Faturamento por tipo de serviço</CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Consultas, exames, imagem, aplicações e vacinas — classificados pelo procedimento do agendamento.
+            </p>
+          </CardHeader>
+          <CardContent className="h-96">
+            {query.isLoading ? <Skeleton className="h-full w-full" /> : servicos.length === 0 ? <EmptyState /> : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={servicos} layout="vertical" margin={{ left: 8, right: 24 }}>
+                  <CartesianGrid {...gridProps} />
+                  <XAxis {...axisProps} type="number" tickFormatter={(v) => compactBrl(Number(v))} />
+                  <YAxis {...axisProps} dataKey="nome" type="category" width={175} interval={0} />
+                  <Tooltip
+                    {...tooltipProps}
+                    formatter={(v: any, _n: any, p: any) => [`${brl(Number(v))} · ${pct(p?.payload?.share ?? 0)} · ${num(p?.payload?.qtd ?? 0)} atend.`, "Faturamento"]}
+                  />
+                  <Bar dataKey="valor" radius={[0, 6, 6, 0]}>
+                    {servicos.map((c, i) => (
+                      <Cell key={c.nome} fill={i === servicos.length - 1 ? "var(--chart-5)" : "var(--chart-2)"} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Composição do faturamento</CardTitle>
+            <p className="text-xs text-muted-foreground">Quanto cada tipo de serviço representa do total do período.</p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {query.isLoading ? <Skeleton className="h-64 w-full" /> : servicos.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Sem dados para os filtros selecionados.</p>
+            ) : (
+              <>
+                {servicos.map((c, i) => (
+                  <div key={c.nome} className="space-y-1">
+                    <div className="flex items-baseline justify-between gap-2 text-sm">
+                      <span className="truncate" title={c.nome}>{c.nome}</span>
+                      <span className="font-medium shrink-0">{brl(c.valor)}</span>
+                    </div>
+                    <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="h-full rounded-full"
+                        style={{ width: `${Math.max(c.share, 1)}%`, background: `var(--chart-${(i % 5) + 1})` }}
+                      />
+                    </div>
+                    <div className="text-xs text-muted-foreground">{pct(c.share)} do total · {num(c.qtd)} atendimentos</div>
+                  </div>
+                ))}
+                <p className="pt-2 text-[11px] leading-snug text-muted-foreground border-t border-border">
+                  Base: {num(comValor)} de {num(total)} agendamentos do período têm valor lançado na agenda.
+                </p>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <Card className="lg:col-span-2">
           <CardHeader><CardTitle>Top 10 especialidades</CardTitle></CardHeader>
           <CardContent className="h-80">
             {topEsp.length === 0 ? <EmptyState /> : (
