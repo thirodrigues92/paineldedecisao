@@ -17,6 +17,14 @@ export const Route = createFileRoute("/_authenticated/analytics/rentabilidade")(
   component: RentabilidadePage,
 });
 
+const compactBrl = (v: number) =>
+  new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(Number(v) || 0);
+
 function RentabilidadePage() {
   const f = useFilters();
 
@@ -83,21 +91,48 @@ function RentabilidadePage() {
       </div>
 
       <Card>
-        <CardHeader><CardTitle>Curva ABC de procedimentos</CardTitle></CardHeader>
-        <CardContent className="h-80">
+        <CardHeader>
+          <CardTitle>Curva ABC de procedimentos</CardTitle>
+          <p className="text-xs text-muted-foreground">Top 20 por receita no período.</p>
+        </CardHeader>
+        <CardContent className="h-[26rem]">
           {abcQ.isLoading ? <Skeleton className="h-full w-full" /> : (
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={abc.slice(0, 20)}>
-                <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                <XAxis dataKey="procedimento" tick={{ fontSize: 10 }} interval={0} angle={-30} textAnchor="end" height={90} />
-                <YAxis tickFormatter={(v) => brl(v)} />
-                <Tooltip formatter={(v: any) => brl(v)} />
-                <Bar dataKey="receita" fill="hsl(var(--primary))" />
+              <BarChart data={abc.slice(0, 20)} margin={{ top: 8, right: 16, left: 8, bottom: 8 }} layout="vertical">
+                <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" horizontal={false} />
+                <XAxis
+                  type="number"
+                  tickFormatter={compactBrl}
+                  stroke="var(--muted-foreground)"
+                  fontSize={11}
+                />
+                <YAxis
+                  type="category"
+                  dataKey="procedimento"
+                  width={210}
+                  interval={0}
+                  tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+                  tickFormatter={(v: string) => (v.length > 30 ? `${v.slice(0, 29)}…` : v)}
+                />
+                <Tooltip
+                  cursor={{ fill: "color-mix(in oklab, var(--primary) 12%, transparent)" }}
+                  contentStyle={{
+                    background: "var(--popover)",
+                    color: "var(--popover-foreground)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 8,
+                    fontSize: 12,
+                  }}
+                  labelStyle={{ color: "var(--foreground)", fontWeight: 600, marginBottom: 4 }}
+                  formatter={(v: any) => [brl(Number(v)), "Receita"]}
+                />
+                <Bar dataKey="receita" fill="var(--chart-1)" radius={[0, 4, 4, 0]} maxBarSize={18} />
               </BarChart>
             </ResponsiveContainer>
           )}
         </CardContent>
       </Card>
+
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card>
@@ -106,9 +141,10 @@ function RentabilidadePage() {
             {tmQ.isLoading ? <Skeleton className="h-full w-full" /> : (
               <ResponsiveContainer width="100%" height="100%">
                 <ScatterChart>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                  <XAxis type="number" dataKey="x" name="Volume" />
-                  <YAxis type="number" dataKey="y" name="Ticket" tickFormatter={(v) => brl(v)} />
+                  <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
+                  <XAxis type="number" dataKey="x" name="Volume" stroke="var(--muted-foreground)" fontSize={11} />
+                  <YAxis type="number" dataKey="y" name="Ticket" width={70} stroke="var(--muted-foreground)" fontSize={11} tickFormatter={compactBrl} />
+
                   <Tooltip
                     cursor={{ strokeDasharray: "3 3" }}
                     formatter={(v: any, k: any) => k === "y" ? brl(v) : num(v)}
@@ -126,7 +162,7 @@ function RentabilidadePage() {
                       );
                     }}
                   />
-                  <Scatter data={scatterData} fill="hsl(var(--primary))" />
+                  <Scatter data={scatterData} fill="var(--chart-1)" />
                 </ScatterChart>
               </ResponsiveContainer>
             )}
