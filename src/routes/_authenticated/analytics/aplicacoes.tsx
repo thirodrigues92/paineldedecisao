@@ -72,6 +72,7 @@ function AplicacoesPage() {
   const [bairroFiltro, setBairroFiltro] = useState<string>("todos");
   const [ticketRange, setTicketRange] = useState<[number, number]>([0, 1000]);
   const [ordenacao, setOrdenacao] = useState<Ordenacao>("receita");
+  const [metricaRegiao, setMetricaRegiao] = useState<"volume" | "receita">("volume");
 
   const regioes = regioesQ.data;
 
@@ -203,6 +204,32 @@ function AplicacoesPage() {
       .sort((a, b) => b.total - a.total)
       .slice(0, 10);
   }, [filtradas, regioes]);
+
+  // ---- região × tipo de aplicação (empilhado) ----
+  const regiaoPorTipo = useMemo(() => {
+    // 5 aplicações mais relevantes viram séries; o resto agrupa em "Outras".
+    const tops = [...porAplicacao]
+      .sort((a, b) => (metricaRegiao === "receita" ? b.receita - a.receita : b.volume - a.volume))
+      .slice(0, 5)
+      .map((a) => a.nome);
+    const series = [...tops, "Outras"];
+
+    const map = new Map<string, Record<string, number> & { bairro: string; _total: number }>();
+    for (const r of filtradas) {
+      const bairro = (r.paciente_id != null ? regioes?.get(r.paciente_id)?.bairro : null) ?? null;
+      if (!bairro) continue;
+      const nome = r.procedimentos?.nome ?? "Sem procedimento";
+      const key = tops.includes(nome) ? nome : "Outras";
+      const cur = map.get(bairro) ?? ({ bairro, _total: 0 } as Record<string, number> & { bairro: string; _total: number });
+      const inc = metricaRegiao === "receita" ? Number(r.valor_total || 0) : 1;
+      cur[key] = (cur[key] ?? 0) + inc;
+      cur._total += inc;
+      map.set(bairro, cur);
+    }
+    const dados = Array.from(map.values()).sort((a, b) => b._total - a._total).slice(0, 10);
+    const usadas = series.filter((s) => dados.some((d) => (d[s] ?? 0) > 0));
+    return { dados, series: usadas };
+  }, [filtradas, regioes, porAplicacao, metricaRegiao]);
 
   // ---- profissionais ----
   const porProfissional = useMemo(() => {
@@ -489,6 +516,45 @@ function AplicacoesPage() {
             )}
           </CardContent>
         </Card>
+
+        <Card className="lg:col-span-2">
+          <CardHeader className="flex-row items-start justify-between gap-4 space-y-0">
+            <div>
+              <CardTitle>Qual aplicação em cada região</CardTitle>
+              <p className="text-xs text-muted-foreground">Top 10 bairros — barras empilhadas pelas 5 aplicações mais relevantes.</p>
+            </div>
+            <Select value={metricaRegiao} onValueChange={(v) => setMetricaRegiao(v as "volume" | "receita")}>
+              <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="volume">Por volume</SelectItem>
+                <SelectItem value="receita">Por receita</SelectItem>
+              </SelectContent>
+            </Select>
+          </CardHeader>
+          <CardContent className="h-[22rem]">
+            {loading || regioesQ.isLoading ? <Skeleton className="h-full w-full" /> : regiaoPorTipo.dados.length === 0 ? (
+              <Vazio>Sem bairro cadastrado nos pacientes destas aplicações.</Vazio>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={regiaoPorTipo.dados} margin={{ bottom: 10 }}>
+                  <CartesianGrid {...gridProps} />
+                  <XAxis {...axisProps} dataKey="bairro" interval={0} angle={-35} textAnchor="end" height={100} />
+                  <YAxis {...axisProps} tickFormatter={(v) => (metricaRegiao === "receita" ? compactBrl(Number(v)) : num(Number(v)))} width={70} />
+                  <Tooltip
+                    {...tooltipProps}
+                    formatter={(v: number, n: string) => [metricaRegiao === "receita" ? brl(Number(v)) : num(Number(v)), n]}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 11, paddingBottom: 8 }} verticalAlign="top" align="left" />
+                  {regiaoPorTipo.series.map((s, i) => (
+                    <Bar key={s} dataKey={s} stackId="a" fill={`var(--chart-${(i % 5) + 1})`} />
+                  ))}
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+
+
 
         <Card>
           <CardHeader>
