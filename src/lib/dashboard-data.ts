@@ -51,7 +51,30 @@ export function dashboardQueryKey(scope: string, f: DashboardFilters) {
 
 export const financialQueryKey = (scope: string, f: DashboardFilters) => dashboardQueryKey(scope, f);
 
+export type PacienteRegiao = { paciente_id: number; bairro: string | null; cidade: string | null };
+
+/** Mapa paciente_id → bairro/cidade, usado nas análises regionais. */
+export async function fetchPacientesRegioes(limit = 20_000): Promise<Map<number, PacienteRegiao>> {
+  const pageSize = 1_000;
+  const map = new Map<number, PacienteRegiao>();
+
+  for (let from = 0; from < limit; from += pageSize) {
+    const { data, error } = await supabase
+      .from("pacientes")
+      .select("paciente_id, bairro, cidade")
+      .order("paciente_id", { ascending: true })
+      .range(from, Math.min(from + pageSize - 1, limit - 1));
+
+    if (error) throw error;
+    for (const p of data ?? []) map.set(p.paciente_id, p as PacienteRegiao);
+    if (!data || data.length < pageSize) break;
+  }
+
+  return map;
+}
+
 export async function fetchFinancialRows(f: DashboardFilters, limit = 20_000): Promise<FinancialRow[]> {
+
   const pageSize = 1_000;
   const all: FinancialRow[] = [];
 
