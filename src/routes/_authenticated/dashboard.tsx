@@ -12,6 +12,8 @@ import {
 import { axisProps, gridProps, tooltipProps } from "@/lib/chart-theme";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LastSyncCard } from "@/components/LastSyncCard";
+import { categoriaServico } from "@/lib/service-categories";
+
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
