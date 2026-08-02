@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useFilters } from "@/lib/filters-context";
+import { dashboardQueryKey } from "@/lib/dashboard-data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,14 +22,16 @@ function CapacidadePage() {
   const settings = useAppSettings();
 
   const q = useQuery({
-    queryKey: ["vw_ocupacao_prof", f.from.toISOString(), f.to.toISOString()],
+    queryKey: dashboardQueryKey("vw_ocupacao_prof", f),
     queryFn: async () => {
-      const { data, error } = await supabase
+      let cq = supabase
         .from("vw_analytics_ocupacao_prof")
-        .select("profissional, data, minutos_ocupados, agendamentos")
+        .select("profissional, profissional_id, data, minutos_ocupados, agendamentos")
         .gte("data", f.from.toISOString().slice(0, 10))
         .lte("data", f.to.toISOString().slice(0, 10))
         .limit(10_000);
+      if (f.profissionalIds.length) cq = cq.in("profissional_id", f.profissionalIds);
+      const { data, error } = await cq;
       if (error) throw error;
       return data as any[];
     },

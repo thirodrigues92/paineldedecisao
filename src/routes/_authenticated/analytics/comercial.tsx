@@ -25,13 +25,15 @@ function ComercialPage() {
   });
 
   const leadQuery = useQuery({
-    queryKey: ["vw_analytics_lead_time", f.from.toISOString(), f.to.toISOString()],
+    queryKey: dashboardQueryKey("vw_analytics_lead_time", f),
     queryFn: async () => {
-      const { data, error } = await supabase
+      let lq = supabase
         .from("vw_analytics_lead_time")
-        .select("especialidade, lead_days, data")
+        .select("especialidade, especialidade_id, lead_days, data")
         .gte("data", f.from.toISOString().slice(0, 10))
         .lte("data", f.to.toISOString().slice(0, 10));
+      if (f.especialidadeIds.length) lq = lq.in("especialidade_id", f.especialidadeIds);
+      const { data, error } = await lq;
       if (error) throw error;
       return data as { especialidade: string; lead_days: number; data: string }[];
     },

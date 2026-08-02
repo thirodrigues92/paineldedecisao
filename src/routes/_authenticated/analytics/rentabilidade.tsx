@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useFilters } from "@/lib/filters-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
+import { dashboardQueryKey, fetchDashboardAppointments } from "@/lib/dashboard-data";
 import { Skeleton } from "@/components/ui/skeleton";
 import { brl, num } from "@/lib/format";
 import {
