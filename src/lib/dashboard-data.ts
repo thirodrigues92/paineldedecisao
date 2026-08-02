@@ -8,11 +8,13 @@ export type DashboardAppointment = {
   valor_total: number | string | null;
   especialidade_id: number | null;
   profissional_id: number | null;
+  procedimento_id: number | null;
   unidade_id: number | null;
   convenio_id: number | null;
   primeiro_agendamento: boolean | null;
   status_id: number | null;
   especialidades: { especialidade_id: number; nome: string } | null;
+  procedimentos: { procedimento_id: number; nome: string } | null;
   profissionais: { profissional_id: number; nome: string } | null;
   unidades: { unidade_id: number; nome_fantasia: string } | null;
   status_agendamento: { status_id: number; categoria: string; descricao: string | null } | null;
@@ -83,7 +85,7 @@ export async function fetchDashboardAppointments(
     for (let from = 0; from < limit; from += pageSize) {
       let q = supabase
         .from("agendamentos")
-        .select("agendamento_id, data, horario, valor_total, especialidade_id, profissional_id, unidade_id, convenio_id, primeiro_agendamento, status_id")
+        .select("agendamento_id, data, horario, valor_total, especialidade_id, profissional_id, procedimento_id, unidade_id, convenio_id, primeiro_agendamento, status_id")
         .gte("data", toISO(f.from))
         .lte("data", toISO(f.to))
         .order("data", { ascending: true })
@@ -103,23 +105,26 @@ export async function fetchDashboardAppointments(
     return all;
   };
 
-  const [appointments, esps, profs, units, statuses] = await Promise.all([
+  const [appointments, esps, profs, units, statuses, procs] = await Promise.all([
     fetchAppointments(),
     supabase.from("especialidades").select("especialidade_id, nome"),
     supabase.from("profissionais").select("profissional_id, nome"),
     supabase.from("unidades").select("unidade_id, nome_fantasia"),
     supabase.from("status_agendamento").select("status_id, categoria, descricao"),
+    supabase.from("procedimentos").select("procedimento_id, nome").limit(5000),
   ]);
 
   if (esps.error) throw esps.error;
   if (profs.error) throw profs.error;
   if (units.error) throw units.error;
   if (statuses.error) throw statuses.error;
+  if (procs.error) throw procs.error;
 
   const espMap = new Map((esps.data ?? []).map((e) => [e.especialidade_id, e]));
   const profMap = new Map((profs.data ?? []).map((p) => [p.profissional_id, p]));
   const unitMap = new Map((units.data ?? []).map((u) => [u.unidade_id, u]));
   const statusMap = new Map((statuses.data ?? []).map((s) => [s.status_id, s]));
+  const procMap = new Map((procs.data ?? []).map((p) => [p.procedimento_id, p]));
 
   return appointments.map((r: any) => ({
     ...r,
@@ -127,5 +132,6 @@ export async function fetchDashboardAppointments(
     profissionais: profMap.get(r.profissional_id) ?? null,
     unidades: unitMap.get(r.unidade_id) ?? null,
     status_agendamento: statusMap.get(r.status_id) ?? null,
+    procedimentos: procMap.get(r.procedimento_id) ?? null,
   }));
 }
