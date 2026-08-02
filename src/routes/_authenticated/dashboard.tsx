@@ -38,6 +38,7 @@ type ServicoBucket = { nome: string; valor: number; qtd: number; itens: Map<stri
 
 function DashboardPage() {
   const f = useFilters();
+  const [detalhe, setDetalhe] = useState<string | null>(null);
 
   const query = useQuery({
     queryKey: dashboardQueryKey("dashboard", f),
