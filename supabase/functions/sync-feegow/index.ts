@@ -474,9 +474,175 @@ async function syncFinancial(supabase: any, from: Date, to: Date) {
   }
 }
 
+// ============ PACIENTES (geo) ============
+
+/** Lê todas as páginas de uma coluna (PostgREST limita a 1000 linhas). */
+async function selectAllColumn(supabase: any, table: string, columns: string, apply?: (q: any) => any, cap = 40_000) {
+  const out: any[] = [];
+  for (let from = 0; from < cap; from += 1000) {
+    let q = supabase.from(table).select(columns).range(from, from + 999);
+    if (apply) q = apply(q);
+    const { data, error } = await q;
+    if (error) throw new Error(`${table}: ${error.message}`);
+    out.push(...(data ?? []));
+    if (!data || data.length < 1000) break;
+  }
+  return out;
+}
+
+const cleanText = (v: unknown) => {
+  const s = String(v ?? "").replace(/\s+/g, " ").trim();
+  return s.length ? s : null;
+};
+
+/**
+ * Sincroniza pacientes que aparecem na agenda, buscando o detalhe (/patient/search),
+ * que é o único endpoint com CEP/cidade/estado. LGPD: gravamos apenas campos agregáveis
+ * (sexo, ano de nascimento, CEP, bairro, cidade, estado, convênio) — nunca nome/CPF/telefone.
+ * Processa em lotes para caber no tempo da função; devolve quantos ainda faltam.
+ */
+async function syncPacientes(supabase: any, limit: number) {
+  const id = await logStart(supabase, `pacientes (lote ${limit})`);
+  let total = 0;
+  try {
+    const [existentes, agenda] = await Promise.all([
+      selectAllColumn(supabase, "pacientes", "paciente_id"),
+      selectAllColumn(supabase, "agendamentos", "paciente_id", (q: any) => q.not("paciente_id", "is", null)),
+    ]);
+    const jaTem = new Set(existentes.map((r: any) => Number(r.paciente_id)));
+    const pendentesSet = new Set<number>();
+    for (const r of agenda) {
+      const pid = Number(r.paciente_id);
+      if (Number.isFinite(pid) && pid > 0 && !jaTem.has(pid)) pendentesSet.add(pid);
+    }
+    const pendentes = [...pendentesSet];
+    const lote = pendentes.slice(0, limit);
+    console.log(`[SYNC] pacientes pendentes=${pendentes.length} lote=${lote.length}`);
+
+    const mapped: any[] = [];
+    const CONCURRENCY = 8;
+    for (let i = 0; i < lote.length; i += CONCURRENCY) {
+      const slice = lote.slice(i, i + CONCURRENCY);
+      const results = await Promise.all(slice.map(async (pid) => {
+        try {
+          const c = await feegow("/patient/search", { paciente_id: String(pid) });
+          const p: any = Array.isArray(c) ? c[0] : c;
+          if (!p) return null;
+          const nasc = parseFeegowDate(p.nascimento ?? p.birthDate);
+          const ano = nasc ? Number(nasc.slice(0, 4)) : null;
+          const cep = String(p.cep ?? "").replace(/\D/g, "");
+          const sexoRaw = String(p.sexo ?? "").toLowerCase();
+          return {
+            paciente_id: pid,
+            sexo: sexoRaw.startsWith("m") ? "M" : sexoRaw.startsWith("f") ? "F" : null,
+            ano_nascimento: ano && ano > 1900 && ano <= new Date().getFullYear() ? ano : null,
+            cep: cep.length === 8 ? cep : null,
+            bairro: cleanText(p.bairro),
+            cidade: cleanText(p.cidade),
+            estado: cleanText(p.estado),
+            convenio_id: Number(p.convenio_id) > 0 ? Number(p.convenio_id) : null,
+            origem_id: Number(p.origem_id) > 0 ? Number(p.origem_id) : null,
+            updated_at: new Date().toISOString(),
+          };
+        } catch (e) {
+          console.warn(`paciente ${pid}`, String(e).slice(0, 120));
+          return null;
+        }
+      }));
+      mapped.push(...results.filter(Boolean));
+    }
+
+    for (let i = 0; i < mapped.length; i += 500) {
+      const slice = mapped.slice(i, i + 500);
+      const { error } = await supabase.from("pacientes").upsert(slice, { onConflict: "paciente_id" });
+      if (error) throw new Error(`upsert pacientes: ${error.message}`);
+      total += slice.length;
+    }
+
+    const restantes = Math.max(0, pendentes.length - lote.length);
+    await logEnd(supabase, id, true, total);
+    return { processados: total, restantes };
+  } catch (e) {
+    await logEnd(supabase, id, false, total, String(e));
+    throw e;
+  }
+}
+
+/** Geocodifica bairros (cache em geo_bairros) e propaga lat/lng para os pacientes. */
+async function geocodeBairros(supabase: any, limit: number) {
+  const id = await logStart(supabase, `geocode bairros (lote ${limit})`);
+  let atualizados = 0;
+  try {
+    const semGeo = await selectAllColumn(
+      supabase, "pacientes", "bairro, cidade, estado",
+      (q: any) => q.is("latitude", null).not("bairro", "is", null).not("cidade", "is", null),
+    );
+    const keyOf = (b: string, c: string, e: string) => `${b}|${c}|${e ?? ""}`;
+    const pendentes = new Map<string, { bairro: string; cidade: string; estado: string }>();
+    for (const r of semGeo) {
+      const bairro = cleanText(r.bairro), cidade = cleanText(r.cidade);
+      if (!bairro || !cidade) continue;
+      const estado = cleanText(r.estado) ?? "";
+      pendentes.set(keyOf(bairro, cidade, estado), { bairro, cidade, estado });
+    }
+
+    const { data: cacheRows } = await supabase.from("geo_bairros").select("bairro, cidade, estado, latitude, longitude");
+    const cache = new Map<string, { latitude: number | null; longitude: number | null }>();
+    for (const r of cacheRows ?? []) cache.set(keyOf(r.bairro, r.cidade, r.estado ?? ""), r);
+
+    let novos = 0;
+    for (const [key, loc] of pendentes) {
+      let geo = cache.get(key);
+      if (!geo) {
+        if (novos >= limit) break;
+        novos++;
+        try {
+          const q = encodeURIComponent(`${loc.bairro}, ${loc.cidade}, ${loc.estado}, Brazil`);
+          const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1`, {
+            headers: { "User-Agent": "painel-decisao-clinica/1.0" },
+          });
+          const arr = await res.json();
+          geo = Array.isArray(arr) && arr.length
+            ? { latitude: Number(arr[0].lat), longitude: Number(arr[0].lon) }
+            : { latitude: null, longitude: null };
+        } catch (e) {
+          console.warn("nominatim", String(e).slice(0, 120));
+          geo = { latitude: null, longitude: null };
+        }
+        await supabase.from("geo_bairros").upsert(
+          { bairro: loc.bairro, cidade: loc.cidade, estado: loc.estado, ...geo, geocoded_at: new Date().toISOString() },
+          { onConflict: "bairro,cidade,estado" },
+        );
+        cache.set(key, geo);
+        await new Promise((r) => setTimeout(r, 1100)); // ToS Nominatim: 1 req/s
+      }
+      if (geo.latitude != null && geo.longitude != null) {
+        let upd = supabase.from("pacientes")
+          .update({ latitude: geo.latitude, longitude: geo.longitude })
+          .is("latitude", null)
+          .eq("bairro", loc.bairro)
+          .eq("cidade", loc.cidade);
+        if (loc.estado) upd = upd.eq("estado", loc.estado);
+        const { error } = await upd;
+        if (error) console.warn("update pacientes geo", error.message);
+        else atualizados++;
+      }
+    }
+
+    const restantes = Math.max(0, pendentes.size - [...pendentes.keys()].filter((k) => cache.has(k)).length);
+    console.log(`[GEOCODE] bairros novos=${novos} aplicados=${atualizados} restantes=${restantes}`);
+    await logEnd(supabase, id, true, atualizados);
+    return { bairros_geocodificados: novos, restantes };
+  } catch (e) {
+    await logEnd(supabase, id, false, atualizados, String(e));
+    throw e;
+  }
+}
+
 async function refreshViews(supabase: any) {
   try { await supabase.rpc("refresh_dashboard_views"); } catch (e) { console.warn("refresh", e); }
 }
+
 
 // ============ HANDLER ============
 
