@@ -2,7 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, CalendarClock, UserX, DollarSign,
   Stethoscope, Building2, MapPinned, Settings, LogOut,
-  TrendingUp, PieChart, Activity, LineChart as LineIcon,
+  TrendingUp, PieChart, Activity, LineChart as LineIcon, Syringe,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
@@ -24,9 +24,11 @@ const navAnalytics = [
   { title: "Comercial", url: "/analytics/comercial", icon: TrendingUp },
   { title: "Rentabilidade", url: "/analytics/rentabilidade", icon: PieChart },
   { title: "Capacidade", url: "/analytics/capacidade", icon: Activity },
+  { title: "Aplicações Injetáveis", url: "/analytics/aplicacoes", icon: Syringe },
   { title: "Previsões & Alertas", url: "/analytics/previsoes", icon: LineIcon },
   { title: "Mapa de Pacientes", url: "/mapa", icon: MapPinned },
 ];
+
 
 const navFooter = [
   { title: "Configurações", url: "/config", icon: Settings },

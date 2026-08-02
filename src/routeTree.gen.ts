@@ -24,6 +24,7 @@ import { Route as AuthenticatedAnalyticsRentabilidadeRouteImport } from './route
 import { Route as AuthenticatedAnalyticsPrevisoesRouteImport } from './routes/_authenticated/analytics/previsoes'
 import { Route as AuthenticatedAnalyticsComercialRouteImport } from './routes/_authenticated/analytics/comercial'
 import { Route as AuthenticatedAnalyticsCapacidadeRouteImport } from './routes/_authenticated/analytics/capacidade'
+import { Route as AuthenticatedAnalyticsAplicacoesRouteImport } from './routes/_authenticated/analytics/aplicacoes'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -104,6 +105,12 @@ const AuthenticatedAnalyticsCapacidadeRoute =
     path: '/analytics/capacidade',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAnalyticsAplicacoesRoute =
+  AuthenticatedAnalyticsAplicacoesRouteImport.update({
+    id: '/analytics/aplicacoes',
+    path: '/analytics/aplicacoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -116,6 +123,7 @@ export interface FileRoutesByFullPath {
   '/no-show': typeof AuthenticatedNoShowRoute
   '/profissionais': typeof AuthenticatedProfissionaisRoute
   '/unidades': typeof AuthenticatedUnidadesRoute
+  '/analytics/aplicacoes': typeof AuthenticatedAnalyticsAplicacoesRoute
   '/analytics/capacidade': typeof AuthenticatedAnalyticsCapacidadeRoute
   '/analytics/comercial': typeof AuthenticatedAnalyticsComercialRoute
   '/analytics/previsoes': typeof AuthenticatedAnalyticsPrevisoesRoute
@@ -132,6 +140,7 @@ export interface FileRoutesByTo {
   '/no-show': typeof AuthenticatedNoShowRoute
   '/profissionais': typeof AuthenticatedProfissionaisRoute
   '/unidades': typeof AuthenticatedUnidadesRoute
+  '/analytics/aplicacoes': typeof AuthenticatedAnalyticsAplicacoesRoute
   '/analytics/capacidade': typeof AuthenticatedAnalyticsCapacidadeRoute
   '/analytics/comercial': typeof AuthenticatedAnalyticsComercialRoute
   '/analytics/previsoes': typeof AuthenticatedAnalyticsPrevisoesRoute
@@ -150,6 +159,7 @@ export interface FileRoutesById {
   '/_authenticated/no-show': typeof AuthenticatedNoShowRoute
   '/_authenticated/profissionais': typeof AuthenticatedProfissionaisRoute
   '/_authenticated/unidades': typeof AuthenticatedUnidadesRoute
+  '/_authenticated/analytics/aplicacoes': typeof AuthenticatedAnalyticsAplicacoesRoute
   '/_authenticated/analytics/capacidade': typeof AuthenticatedAnalyticsCapacidadeRoute
   '/_authenticated/analytics/comercial': typeof AuthenticatedAnalyticsComercialRoute
   '/_authenticated/analytics/previsoes': typeof AuthenticatedAnalyticsPrevisoesRoute
@@ -168,6 +178,7 @@ export interface FileRouteTypes {
     | '/no-show'
     | '/profissionais'
     | '/unidades'
+    | '/analytics/aplicacoes'
     | '/analytics/capacidade'
     | '/analytics/comercial'
     | '/analytics/previsoes'
@@ -184,6 +195,7 @@ export interface FileRouteTypes {
     | '/no-show'
     | '/profissionais'
     | '/unidades'
+    | '/analytics/aplicacoes'
     | '/analytics/capacidade'
     | '/analytics/comercial'
     | '/analytics/previsoes'
@@ -201,6 +213,7 @@ export interface FileRouteTypes {
     | '/_authenticated/no-show'
     | '/_authenticated/profissionais'
     | '/_authenticated/unidades'
+    | '/_authenticated/analytics/aplicacoes'
     | '/_authenticated/analytics/capacidade'
     | '/_authenticated/analytics/comercial'
     | '/_authenticated/analytics/previsoes'
@@ -320,6 +333,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAnalyticsCapacidadeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/analytics/aplicacoes': {
+      id: '/_authenticated/analytics/aplicacoes'
+      path: '/analytics/aplicacoes'
+      fullPath: '/analytics/aplicacoes'
+      preLoaderRoute: typeof AuthenticatedAnalyticsAplicacoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -332,6 +352,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedNoShowRoute: typeof AuthenticatedNoShowRoute
   AuthenticatedProfissionaisRoute: typeof AuthenticatedProfissionaisRoute
   AuthenticatedUnidadesRoute: typeof AuthenticatedUnidadesRoute
+  AuthenticatedAnalyticsAplicacoesRoute: typeof AuthenticatedAnalyticsAplicacoesRoute
   AuthenticatedAnalyticsCapacidadeRoute: typeof AuthenticatedAnalyticsCapacidadeRoute
   AuthenticatedAnalyticsComercialRoute: typeof AuthenticatedAnalyticsComercialRoute
   AuthenticatedAnalyticsPrevisoesRoute: typeof AuthenticatedAnalyticsPrevisoesRoute
@@ -347,6 +368,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedNoShowRoute: AuthenticatedNoShowRoute,
   AuthenticatedProfissionaisRoute: AuthenticatedProfissionaisRoute,
   AuthenticatedUnidadesRoute: AuthenticatedUnidadesRoute,
+  AuthenticatedAnalyticsAplicacoesRoute: AuthenticatedAnalyticsAplicacoesRoute,
   AuthenticatedAnalyticsCapacidadeRoute: AuthenticatedAnalyticsCapacidadeRoute,
   AuthenticatedAnalyticsComercialRoute: AuthenticatedAnalyticsComercialRoute,
   AuthenticatedAnalyticsPrevisoesRoute: AuthenticatedAnalyticsPrevisoesRoute,
