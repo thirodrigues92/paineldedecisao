@@ -311,12 +311,16 @@ function DashboardPage() {
                         style={{ width: `${Math.max(c.share, 1)}%`, background: `var(--chart-${(i % 5) + 1})` }}
                       />
                     </div>
-                    <div className="text-xs text-muted-foreground">{pct(c.share)} do total · {num(c.qtd)} atendimentos</div>
+                    <div className="text-xs text-muted-foreground">{pct(c.share)} do total · {num(c.qtd)} lançamentos</div>
                   </div>
                 ))}
                 <p className="pt-2 text-[11px] leading-snug text-muted-foreground border-t border-border">
-                  Base: {num(comValor)} de {num(total)} agendamentos do período têm valor lançado na agenda.
+                  Total confere com a receita do período: {brl(totalServicos)} de {brl(receitaPrev)}.
+                  {naoIdentificado > 0
+                    ? ` ${brl(naoIdentificado)} ainda sem procedimento na fatura (Feegow) — rode a sincronização financeira para reduzir.`
+                    : ""}
                 </p>
+
               </>
             )}
           </CardContent>
