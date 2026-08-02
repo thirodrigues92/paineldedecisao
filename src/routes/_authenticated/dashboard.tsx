@@ -105,28 +105,35 @@ function DashboardPage() {
 
   // Faturamento por tipo de serviço — sobre a RECEITA REAL (financeiro_lancamentos),
   // para bater com o KPI de receita. O procedimento vem do item da fatura; quando a
-  // Feegow não envia o item, cai em "Não identificado".
+  // Feegow não envia o item, cai em "Sem detalhamento da Feegow".
   const procNomes = query.data?.procNomes ?? new Map<number, string>();
 
   const receitas = financialRows.filter((r) => r.tipo === "receita");
-  const byServico = new Map<string, { nome: string; valor: number; qtd: number }>();
+  const byServico = new Map<string, ServicoBucket>();
   let classificado = 0;
   for (const r of receitas) {
     const valor = Number(r.valor || 0);
     const nomeProc =
       (r.procedimento_id ? procNomes.get(Number(r.procedimento_id)) : null) ?? r.descricao_item ?? null;
-    const nome = nomeProc ? categoriaServico(nomeProc) : "Não identificado";
-    if (nomeProc) classificado += valor;
-    const cur = byServico.get(nome) ?? { nome, valor: 0, qtd: 0 };
+    const nome = categoriaServico(nomeProc);
+    if (nomeProc && nome !== "Faturamento em lote (convênio)") classificado += valor;
+    const cur = byServico.get(nome) ?? { nome, valor: 0, qtd: 0, itens: new Map<string, { nome: string; valor: number; qtd: number }>() };
     cur.valor += valor;
     cur.qtd += 1;
+    const itemNome = (nomeProc ?? "").trim() || "Sem descrição na fatura";
+    const it = cur.itens.get(itemNome) ?? { nome: itemNome, valor: 0, qtd: 0 };
+    it.valor += valor;
+    it.qtd += 1;
+    cur.itens.set(itemNome, it);
     byServico.set(nome, cur);
   }
   const servicosBase = Array.from(byServico.values()).filter((c) => c.valor > 0).sort((a, b) => b.valor - a.valor);
   const totalServicos = servicosBase.reduce((s, c) => s + c.valor, 0);
   const servicos = servicosBase.map((c) => ({ ...c, share: totalServicos > 0 ? (c.valor * 100) / totalServicos : 0 }));
-  const naoIdentificado = Math.max(receitaPrev - classificado, 0);
+  const receitaLote = byServico.get("Faturamento em lote (convênio)")?.valor ?? 0;
+  const semDetalhe = byServico.get("Sem detalhamento da Feegow")?.valor ?? 0;
   const coberturaServico = receitaPrev > 0 ? (classificado * 100) / receitaPrev : 0;
+
 
 
 
