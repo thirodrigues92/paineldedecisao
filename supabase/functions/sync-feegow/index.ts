@@ -589,7 +589,7 @@ async function geocodeBairros(supabase: any, limit: number) {
     for (const r of semGeo) {
       const bairro = cleanText(r.bairro), cidade = cleanText(r.cidade);
       if (!bairro || !cidade) continue;
-      const estado = cleanText(r.estado) ?? "";
+      const estado = String(r.estado ?? "").trim().toUpperCase();
       pendentes.set(keyOf(bairro, cidade, estado), { bairro, cidade, estado });
     }
 
