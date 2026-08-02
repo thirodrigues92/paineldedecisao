@@ -246,7 +246,12 @@ async function syncSupport(supabase: any) {
       const uniqueProc = mapped.filter((r) => { if (seenProc.has(r.procedimento_id)) return false; seenProc.add(r.procedimento_id); return true; });
       console.log(`[SYNC] procedimentos: ${uniqueProc.length} mapeados`);
 
-      if (mapped.length) { await supabase.from("procedimentos").upsert(mapped, { onConflict: "procedimento_id" }); total += mapped.length; }
+      if (uniqueProc.length) {
+        const { error } = await supabase.from("procedimentos").upsert(uniqueProc, { onConflict: "procedimento_id" });
+        if (error) throw new Error(`procedimentos upsert: ${error.message}`);
+        total += uniqueProc.length;
+      }
+
     } catch (e) { console.warn("procedimentos", e); }
 
     await logEnd(supabase, id, true, total);
