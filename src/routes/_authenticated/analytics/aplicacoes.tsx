@@ -638,7 +638,7 @@ function Kpi({ label, value, sub, color }: { label: string; value: string; sub: 
     <Card>
       <CardContent className="p-5">
         <div className="text-xs text-muted-foreground">{label}</div>
-        <div className="text-3xl xl:text-4xl font-bold mt-2 tracking-tight tabular-nums truncate" style={{ color }} title={value}>{value}</div>
+        <div className="text-2xl xl:text-3xl font-bold mt-2 tracking-tight tabular-nums truncate" style={{ color }} title={value}>{value}</div>
         <div className="text-xs text-muted-foreground mt-2">{sub}</div>
       </CardContent>
     </Card>
