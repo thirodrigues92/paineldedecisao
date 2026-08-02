@@ -105,11 +105,9 @@ function DashboardPage() {
 
   // Faturamento por tipo de serviço — sobre a RECEITA REAL (financeiro_lancamentos),
   // para bater com o KPI de receita. O procedimento vem do item da fatura; quando a
-  // Feegow não envia o item, tentamos o nome pelo procedimento do agendamento.
-  const procNomes = new Map<number, string>();
-  for (const r of rows as any[]) {
-    if (r.procedimento_id && r.procedimentos?.nome) procNomes.set(Number(r.procedimento_id), r.procedimentos.nome);
-  }
+  // Feegow não envia o item, cai em "Não identificado".
+  const procNomes = query.data?.procNomes ?? new Map<number, string>();
+
   const receitas = financialRows.filter((r) => r.tipo === "receita");
   const byServico = new Map<string, { nome: string; valor: number; qtd: number }>();
   let classificado = 0;
