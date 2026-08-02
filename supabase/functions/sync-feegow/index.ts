@@ -603,15 +603,24 @@ async function geocodeBairros(supabase: any, limit: number) {
       if (!geo) {
         if (novos >= limit) break;
         novos++;
-        try {
-          const q = encodeURIComponent(`${loc.bairro}, ${loc.cidade}, ${loc.estado}, Brazil`);
-          const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1`, {
-            headers: { "User-Agent": "painel-decisao-clinica/1.0" },
-          });
+        const nominatim = async (q: string) => {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1`,
+            { headers: { "User-Agent": "painel-decisao-clinica/1.0" } },
+          );
           const arr = await res.json();
-          geo = Array.isArray(arr) && arr.length
+          return Array.isArray(arr) && arr.length
             ? { latitude: Number(arr[0].lat), longitude: Number(arr[0].lon) }
-            : { latitude: null, longitude: null };
+            : null;
+        };
+        try {
+          geo = await nominatim(`${loc.bairro}, ${loc.cidade}, ${loc.estado}, Brazil`)
+            ?? { latitude: null, longitude: null };
+          if (geo.latitude == null) {
+            // Fallback: centro da cidade — melhor aproximação que descartar o paciente.
+            await new Promise((r) => setTimeout(r, 1100));
+            geo = await nominatim(`${loc.cidade}, ${loc.estado}, Brazil`) ?? { latitude: null, longitude: null };
+          }
         } catch (e) {
           console.warn("nominatim", String(e).slice(0, 120));
           geo = { latitude: null, longitude: null };
@@ -622,6 +631,7 @@ async function geocodeBairros(supabase: any, limit: number) {
         );
         cache.set(key, geo);
         await new Promise((r) => setTimeout(r, 1100)); // ToS Nominatim: 1 req/s
+
       }
       if (geo.latitude != null && geo.longitude != null) {
         let upd = supabase.from("pacientes")
