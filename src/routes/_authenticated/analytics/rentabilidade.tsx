@@ -17,6 +17,14 @@ export const Route = createFileRoute("/_authenticated/analytics/rentabilidade")(
   component: RentabilidadePage,
 });
 
+const compactBrl = (v: number) =>
+  new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(Number(v) || 0);
+
 function RentabilidadePage() {
   const f = useFilters();
 
