@@ -199,7 +199,9 @@ export type Database = {
           created_at: string
           data_pagamento: string | null
           data_vencimento: string | null
+          descricao_item: string | null
           id: number
+          procedimento_id: number | null
           status: string | null
           tipo: string
           unidade_id: number | null
@@ -213,7 +215,9 @@ export type Database = {
           created_at?: string
           data_pagamento?: string | null
           data_vencimento?: string | null
+          descricao_item?: string | null
           id: number
+          procedimento_id?: number | null
           status?: string | null
           tipo: string
           unidade_id?: number | null
@@ -227,7 +231,9 @@ export type Database = {
           created_at?: string
           data_pagamento?: string | null
           data_vencimento?: string | null
+          descricao_item?: string | null
           id?: number
+          procedimento_id?: number | null
           status?: string | null
           tipo?: string
           unidade_id?: number | null
