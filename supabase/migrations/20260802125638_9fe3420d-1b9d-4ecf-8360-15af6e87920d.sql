@@ -1,0 +1,1 @@
+UPDATE public.financeiro_lancamentos SET categoria = 'Não classificado', updated_at = now() WHERE categoria IS NULL OR btrim(categoria) = '';
