@@ -76,7 +76,25 @@ export async function fetchPacientesRegioes(limit = 20_000): Promise<Map<number,
   return map;
 }
 
+/** Mapa procedimento_id → nome (catálogo completo). */
+export async function fetchProcedimentoNomes(): Promise<Map<number, string>> {
+  const map = new Map<number, string>();
+  const pageSize = 1_000;
+  for (let from = 0; from < 10_000; from += pageSize) {
+    const { data, error } = await supabase
+      .from("procedimentos")
+      .select("procedimento_id, nome")
+      .order("procedimento_id", { ascending: true })
+      .range(from, from + pageSize - 1);
+    if (error) throw error;
+    for (const p of data ?? []) map.set(p.procedimento_id, p.nome);
+    if (!data || data.length < pageSize) break;
+  }
+  return map;
+}
+
 export async function fetchFinancialRows(f: DashboardFilters, limit = 20_000): Promise<FinancialRow[]> {
+
 
   const pageSize = 1_000;
   const all: FinancialRow[] = [];
