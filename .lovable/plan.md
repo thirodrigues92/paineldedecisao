@@ -1,34 +1,39 @@
-## Objetivo
+## O que está acontecendo
 
-Adicionar na Visão Executiva um gráfico de **faturamento por categoria de serviço** — Consultas, Exames laboratoriais, Imagem/Ultrassom, Cardiologia diagnóstica, Aplicações injetáveis, Ocupacional/Atestados, Outros — mostrando quanto cada uma faturou e quanto representa do total.
+Os dois números vêm de **fontes diferentes**, por isso nunca batem:
 
-## Por que não usar a categoria financeira
+| Bloco | Fonte | Total no banco |
+|---|---|---|
+| KPI "Receita prevista" / Faturamento por categoria | `financeiro_lancamentos` (faturas Feegow), tipo = receita | **R$ 2.033.733** (5.704 lançamentos) |
+| Faturamento por tipo de serviço | `agendamentos.valor_total` (agenda precificada) | **R$ 1.092.113** (5.079 agendamentos com valor) |
 
-Já verifiquei no banco: 5.610 das receitas (R$ 1,39 mi) estão como "Não classificado" porque a Feegow não devolve a categoria nessas faturas. Ela não serve para responder "quanto consultas faturaram".
+Ou seja, faltam ~R$ 941 mil (46%) no gráfico por serviço, porque:
+- só 5.079 dos 15.089 agendamentos têm `valor_total` preenchido pela Feegow;
+- receitas que não nascem de agendamento (balcão, avulsos, parcelas, pacotes) não existem na agenda;
+- o gráfico ignora linhas com valor 0.
 
-A fonte que responde é o **procedimento do agendamento** (`agendamentos.valor_total` + `procedimentos.nome`), que já está na base e cobre R$ 1,09 mi em 15.089 agendamentos. Confirmei também:
-- 5.926 agendamentos são de consulta, 3.408 de imagem/ultrassom, 154 de aplicações injetáveis;
-- **nenhum procedimento cadastrado tem "vacina" no nome** — se a clínica aplica vacinas, elas estão registradas com outro nome ou fora da agenda, então essa fatia não vai aparecer enquanto não houver esse cadastro;
-- 10.010 agendamentos estão com valor zero (não precificados na agenda), então o gráfico mostra o faturamento capturado na agenda, não o caixa total — isso ficará escrito no card.
+Não é bug de cálculo — é ausência do vínculo entre a fatura e o procedimento faturado.
 
-## O que será construído
+## Correção proposta
 
-1. **Classificador de categorias de serviço** (novo arquivo em `src/lib/`), no mesmo estilo do que já existe para aplicações injetáveis: regras por nome do procedimento devolvendo a categoria. Regras iniciais:
-   - Consultas: nome começa com/contém "consulta", "retorno"
-   - Exames laboratoriais: hemograma, glicose, colesterol, TSH, urina, cultura, sorologia, toxicológico laboratorial etc.
-   - Imagem e ultrassom: USG, ultrassom, ecocardiograma, doppler, raio-x, densitometria
-   - Cardiologia diagnóstica: ECG, holter, MAPA, teste ergométrico
-   - Aplicações injetáveis e vacinas: reaproveita as regras já existentes de injetáveis + termos de vacina/imunização
-   - Procedimentos e cirurgias: biópsia, cauterização, sutura, exérese, infiltração
-   - Ocupacional e atestados: ASO, admissional, demissional, toxicológico CNH, laudo
-   - Outros: o que não casar
-2. **Gráfico novo na Visão Executiva**: barras horizontais por categoria, ordenadas por faturamento, com valor em reais, % do total e nº de atendimentos no tooltip; a categoria de menor faturamento destacada, no mesmo padrão do gráfico de categoria financeira que já está lá.
-3. **Card lateral "Composição do faturamento"**: lista compacta categoria → valor → % com barra de participação, para leitura rápida de quem representa quanto.
-4. Ambos respeitam os filtros globais (período, unidade, especialidade, profissional, convênio) e reaproveitam os dados já carregados pela tela — sem consulta extra ao banco e sem migração.
-5. Nota no rodapé do card informando a cobertura: quantos agendamentos do período têm valor lançado, para o gestor saber que a base é a agenda precificada.
+**1. Trazer o procedimento de cada fatura (raiz do problema)**
+O endpoint `/financial/list-invoice` já retorna `itens` na resposta, mas a sincronização hoje descarta esse bloco. Vou:
+- adicionar as colunas `procedimento_id` e `descricao_item` em `financeiro_lancamentos`;
+- gravar o item da fatura na Edge Function `sync-feegow` (modo `financial`);
+- rodar re-sync do período para preencher o histórico.
+
+**2. Recalcular "Faturamento por tipo de serviço" com receita real**
+O gráfico passa a somar `financeiro_lancamentos` (tipo = receita), classificando pelo nome do procedimento do item; o que continuar sem item vira "Não identificado", explicitamente visível.
+Resultado: soma do gráfico = KPI de receita, sempre.
+
+**3. Card de conciliação**
+Abaixo do gráfico, uma linha curta: `Receita total R$ X · classificada R$ Y (Z%) · não identificada R$ W`, para o número nunca mais parecer "faltando" sem explicação.
+
+**4. Fallback se a Feegow não devolver itens**
+Se após o re-sync a maioria das faturas vier sem item, mantenho o gráfico na receita real e faço o rateio pelo procedimento do agendamento do mesmo paciente/dia quando houver correspondência; o restante fica em "Não identificado" com a nota de cobertura.
 
 ## Detalhes técnicos
-
-- Edição em `src/routes/_authenticated/dashboard.tsx`, reutilizando `fetchDashboardAppointments` (já traz `procedimentos.nome` e `valor_total`).
-- Novo `src/lib/service-categories.ts` com a função de classificação, exportada para reuso em outras telas depois.
-- Cores via `var(--chart-1..5)` e `chart-theme.ts`, como nos demais gráficos.
+- Migração: `ALTER TABLE public.financeiro_lancamentos ADD COLUMN procedimento_id integer, ADD COLUMN descricao_item text;` (grants/RLS já existentes permanecem).
+- `supabase/functions/sync-feegow/index.ts`: mapear `invoice.itens[]` para as linhas de detalhe (fallback para `detalhes[].procedimento_id`).
+- `src/lib/dashboard-data.ts`: incluir os novos campos no select financeiro.
+- `src/routes/_authenticated/dashboard.tsx`: trocar a base do gráfico de serviço e adicionar a linha de conciliação; `src/lib/service-categories.ts` continua sendo o classificador.
