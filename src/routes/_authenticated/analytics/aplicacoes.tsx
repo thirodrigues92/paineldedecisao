@@ -531,7 +531,7 @@ function AplicacoesPage() {
               </SelectContent>
             </Select>
           </CardHeader>
-          <CardContent className="h-96">
+          <CardContent className="h-[22rem]">
             {loading || regioesQ.isLoading ? <Skeleton className="h-full w-full" /> : regiaoPorTipo.dados.length === 0 ? (
               <Vazio>Sem bairro cadastrado nos pacientes destas aplicações.</Vazio>
             ) : (
