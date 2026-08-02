@@ -247,6 +247,7 @@ function DashboardPage() {
 }
 
 function EmptyState() {
+
   return (
     <div className="h-full w-full grid place-items-center text-sm text-muted-foreground">
       Sem dados para os filtros selecionados.
