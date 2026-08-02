@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useFilters } from "@/lib/filters-context";
-import { dashboardQueryKey, fetchDashboardAppointments, fetchFinancialRows } from "@/lib/dashboard-data";
+import { dashboardQueryKey, fetchDashboardAppointments, fetchFinancialRows, fetchProcedimentoNomes } from "@/lib/dashboard-data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { brl, num, pct } from "@/lib/format";
 import { Calendar, DollarSign, UserPlus, UserX, Activity, TrendingUp } from "lucide-react";
@@ -35,14 +35,16 @@ function DashboardPage() {
   const query = useQuery({
     queryKey: dashboardQueryKey("dashboard", f),
     queryFn: async () => {
-      const [appointments, financial] = await Promise.all([
+      const [appointments, financial, procNomes] = await Promise.all([
         fetchDashboardAppointments(f, 30_000),
         fetchFinancialRows(f, 20_000),
+        fetchProcedimentoNomes(),
       ]);
 
-      return { appointments, financial };
+      return { appointments, financial, procNomes };
     },
   });
+
 
 
   const rows = query.data?.appointments ?? [];
@@ -101,13 +103,20 @@ function DashboardPage() {
   }));
   const menores = [...categorias].slice(-3).reverse();
 
-  // Faturamento por categoria de serviço (derivado do procedimento do agendamento)
+  // Faturamento por tipo de serviço — sobre a RECEITA REAL (financeiro_lancamentos),
+  // para bater com o KPI de receita. O procedimento vem do item da fatura; quando a
+  // Feegow não envia o item, cai em "Não identificado".
+  const procNomes = query.data?.procNomes ?? new Map<number, string>();
+
+  const receitas = financialRows.filter((r) => r.tipo === "receita");
   const byServico = new Map<string, { nome: string; valor: number; qtd: number }>();
-  let comValor = 0;
-  for (const r of rows as any[]) {
-    const valor = Number(r.valor_total || 0);
-    if (valor > 0) comValor += 1;
-    const nome = categoriaServico(r.procedimentos?.nome);
+  let classificado = 0;
+  for (const r of receitas) {
+    const valor = Number(r.valor || 0);
+    const nomeProc =
+      (r.procedimento_id ? procNomes.get(Number(r.procedimento_id)) : null) ?? r.descricao_item ?? null;
+    const nome = nomeProc ? categoriaServico(nomeProc) : "Não identificado";
+    if (nomeProc) classificado += valor;
     const cur = byServico.get(nome) ?? { nome, valor: 0, qtd: 0 };
     cur.valor += valor;
     cur.qtd += 1;
@@ -116,6 +125,9 @@ function DashboardPage() {
   const servicosBase = Array.from(byServico.values()).filter((c) => c.valor > 0).sort((a, b) => b.valor - a.valor);
   const totalServicos = servicosBase.reduce((s, c) => s + c.valor, 0);
   const servicos = servicosBase.map((c) => ({ ...c, share: totalServicos > 0 ? (c.valor * 100) / totalServicos : 0 }));
+  const naoIdentificado = Math.max(receitaPrev - classificado, 0);
+  const coberturaServico = receitaPrev > 0 ? (classificado * 100) / receitaPrev : 0;
+
 
 
 
@@ -250,8 +262,10 @@ function DashboardPage() {
           <CardHeader>
             <CardTitle>Faturamento por tipo de serviço</CardTitle>
             <p className="text-xs text-muted-foreground">
-              Consultas, exames, imagem, aplicações e vacinas — classificados pelo procedimento do agendamento.
+              Soma a receita real do período ({brl(receitaPrev)}) — classificada {brl(classificado)} ({pct(coberturaServico)})
+              {naoIdentificado > 0 ? ` · não identificada ${brl(naoIdentificado)}` : ""}.
             </p>
+
           </CardHeader>
           <CardContent className="h-96">
             {query.isLoading ? <Skeleton className="h-full w-full" /> : servicos.length === 0 ? <EmptyState /> : (
@@ -297,12 +311,16 @@ function DashboardPage() {
                         style={{ width: `${Math.max(c.share, 1)}%`, background: `var(--chart-${(i % 5) + 1})` }}
                       />
                     </div>
-                    <div className="text-xs text-muted-foreground">{pct(c.share)} do total · {num(c.qtd)} atendimentos</div>
+                    <div className="text-xs text-muted-foreground">{pct(c.share)} do total · {num(c.qtd)} lançamentos</div>
                   </div>
                 ))}
                 <p className="pt-2 text-[11px] leading-snug text-muted-foreground border-t border-border">
-                  Base: {num(comValor)} de {num(total)} agendamentos do período têm valor lançado na agenda.
+                  Total confere com a receita do período: {brl(totalServicos)} de {brl(receitaPrev)}.
+                  {naoIdentificado > 0
+                    ? ` ${brl(naoIdentificado)} ainda sem procedimento na fatura (Feegow) — rode a sincronização financeira para reduzir.`
+                    : ""}
                 </p>
+
               </>
             )}
           </CardContent>
