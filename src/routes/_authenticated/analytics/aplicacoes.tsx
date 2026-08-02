@@ -517,6 +517,45 @@ function AplicacoesPage() {
           </CardContent>
         </Card>
 
+        <Card className="lg:col-span-2">
+          <CardHeader className="flex-row items-start justify-between gap-4 space-y-0">
+            <div>
+              <CardTitle>Qual aplicação em cada região</CardTitle>
+              <p className="text-xs text-muted-foreground">Top 10 bairros — barras empilhadas pelas 5 aplicações mais relevantes.</p>
+            </div>
+            <Select value={metricaRegiao} onValueChange={(v) => setMetricaRegiao(v as "volume" | "receita")}>
+              <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="volume">Por volume</SelectItem>
+                <SelectItem value="receita">Por receita</SelectItem>
+              </SelectContent>
+            </Select>
+          </CardHeader>
+          <CardContent className="h-96">
+            {loading || regioesQ.isLoading ? <Skeleton className="h-full w-full" /> : regiaoPorTipo.dados.length === 0 ? (
+              <Vazio>Sem bairro cadastrado nos pacientes destas aplicações.</Vazio>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={regiaoPorTipo.dados} margin={{ bottom: 60 }}>
+                  <CartesianGrid {...gridProps} />
+                  <XAxis {...axisProps} dataKey="bairro" interval={0} angle={-35} textAnchor="end" height={70} />
+                  <YAxis {...axisProps} tickFormatter={(v) => (metricaRegiao === "receita" ? compactBrl(Number(v)) : num(Number(v)))} width={70} />
+                  <Tooltip
+                    {...tooltipProps}
+                    formatter={(v: number, n: string) => [metricaRegiao === "receita" ? brl(Number(v)) : num(Number(v)), n]}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  {regiaoPorTipo.series.map((s, i) => (
+                    <Bar key={s} dataKey={s} stackId="a" fill={`var(--chart-${(i % 5) + 1})`} />
+                  ))}
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+
+
+
         <Card>
           <CardHeader>
             <CardTitle>No-show: aplicações vs. demais</CardTitle>
