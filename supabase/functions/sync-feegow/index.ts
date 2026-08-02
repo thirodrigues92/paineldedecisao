@@ -546,7 +546,7 @@ async function syncPacientes(supabase: any, limit: number) {
             cep: cep.length === 8 ? cep : null,
             bairro: cleanText(p.bairro),
             cidade: cleanText(p.cidade),
-            estado: cleanText(p.estado),
+            estado: String(p.estado ?? "").trim().toUpperCase() || null,
             convenio_id: Number(p.convenio_id) > 0 ? Number(p.convenio_id) : null,
             origem_id: Number(p.origem_id) > 0 ? Number(p.origem_id) : null,
             updated_at: new Date().toISOString(),
