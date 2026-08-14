@@ -92,6 +92,9 @@ function RelatorioAtendimentosPage() {
 
       const linhas: Linha[] = agendamentos.map((a) => {
         const c = a.paciente_id ? contatos.get(Number(a.paciente_id)) : undefined;
+        const real = Number(a.valor_total || 0);
+        const est = Number(a.valor_estimado || 0);
+        const usaEstimado = real <= 0 && est > 0;
         return {
           agendamento_id: Number(a.agendamento_id),
           celular: c?.celular ?? "—",
