@@ -31,8 +31,10 @@ const navAnalytics = [
 
 
 const navFooter = [
+  { title: "Auditoria de Dados", url: "/auditoria", icon: ShieldCheck },
   { title: "Configurações", url: "/config", icon: Settings },
 ];
+
 
 export function AppSidebar() {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
