@@ -1078,19 +1078,42 @@ Deno.serve(async (req) => {
       });
       const topo = (r: any) => parseCurrency(r.valor_total ?? r.valor_total_agendamento ?? r.total_value ?? r.valor ?? 0);
       const zerados = rows.filter((r: any) => topo(r) === 0);
+      // Candidatos de total do dia, para bater com o relatório da Feegow.
+      let candPrincipal = 0;      // apenas r.valor (procedimento principal)
+      let candPrincipalTab = 0;   // r.valor, com fallback na tabela de preço
+      let candSomaProcs = 0;      // soma de todos os procedimentos, com tabela
+      let candTopo = 0;           // valor_total_agendamento
+      for (const r of rows as any[]) {
+        const v = await calcularValorAgendamento(r);
+        candSomaProcs += v.valor;
+        candTopo += parseCurrency(r.valor_total_agendamento ?? 0);
+        const principal = parseCurrency(r.valor ?? 0);
+        candPrincipal += principal;
+        if (principal > 0) candPrincipalTab += principal;
+        else {
+          const tab = Number(r.tabela_id ?? 0) || 0;
+          const pid = Number(r.procedimento_id ?? 0) || 0;
+          candPrincipalTab += tab && pid ? ((await getTabelaPrecos(tab)).get(pid) ?? 0) : 0;
+        }
+      }
       extra = {
         ...extra,
         dia,
         totalAgendamentos: rows.length,
         comValorTopo: rows.length - zerados.length,
         semValorTopo: zerados.length,
-        somaTopo: rows.reduce((s: number, r: any) => s + topo(r), 0),
+        candidatos: {
+          somaProcedimentosComTabela: candSomaProcs,
+          valorTotalAgendamento: candTopo,
+          procedimentoPrincipal: candPrincipal,
+          procedimentoPrincipalComTabela: candPrincipalTab,
+        },
         chaves: [...new Set(rows.flatMap((r: any) => Object.keys(r ?? {})))],
         chavesProcedimentos: [...new Set(rows.flatMap((r: any) =>
           asArray(r.procedimentos ?? r.procedures ?? r.itens ?? r.items ?? []).flatMap((i: any) => Object.keys(i ?? {}))))],
-        amostrasZeradas: zerados.slice(0, 3).map((r: any) => JSON.stringify(r).slice(0, 2500)),
-        amostrasComValor: rows.filter((r: any) => topo(r) > 0).slice(0, 2).map((r: any) => JSON.stringify(r).slice(0, 2000)),
+        amostrasZeradas: zerados.slice(0, 1).map((r: any) => JSON.stringify(r).slice(0, 1200)),
       };
+
     }
 
     if (mode === "probe-precos") {
