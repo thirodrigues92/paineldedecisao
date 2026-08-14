@@ -303,6 +303,7 @@ export type Database = {
           celular: string | null
           cep: string | null
           cidade: string | null
+          contato_sincronizado_em: string | null
           convenio_id: number | null
           created_at: string
           estado: string | null
@@ -321,6 +322,7 @@ export type Database = {
           celular?: string | null
           cep?: string | null
           cidade?: string | null
+          contato_sincronizado_em?: string | null
           convenio_id?: number | null
           created_at?: string
           estado?: string | null
@@ -339,6 +341,7 @@ export type Database = {
           celular?: string | null
           cep?: string | null
           cidade?: string | null
+          contato_sincronizado_em?: string | null
           convenio_id?: number | null
           created_at?: string
           estado?: string | null
