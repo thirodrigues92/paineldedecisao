@@ -42,6 +42,7 @@ export type Database = {
           telemedicina: boolean
           unidade_id: number | null
           updated_at: string
+          valor_estimado: number
           valor_origem: string | null
           valor_total: number
         }
@@ -72,6 +73,7 @@ export type Database = {
           telemedicina?: boolean
           unidade_id?: number | null
           updated_at?: string
+          valor_estimado?: number
           valor_origem?: string | null
           valor_total?: number
         }
@@ -102,6 +104,7 @@ export type Database = {
           telemedicina?: boolean
           unidade_id?: number | null
           updated_at?: string
+          valor_estimado?: number
           valor_origem?: string | null
           valor_total?: number
         }
