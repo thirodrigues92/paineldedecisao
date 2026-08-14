@@ -149,15 +149,18 @@ function RelatorioAtendimentosPage() {
     setOrdem((o) => (o.key === key ? { key, dir: o.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" }));
 
   const exportarCsv = () => {
-    const cab = COLUNAS.map((c) => c.label).join(";");
+    const cab = [...COLUNAS.map((c) => c.label), "Origem do valor"].join(";");
     const corpo = linhas
       .map((l) =>
-        COLUNAS.map((c) => {
-          const v = l[c.key];
-          if (c.key === "data") return fmtData(l.data);
-          if (typeof v === "number") return v.toFixed(2).replace(".", ",");
-          return `"${String(v).replace(/"/g, '""')}"`;
-        }).join(";"),
+        [
+          ...COLUNAS.map((c) => {
+            const v = l[c.key];
+            if (c.key === "data") return fmtData(l.data);
+            if (typeof v === "number") return v.toFixed(2).replace(".", ",");
+            return `"${String(v).replace(/"/g, '""')}"`;
+          }),
+          l.estimado ? "estimado" : "confirmado",
+        ].join(";"),
       )
       .join("\n");
     const blob = new Blob([`\uFEFF${cab}\n${corpo}`], { type: "text/csv;charset=utf-8" });
