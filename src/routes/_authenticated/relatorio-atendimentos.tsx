@@ -109,14 +109,17 @@ function RelatorioAtendimentosPage() {
 
   const linhas = useMemo(() => {
     const termo = busca.trim().toLowerCase();
-    const base = termo
-      ? (query.data ?? []).filter((l) =>
-          [l.paciente, l.celular, l.procedimento, l.local, l.status, l.origem]
-            .join(" ")
-            .toLowerCase()
-            .includes(termo),
-        )
-      : (query.data ?? []);
+    let base = query.data ?? [];
+    if (termo) {
+      base = base.filter((l) =>
+        [l.paciente, l.celular, l.procedimento, l.local, l.status, l.origem]
+          .join(" ")
+          .toLowerCase()
+          .includes(termo),
+      );
+    }
+    if (filtroFaturado === "faturados") base = base.filter((l) => l.faturado > 0);
+    if (filtroFaturado === "nao") base = base.filter((l) => l.faturado <= 0);
     const dir = ordem.dir === "asc" ? 1 : -1;
     return [...base].sort((a, b) => {
       const va = a[ordem.key];
