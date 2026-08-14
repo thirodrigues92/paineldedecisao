@@ -198,16 +198,64 @@ async function syncSupport(supabase: any) {
       if (mapped.length) { await supabase.from("profissionais").upsert(mapped, { onConflict: "profissional_id" }); total += mapped.length; }
     } catch (e) { console.warn("profissionais", e); }
 
-    // Convênios
-    try {
-      const rows = await feegow("/insurance/list");
-      const mapped = asArray(rows).map((r) => ({
-        convenio_id: Number(r.id ?? r.insurance_id),
-        nome: String(r.name ?? r.nome ?? ""),
-        planos: r.plans ?? r.planos ?? [],
-      })).filter((r) => r.convenio_id);
-      if (mapped.length) { await supabase.from("convenios").upsert(mapped, { onConflict: "convenio_id" }); total += mapped.length; }
-    } catch (e) { console.warn("convenios", e); }
+    // Convênios — a Feegow expõe esse catálogo em caminhos diferentes conforme a conta.
+    // Tenta em cascata e registra em sync_logs qual respondeu (ou todos os erros).
+    {
+      const candidatos = [
+        "/insurance/list",
+        "/insurance/list-insurance",
+        "/insurance/list-insurance-plans",
+        "/insurance/search",
+      ];
+      const convId = await logStart(supabase, "convenios");
+      const falhas: string[] = [];
+      let gravados = 0;
+      let usado = "";
+      for (const path of candidatos) {
+        try {
+          const rows = await feegow(path);
+          const mapped = asArray(rows).map((r: any) => ({
+            convenio_id: Number(r.id ?? r.insurance_id ?? r.convenio_id),
+            nome: String(r.name ?? r.nome ?? r.insurance_name ?? r.descricao ?? "").trim() || `Convênio ${r.id}`,
+            planos: r.plans ?? r.planos ?? [],
+          })).filter((r: any) => Number.isFinite(r.convenio_id) && r.convenio_id > 0);
+          const seenConv = new Set<number>();
+          const uniq = mapped.filter((r: any) => !seenConv.has(r.convenio_id) && seenConv.add(r.convenio_id));
+          if (!uniq.length) { falhas.push(`${path}: 0 registros`); continue; }
+          const { error } = await supabase.from("convenios").upsert(uniq, { onConflict: "convenio_id" });
+          if (error) { falhas.push(`${path}: ${error.message}`); continue; }
+          gravados = uniq.length;
+          usado = path;
+          total += gravados;
+          break;
+        } catch (e) {
+          falhas.push(`${path}: ${String(e).slice(0, 200)}`);
+        }
+      }
+      // Fallback: garante que todo convenio_id visto na agenda exista no catálogo,
+      // para os filtros e gráficos não ficarem sem rótulo.
+      try {
+        const agendaConv = await selectAllColumn(
+          supabase, "agendamentos", "convenio_id", (q: any) => q.not("convenio_id", "is", null),
+        );
+        const { data: existentes } = await supabase.from("convenios").select("convenio_id");
+        const jaTem = new Set((existentes ?? []).map((r: any) => Number(r.convenio_id)));
+        const faltando = [...new Set(agendaConv.map((r: any) => Number(r.convenio_id)))]
+          .filter((cid) => Number.isFinite(cid) && cid > 0 && !jaTem.has(cid))
+          .map((cid) => ({ convenio_id: cid, nome: `Convênio ${cid}`, planos: [] }));
+        if (faltando.length) {
+          await supabase.from("convenios").upsert(faltando, { onConflict: "convenio_id" });
+          gravados += faltando.length;
+        }
+      } catch (e) {
+        falhas.push(`fallback agenda: ${String(e).slice(0, 200)}`);
+      }
+      await logEnd(
+        supabase, convId, gravados > 0, gravados,
+        gravados > 0 && !falhas.length ? undefined : `usado=${usado || "nenhum"} | ${falhas.join(" | ")}`,
+      );
+    }
+
 
     // Unidades — endpoint retorna { matriz: [...], unidades: [...] }
     try {
