@@ -106,7 +106,8 @@ function RelatorioAtendimentosPage() {
           paciente: c?.nome ?? (a.paciente_id ? `Paciente #${a.paciente_id}` : "—"),
           procedimento: a.procedimentos?.nome ?? "—",
           status: a.status_agendamento?.descricao ?? a.status_agendamento?.categoria ?? "—",
-          valor: Number(a.valor_total || 0),
+          valor: usaEstimado ? est : real,
+          estimado: usaEstimado,
         };
       });
       return linhas;
