@@ -1113,6 +1113,27 @@ Deno.serve(async (req) => {
           asArray(r.procedimentos ?? r.procedures ?? r.itens ?? r.items ?? []).flatMap((i: any) => Object.keys(i ?? {}))))],
         amostrasZeradas: zerados.slice(0, 1).map((r: any) => JSON.stringify(r).slice(0, 1200)),
       };
+    if (mode === "probe-tabelas") {
+      // Compara o preço do mesmo procedimento em tabelas diferentes: o parâmetro é respeitado?
+      const pid = Number(url.searchParams.get("procedimento") ?? 377);
+      const out: Record<string, unknown> = {};
+      for (const t of ["1", "2", "13", "14", "99"]) {
+        try {
+          const rows = asArray(await feegow("/procedures/list", { tabela_id: t }));
+          const alvo = rows.find((r: any) => Number(r.procedimento_id ?? r.id) === pid);
+          out[`tabela_id=${t}`] = { registros: rows.length, valorProcedimento: alvo?.valor ?? null };
+        } catch (e) { out[`tabela_id=${t}`] = String(e).slice(0, 160); }
+      }
+      for (const params of [{ convenio_id: "2" }, { convenio_id: "2", tabela_id: "13" }, { plano_id: "0", convenio_id: "2" }]) {
+        try {
+          const rows = asArray(await feegow("/procedures/list", params as Record<string, string>));
+          const alvo = rows.find((r: any) => Number(r.procedimento_id ?? r.id) === pid);
+          out[JSON.stringify(params)] = { registros: rows.length, valorProcedimento: alvo?.valor ?? null };
+        } catch (e) { out[JSON.stringify(params)] = String(e).slice(0, 160); }
+      }
+      extra = { ...extra, procedimento: pid, probeTabelas: out };
+    }
+
 
     }
 
