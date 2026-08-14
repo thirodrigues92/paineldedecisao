@@ -202,3 +202,43 @@ export async function fetchDashboardAppointments(
     procedimentos: procMap.get(r.procedimento_id) ?? null,
   }));
 }
+export type PacienteContato = { nome: string | null; celular: string | null; origem_id: number | null };
+
+/** Mapa paciente_id → nome/celular/origem, usado no relatório de atendimentos. */
+export async function fetchPacientesContato(limit = 40_000): Promise<Map<number, PacienteContato>> {
+  const map = new Map<number, PacienteContato>();
+  const pageSize = 1_000;
+  for (let from = 0; from < limit; from += pageSize) {
+    const { data, error } = await supabase
+      .from("pacientes")
+      .select("paciente_id, nome, celular, origem_id")
+      .order("paciente_id", { ascending: true })
+      .range(from, from + pageSize - 1);
+    if (error) throw error;
+    for (const p of data ?? []) {
+      map.set(p.paciente_id, { nome: p.nome, celular: p.celular, origem_id: p.origem_id });
+    }
+    if (!data || data.length < pageSize) break;
+  }
+  return map;
+}
+
+/** Mapa agendamento_id → valor já faturado no financeiro (receitas vinculadas). */
+export async function fetchFaturadoPorAgendamento(ids: number[]): Promise<Map<number, number>> {
+  const map = new Map<number, number>();
+  const chunk = 400;
+  for (let i = 0; i < ids.length; i += chunk) {
+    const slice = ids.slice(i, i + chunk);
+    if (!slice.length) continue;
+    const { data, error } = await supabase
+      .from("financeiro_lancamentos")
+      .select("agendamento_id, valor, tipo")
+      .in("agendamento_id", slice);
+    if (error) throw error;
+    for (const r of data ?? []) {
+      if (r.tipo !== "receita" || !r.agendamento_id) continue;
+      map.set(Number(r.agendamento_id), (map.get(Number(r.agendamento_id)) ?? 0) + Number(r.valor || 0));
+    }
+  }
+  return map;
+}
