@@ -654,10 +654,17 @@ async function syncFinancial(supabase: any, from: Date, to: Date) {
     } catch (e) {
       console.warn("enriquecer pela agenda", String(e).slice(0, 200));
     }
+    let porCategoria = 0;
+    try {
+      porCategoria = await mapearConvenioPorCategoria(supabase, mapped);
+    } catch (e) {
+      console.warn("convenio por categoria", String(e).slice(0, 200));
+    }
     diagnosticoReceb = [
       diagnosticoReceb,
-      `vinculo agenda: ${vinculo.comVinculo} com / ${vinculo.semVinculo} sem, convênio herdado ${vinculo.convenioAplicado}`,
+      `vinculo agenda: ${vinculo.comVinculo} com / ${vinculo.semVinculo} sem, convênio herdado ${vinculo.convenioAplicado}, por categoria ${porCategoria}`,
     ].filter(Boolean).join(" || ");
+
 
 
 
