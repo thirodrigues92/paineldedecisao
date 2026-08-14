@@ -1,46 +1,36 @@
-## Diagnóstico (queries já rodadas no banco)
+# Auditoria de Dados — tela `/auditoria`
 
-O gráfico "Faturamento por tipo de serviço" **não usa especialidade** — ele usa a receita real de `financeiro_lancamentos` classificada pelo **nome do procedimento do item da fatura**. Por isso o problema não está nas especialidades (só 41 agendamentos sem especialidade, R$ 4,8k — irrelevante).
+Nova tela (menu "Auditoria de Dados") que mostra, sem interpretação, a origem de cada número: contagens brutas, nulos críticos, histórico de sync e conciliação de receita.
 
-O "Outros" (~R$ 1,08 mi de R$ 2,03 mi de receita) é composto por **três coisas bem distintas**:
+## Números atuais já confirmados no banco
+- agendamentos: 16.022 | financeiro_lancamentos: 6.515 | pacientes: 6.188
+- procedimentos: 887 | profissionais: 32 | unidades: 2 | sync_logs: 77 execuções
+- financeiro_lancamentos sem `procedimento_id`: 1.701
 
-| Bloco | Lançamentos | Receita | Causa |
-|---|---|---|---|
-| Faturas em lote de convênio (`Lote(s): 2501…2529`) | 66 | R$ 541,8k | Fatura agregada, sem procedimento — 1 linha por lote mensal |
-| Sem nenhum detalhe (sem `procedimento_id` e sem descrição) | 816 | R$ 220,1k | Feegow não devolveu o item da fatura |
-| Nomes reais que as regras atuais não reconhecem | 733 | R$ 320,6k | Falta de regra de classificação (não é problema de dados) |
+## Abas da tela
 
-Exemplos do terceiro bloco (os maiores): `Faturamento Autogestão` R$ 79,5k, exames de laboratório com sigla (`Shbg`, `Dehidrotestosterona Dht`, `Testosterona Livre`, `Dimero D`, `Cortisol Basal`, `Anti Ccp`, `Zinco`, `Paratormônio`, `Lipidograma`, `Sangue Oculto`, `Ca-15/3`), protocolos injetáveis (`PROTOCOLO PARA ANSIEDADE E DEPRESSÃO - IM`, `PROTOCOLO ARTICULAÇÕES`, `PROTOCOLO DETOX`), estética/derma (`INTRADERMOTERAPIA CAPILAR`, `TOXINA BOTULÍNICA`, `CONOPLASTIA`), contracepção (`MIRENA / KYLEENA`, `IMPLANOM`), diagnósticos (`POLISSONOGRAFIA`, `MAPEAMENTO DE RETINA`, `MICROSCOPIA`, `RISCO CIRÚRGICO`, `POOL COGNITIVO-MEMORIA`, `BIOIMPEDÂNCIA`).
+**1. Status de Sync**
+Últimas 10 linhas de `sync_logs`: endpoint, início, fim, duração, registros, sucesso/erro (mensagem completa). Além disso, última sync bem-sucedida por endpoint.
 
-**Conclusão:** ~30% do "Outros" é falta de regra (fácil de resolver), ~50% é faturamento em lote de convênio (é legítimo, mas precisa de rótulo próprio) e ~20% é dado incompleto vindo da Feegow.
+**2. Qualidade de Dados**
+Uma linha por tabela (agendamentos, financeiro_lancamentos, procedimentos, profissionais, unidades, pacientes, ceps/geo, injetáveis derivados) com:
+- total de registros
+- % e contagem de NULL por campo crítico (ex.: agendamentos: status_id, procedimento_id, profissional_id, unidade_id, convenio_id, paciente_id, valor_total=0, duracao_min; financeiro: procedimento_id, descricao_item, categoria, data_pagamento, unidade_id; pacientes: cep, bairro, latitude; procedimentos: nome vazio)
+- % de completude geral
+- órfãos: registros cujo FK aponta para id inexistente na tabela pai (agendamentos→profissional/unidade/especialidade/procedimento/paciente/status; financeiro→procedimento/unidade)
 
-## O que fazer
+**3. Rastreamento de Receita**
+- Receita total do BD (`financeiro_lancamentos.tipo='receita'`) no período dos filtros globais
+- Quebra por bucket de classificação de serviço (mesma função usada na Visão Executiva), com contagem e valor de "Outros serviços", "Faturamento em lote (convênio)" e "Sem detalhamento da Feegow"
+- Soma de `valor_total` dos agendamentos no mesmo período, para comparação agenda vs financeiro (delta absoluto e %)
+- Verificação de tipo: valores lidos como string vs number, quantidade de valores não numéricos/negativos/zerados
 
-### 1. Separar o "Outros" em três rótulos honestos
-Em vez de um balde único, o gráfico passa a mostrar:
-- **Faturamento em lote (convênio)** — as faturas `Lote(s):` e `Faturamento Autogestão`/`Repasse`
-- **Sem detalhamento da Feegow** — lançamentos sem item nem procedimento
-- **Outros serviços** — só o que sobrar de verdade
-
-### 2. Ampliar as regras de classificação
-Atualizar `src/lib/service-categories.ts` para cobrir os nomes encontrados:
-- Laboratório: siglas e hormônios (shbg, dht, testosterona, cortisol, dímero d, zinco, anti-ccp, anti-trab, paratormônio, androstenediona, lipidograma, sangue oculto, complemento, ca-15/3, sexagem fetal, microscopia)
-- Cardiologia/diagnóstico: polissonografia, risco cirúrgico, mapeamento de retina, bioimpedância, pool cognitivo, patch test
-- Aplicações e vacinas: `PROTOCOLO … IM/EV`, viscosuplementação, intradermoterapia, toxina botulínica
-- Procedimentos e cirurgias: conoplastia, Mirena/Kyleena, Implanon, DIU
-Isso tira ~R$ 200k do "Outros" e joga nas categorias corretas.
-
-### 3. Drill-down: clicar na categoria e ver o que tem dentro
-Ao clicar numa barra do gráfico, abre um painel lateral com os itens que compõem aquela categoria (nome, quantidade, receita, ticket médio), ordenados por receita. Resolve a dúvida "o que tem em Outros?" de forma permanente, sem precisar de SQL.
-
-### 4. Nota de cobertura no rodapé
-Mostrar explicitamente quanto da receita está classificada por procedimento, quanto veio em lote de convênio e quanto a Feegow não detalhou.
+**4. Log de Todas as Tabelas**
+Tabela única com todas as métricas por tabela + botão "Copiar JSON" e "Baixar JSON" com o payload estruturado completo (tabela → total, nulos por campo, órfãos, última sync, registros da última sync, fonte da consulta usada).
 
 ## Detalhes técnicos
-
-- `src/lib/service-categories.ts`: novas regex + duas categorias novas (`Faturamento em lote`, `Sem detalhamento`), mantendo a assinatura `categoriaServico(nome)` e adicionando um caminho que também considera lançamento sem nome.
-- `src/routes/_authenticated/dashboard.tsx`: agregação por categoria passa a guardar também a lista de itens (nome → valor/qtd) para o drill-down; painel usa `Sheet` do shadcn e o tema de cores central (`src/lib/chart-theme.ts`).
-- Sem migração de banco e sem mudança na Edge Function nesta etapa — a soma continua batendo com o KPI de Receita total.
-
-## Opcional (fase seguinte)
-Para abrir o que tem dentro das faturas em lote de convênio (R$ 541,8k), seria preciso chamar o endpoint de itens/vendas da Feegow por fatura na sincronização. Fica como etapa separada, se você quiser esse nível de detalhe.
+- Nova rota `src/routes/_authenticated/auditoria.tsx` + item na `AppSidebar`.
+- Nova função de servidor `src/lib/audit.functions.ts` com `.middleware([requireSupabaseAuth])`, executando as contagens/nulos/órfãos via consultas agregadas (uma chamada, um JSON de retorno) — evita paginar dezenas de milhares de linhas no browser.
+- Para os agregados usarei RPC SQL nova `public.audit_snapshot()` (SECURITY DEFINER, `stable`, retorna `jsonb`) com GRANT EXECUTE para `authenticated`, chamada pela server function; assim todo número vem de um único SELECT auditável.
+- A aba de receita reutiliza `fetchFinancialRows` + `categoriaServico` já existentes, respeitando os filtros globais.
+- Nenhuma alteração nas telas atuais; apenas leitura.
