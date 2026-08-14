@@ -863,9 +863,21 @@ async function syncPacientes(supabase: any, limit: number, recarregar = false) {
           const ano = nasc ? Number(nasc.slice(0, 4)) : null;
           const cep = String(p.cep ?? "").replace(/\D/g, "");
           const sexoRaw = String(p.sexo ?? "").toLowerCase();
+          // celulares/telefones vêm como array com DDD solto e números incompletos.
+          const fones = [...asArray(p.celulares), ...asArray(p.telefones)]
+            .map((t: unknown) => String(t ?? "").replace(/\D/g, ""))
+            .filter((t: string) => t.length >= 10);
+          const celular = fones[0]
+            ? fones[0].length === 11
+              ? `(${fones[0].slice(0, 2)}) ${fones[0].slice(2, 7)}-${fones[0].slice(7)}`
+              : `(${fones[0].slice(0, 2)}) ${fones[0].slice(2, 6)}-${fones[0].slice(6)}`
+            : null;
           return {
             paciente_id: pid,
             nome: cleanText(p.nome ?? p.name ?? p.paciente ?? p.nome_completo ?? p.fullName),
+            celular,
+            contato_sincronizado_em: new Date().toISOString(),
+
 
             sexo: sexoRaw.startsWith("m") ? "M" : sexoRaw.startsWith("f") ? "F" : null,
             ano_nascimento: ano && ano > 1900 && ano <= new Date().getFullYear() ? ano : null,
