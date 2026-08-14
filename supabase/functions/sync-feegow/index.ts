@@ -862,6 +862,8 @@ async function syncPacientes(supabase: any, limit: number) {
           const sexoRaw = String(p.sexo ?? "").toLowerCase();
           return {
             paciente_id: pid,
+            nome: cleanText(p.nome ?? p.name ?? p.paciente ?? p.nome_completo ?? p.fullName),
+
             sexo: sexoRaw.startsWith("m") ? "M" : sexoRaw.startsWith("f") ? "F" : null,
             ano_nascimento: ano && ano > 1900 && ano <= new Date().getFullYear() ? ano : null,
             cep: cep.length === 8 ? cep : null,
