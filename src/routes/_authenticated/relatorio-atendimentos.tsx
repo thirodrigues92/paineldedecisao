@@ -170,7 +170,7 @@ function RelatorioAtendimentosPage() {
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-medium text-muted-foreground">Atendimentos</CardTitle>
@@ -179,7 +179,22 @@ function RelatorioAtendimentosPage() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-medium text-muted-foreground">Valor na agenda</CardTitle>
+            <CardTitle className="text-xs font-medium text-muted-foreground">Valor confirmado</CardTitle>
+          </CardHeader>
+          <CardContent className="text-2xl font-semibold">{brl(totalConfirmado)}</CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-medium text-muted-foreground">Valor estimado</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-semibold">{brl(totalEstimado)}</p>
+            <p className="text-xs text-muted-foreground">{num(qtdEstimado)} sem preço na API</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-medium text-muted-foreground">Total combinado</CardTitle>
           </CardHeader>
           <CardContent className="text-2xl font-semibold">{brl(totalValor)}</CardContent>
         </Card>
