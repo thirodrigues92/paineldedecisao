@@ -33,12 +33,17 @@ export type Database = {
           plano_id: number | null
           primeiro_agendamento: boolean
           procedimento_id: number | null
+          procedimentos_detalhe: Json
           profissional_id: number | null
+          qtd_procedimentos: number
           retorno: boolean
           status_id: number | null
+          tabela_id: number | null
           telemedicina: boolean
           unidade_id: number | null
           updated_at: string
+          valor_estimado: number
+          valor_origem: string | null
           valor_total: number
         }
         Insert: {
@@ -59,12 +64,17 @@ export type Database = {
           plano_id?: number | null
           primeiro_agendamento?: boolean
           procedimento_id?: number | null
+          procedimentos_detalhe?: Json
           profissional_id?: number | null
+          qtd_procedimentos?: number
           retorno?: boolean
           status_id?: number | null
+          tabela_id?: number | null
           telemedicina?: boolean
           unidade_id?: number | null
           updated_at?: string
+          valor_estimado?: number
+          valor_origem?: string | null
           valor_total?: number
         }
         Update: {
@@ -85,12 +95,17 @@ export type Database = {
           plano_id?: number | null
           primeiro_agendamento?: boolean
           procedimento_id?: number | null
+          procedimentos_detalhe?: Json
           profissional_id?: number | null
+          qtd_procedimentos?: number
           retorno?: boolean
           status_id?: number | null
+          tabela_id?: number | null
           telemedicina?: boolean
           unidade_id?: number | null
           updated_at?: string
+          valor_estimado?: number
+          valor_origem?: string | null
           valor_total?: number
         }
         Relationships: []

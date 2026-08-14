@@ -309,7 +309,82 @@ async function syncSupport(supabase: any) {
   }
 }
 
+// ===== Tabela de preços de referência =====
+// /procedures/list devolve { procedimento_id, valor } com valor em CENTAVOS.
+// ATENÇÃO: a API IGNORA tabela_id/convenio_id — sempre devolve a MESMA tabela (particular).
+// Por isso esse preço nunca entra em valor_total; serve só como ESTIMATIVA (valor_estimado)
+// para os atendimentos de convênio, em que a Feegow não devolve preço nenhum.
+let precoRefCache: Map<number, number> | null = null;
+
+async function getTabelaPrecos(): Promise<Map<number, number>> {
+  if (precoRefCache) return precoRefCache;
+  const map = new Map<number, number>();
+  try {
+    const rows = asArray(await feegow("/procedures/list"));
+    for (const r of rows) {
+      const pid = Number(r.procedimento_id ?? r.id);
+      const bruto = r.valor ?? r.value;
+      if (!Number.isFinite(pid) || bruto == null) continue;
+      // Inteiro sem separador → centavos. Com "R$"/vírgula → parseCurrency.
+      const v = typeof bruto === "number" || /^-?\d+$/.test(String(bruto).trim())
+        ? Number(bruto) / 100
+        : parseCurrency(bruto);
+      if (Number.isFinite(v)) map.set(pid, v);
+    }
+  } catch (e) {
+    console.warn("tabela de preços de referência", e);
+  }
+  precoRefCache = map;
+  return map;
+}
+
+/**
+ * Valor do agendamento.
+ * valor    = somente o que a Feegow informou (soma dos procedimentos ou total do topo).
+ * estimado = referência da tabela particular para os itens sem preço (não entra na receita).
+ */
+async function calcularValorAgendamento(r: any): Promise<{
+  valor: number; estimado: number; origem: string; qtd: number; detalhe: Array<Record<string, unknown>>;
+}> {
+  const procs = asArray(r.procedimentos ?? r.procedures ?? r.itens ?? r.items ?? []);
+  const detalhe: Array<Record<string, unknown>> = [];
+  const topo = parseCurrency(r.valor_total_agendamento ?? r.valor_total ?? r.total_value ?? 0);
+  let soma = 0;
+  let estimado = 0;
+  let semPreco = 0;
+
+  for (const p of procs) {
+    const pid = Number(p.procedimentoID ?? p.procedimento_id ?? p.id ?? 0) || null;
+    const bruto = p.valor ?? p.value;
+    const v = bruto == null ? 0 : parseCurrency(bruto);
+    let ref = v;
+    let origem = "feegow";
+    if (v === 0) {
+      semPreco += 1;
+      origem = "sem_valor";
+      ref = pid ? ((await getTabelaPrecos()).get(pid) ?? 0) : 0;
+    }
+    soma += v;
+    estimado += ref;
+    detalhe.push({ procedimento_id: pid, valor: v, valor_referencia: ref, origem });
+  }
+
+  if (!procs.length) {
+    const t = topo || parseCurrency(r.valor ?? 0);
+    return { valor: t, estimado: t, origem: t > 0 ? "feegow_topo" : "sem_valor", qtd: 0, detalhe: [] };
+  }
+
+  if (soma === 0 && topo > 0) {
+    return { valor: topo, estimado: Math.max(topo, estimado), origem: "feegow_topo", qtd: procs.length, detalhe };
+  }
+
+  const origem = soma === 0 ? "sem_valor" : (semPreco > 0 ? "parcial" : "feegow");
+  return { valor: soma, estimado: Math.max(soma, estimado), origem, qtd: procs.length, detalhe };
+}
+
+
 async function syncAgendamentos(supabase: any, from: Date, to: Date) {
+
   // Chunks de 30 dias
   const chunks: Array<[Date, Date]> = [];
   let cur = new Date(from);
@@ -329,31 +404,46 @@ async function syncAgendamentos(supabase: any, from: Date, to: Date) {
         list_procedures: "1",
       });
       if (!rows.length) continue;
-      const mapped = rows.map((r: any) => ({
-        agendamento_id: Number(r.agendamento_id ?? r.id),
-        data: parseFeegowDate(r.data ?? r.date),
-        horario: r.horario ?? r.time ?? null,
-        paciente_id: r.paciente_id ? Number(r.paciente_id) : null,
-        profissional_id: r.profissional_id ? Number(r.profissional_id) : null,
-        especialidade_id: r.especialidade_id ? Number(r.especialidade_id) : null,
-        procedimento_id: r.procedimento_id ? Number(r.procedimento_id) : null,
-        status_id: r.status_id ? Number(r.status_id) : null,
-        unidade_id: r.unidade_id ? Number(r.unidade_id) : null,
-        local_id: r.local_id ? Number(r.local_id) : null,
-        canal_id: r.canal_id ? Number(r.canal_id) : null,
-        convenio_id: r.convenio_id ? Number(r.convenio_id) : null,
-        plano_id: r.plano_id ? Number(r.plano_id) : null,
-        valor_total: parseCurrency(r.valor_total ?? r.valor_total_agendamento ?? r.total_value ?? r.valor ?? 0),
-        telemedicina: Boolean(r.telemedicina),
-        encaixe: Boolean(r.encaixe),
-        retorno: Boolean(r.retorno),
-        primeiro_agendamento: Boolean(r.primeiro_agendamento ?? r.first_time),
-        agendado_em: r.agendado_em ?? null,
-        agendado_por: r.agendado_por ?? null,
-        notas: r.notas ?? r.observacoes ?? null,
-        // Duração: Feegow devolve 0 na maioria dos slots → cai no default de 30 min.
-        duracao_min: (() => { const d = Number(r.duracao ?? r.duration ?? 0); return d > 0 ? d : 30; })(),
-      })).filter((r: any) => r.agendamento_id && r.data);
+      const mapped: any[] = [];
+      for (const r of rows as any[]) {
+        const v = await calcularValorAgendamento(r);
+        mapped.push({
+          agendamento_id: Number(r.agendamento_id ?? r.id),
+          data: parseFeegowDate(r.data ?? r.date),
+          horario: r.horario ?? r.time ?? null,
+          paciente_id: r.paciente_id ? Number(r.paciente_id) : null,
+          profissional_id: r.profissional_id ? Number(r.profissional_id) : null,
+          especialidade_id: r.especialidade_id ? Number(r.especialidade_id) : null,
+          procedimento_id: r.procedimento_id ? Number(r.procedimento_id) : null,
+          status_id: r.status_id ? Number(r.status_id) : null,
+          unidade_id: r.unidade_id ? Number(r.unidade_id) : null,
+          local_id: r.local_id ? Number(r.local_id) : null,
+          canal_id: r.canal_id ? Number(r.canal_id) : null,
+          convenio_id: r.convenio_id ? Number(r.convenio_id) : null,
+          plano_id: r.plano_id ? Number(r.plano_id) : null,
+          tabela_id: r.tabela_id ? Number(r.tabela_id) : null,
+          valor_total: v.valor,
+          valor_estimado: v.estimado,
+
+          valor_origem: v.origem,
+          qtd_procedimentos: v.qtd,
+          procedimentos_detalhe: v.detalhe,
+          telemedicina: Boolean(r.telemedicina),
+          encaixe: Boolean(r.encaixe),
+          retorno: Boolean(r.retorno),
+          primeiro_agendamento: Boolean(r.primeiro_agendamento ?? r.first_time),
+          agendado_em: r.agendado_em ?? null,
+          agendado_por: r.agendado_por ?? null,
+          notas: r.notas ?? r.observacoes ?? null,
+          // Duração: Feegow devolve 0 na maioria dos slots → cai no default de 30 min.
+          duracao_min: (() => { const d = Number(r.duracao ?? r.duration ?? 0); return d > 0 ? d : 30; })(),
+        });
+      }
+      {
+        const validos = mapped.filter((r: any) => r.agendamento_id && r.data);
+        mapped.length = 0; mapped.push(...validos);
+      }
+
       // Dedupe por agendamento_id (evita "ON CONFLICT ... cannot affect row a second time")
       const seen = new Set<number>();
       const unique = mapped.filter((r: any) => {
@@ -990,6 +1080,94 @@ Deno.serve(async (req) => {
       };
 
     }
+    if (mode === "probe-appoint") {
+      // Diagnóstico bruto dos agendamentos de um dia: mostra o JSON cru dos que vêm com valor 0.
+      const dia = url.searchParams.get("data") ?? toFeegowDate(new Date());
+      const rows = await feegowPaginated("/appoints/search", {
+        data_start: dia, data_end: dia, list_procedures: "1",
+      });
+      const topo = (r: any) => parseCurrency(r.valor_total ?? r.valor_total_agendamento ?? r.total_value ?? r.valor ?? 0);
+      const zerados = rows.filter((r: any) => topo(r) === 0);
+      // Candidatos de total do dia, para conferir com o relatório da Feegow.
+      let candPrincipal = 0;   // apenas r.valor (procedimento principal)
+      let candReal = 0;        // soma dos procedimentos com preço informado
+      let candEstimado = 0;    // idem, completando os sem preço pela tabela de referência
+      let candTopo = 0;        // valor_total_agendamento
+      for (const r of rows as any[]) {
+        const v = await calcularValorAgendamento(r);
+        candReal += v.valor;
+        candEstimado += v.estimado;
+        candTopo += parseCurrency(r.valor_total_agendamento ?? 0);
+        candPrincipal += parseCurrency(r.valor ?? 0);
+      }
+      extra = {
+        ...extra,
+        dia,
+        totalAgendamentos: rows.length,
+        comValorTopo: rows.length - zerados.length,
+        semValorTopo: zerados.length,
+        candidatos: {
+          somaProcedimentosInformados: candReal,
+          somaComEstimativa: candEstimado,
+          valorTotalAgendamento: candTopo,
+          procedimentoPrincipal: candPrincipal,
+        },
+
+        chaves: [...new Set(rows.flatMap((r: any) => Object.keys(r ?? {})))],
+        chavesProcedimentos: [...new Set(rows.flatMap((r: any) =>
+          asArray(r.procedimentos ?? r.procedures ?? r.itens ?? r.items ?? []).flatMap((i: any) => Object.keys(i ?? {}))))],
+        amostrasZeradas: zerados.slice(0, 1).map((r: any) => JSON.stringify(r).slice(0, 1200)),
+      };
+    }
+
+    if (mode === "probe-tabelas") {
+      // Compara o preço do mesmo procedimento em tabelas diferentes: o parâmetro é respeitado?
+      const pid = Number(url.searchParams.get("procedimento") ?? 377);
+      const out: Record<string, unknown> = {};
+      for (const t of ["1", "2", "13", "14", "99"]) {
+        try {
+          const rows = asArray(await feegow("/procedures/list", { tabela_id: t }));
+          const alvo = rows.find((r: any) => Number(r.procedimento_id ?? r.id) === pid);
+          out[`tabela_id=${t}`] = { registros: rows.length, valorProcedimento: alvo?.valor ?? null };
+        } catch (e) { out[`tabela_id=${t}`] = String(e).slice(0, 160); }
+      }
+      for (const params of [{ convenio_id: "2" }, { convenio_id: "2", tabela_id: "13" }, { plano_id: "0", convenio_id: "2" }]) {
+        try {
+          const rows = asArray(await feegow("/procedures/list", params as Record<string, string>));
+          const alvo = rows.find((r: any) => Number(r.procedimento_id ?? r.id) === pid);
+          out[JSON.stringify(params)] = { registros: rows.length, valorProcedimento: alvo?.valor ?? null };
+        } catch (e) { out[JSON.stringify(params)] = String(e).slice(0, 160); }
+      }
+      extra = { ...extra, procedimento: pid, probeTabelas: out };
+    }
+
+
+    if (mode === "probe-precos") {
+      // Diagnóstico bruto: procura tabelas de preço por procedimento/convênio.
+      const gets: Array<[string, Record<string, string>]> = [
+        ["/procedures/list-values", {}],
+        ["/procedures/values", {}],
+        ["/procedures/list-price", {}],
+        ["/procedures/price-table", {}],
+        ["/procedures/list", { tabela_id: "13" }],
+        ["/procedures/list-procedure-value", { tabela_id: "13" }],
+        ["/settings/list-price-table", {}],
+        ["/company/list-price-table", {}],
+        ["/insurance/list-price-table", {}],
+        ["/insurance/list-plans", {}],
+        ["/procedures/list-table", {}],
+      ];
+      const results: Record<string, string> = {};
+      for (const [p, params] of gets) {
+        try {
+          const c = await feegow(p, params);
+          const rows = asArray(c);
+          results[`GET ${p} ${JSON.stringify(params)}`] = `${rows.length} registros | amostra: ${JSON.stringify(rows[0] ?? null).slice(0, 500)}`;
+        } catch (e) { results[`GET ${p} ${JSON.stringify(params)}`] = String(e).slice(0, 180); }
+      }
+      extra = { ...extra, probePrecos: results };
+    }
+
 
     if (mode === "geocode") extra = { ...extra, geocode: await geocodeBairros(supabase, limit || 30) };
 
