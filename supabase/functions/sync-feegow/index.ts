@@ -1113,6 +1113,8 @@ Deno.serve(async (req) => {
           asArray(r.procedimentos ?? r.procedures ?? r.itens ?? r.items ?? []).flatMap((i: any) => Object.keys(i ?? {}))))],
         amostrasZeradas: zerados.slice(0, 1).map((r: any) => JSON.stringify(r).slice(0, 1200)),
       };
+    }
+
     if (mode === "probe-tabelas") {
       // Compara o preço do mesmo procedimento em tabelas diferentes: o parâmetro é respeitado?
       const pid = Number(url.searchParams.get("procedimento") ?? 377);
@@ -1134,8 +1136,6 @@ Deno.serve(async (req) => {
       extra = { ...extra, procedimento: pid, probeTabelas: out };
     }
 
-
-    }
 
     if (mode === "probe-precos") {
       // Diagnóstico bruto: procura tabelas de preço por procedimento/convênio.
