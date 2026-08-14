@@ -396,31 +396,44 @@ async function syncAgendamentos(supabase: any, from: Date, to: Date) {
         list_procedures: "1",
       });
       if (!rows.length) continue;
-      const mapped = rows.map((r: any) => ({
-        agendamento_id: Number(r.agendamento_id ?? r.id),
-        data: parseFeegowDate(r.data ?? r.date),
-        horario: r.horario ?? r.time ?? null,
-        paciente_id: r.paciente_id ? Number(r.paciente_id) : null,
-        profissional_id: r.profissional_id ? Number(r.profissional_id) : null,
-        especialidade_id: r.especialidade_id ? Number(r.especialidade_id) : null,
-        procedimento_id: r.procedimento_id ? Number(r.procedimento_id) : null,
-        status_id: r.status_id ? Number(r.status_id) : null,
-        unidade_id: r.unidade_id ? Number(r.unidade_id) : null,
-        local_id: r.local_id ? Number(r.local_id) : null,
-        canal_id: r.canal_id ? Number(r.canal_id) : null,
-        convenio_id: r.convenio_id ? Number(r.convenio_id) : null,
-        plano_id: r.plano_id ? Number(r.plano_id) : null,
-        valor_total: parseCurrency(r.valor_total ?? r.valor_total_agendamento ?? r.total_value ?? r.valor ?? 0),
-        telemedicina: Boolean(r.telemedicina),
-        encaixe: Boolean(r.encaixe),
-        retorno: Boolean(r.retorno),
-        primeiro_agendamento: Boolean(r.primeiro_agendamento ?? r.first_time),
-        agendado_em: r.agendado_em ?? null,
-        agendado_por: r.agendado_por ?? null,
-        notas: r.notas ?? r.observacoes ?? null,
-        // Duração: Feegow devolve 0 na maioria dos slots → cai no default de 30 min.
-        duracao_min: (() => { const d = Number(r.duracao ?? r.duration ?? 0); return d > 0 ? d : 30; })(),
-      })).filter((r: any) => r.agendamento_id && r.data);
+      const mapped: any[] = [];
+      for (const r of rows as any[]) {
+        const v = await calcularValorAgendamento(r);
+        mapped.push({
+          agendamento_id: Number(r.agendamento_id ?? r.id),
+          data: parseFeegowDate(r.data ?? r.date),
+          horario: r.horario ?? r.time ?? null,
+          paciente_id: r.paciente_id ? Number(r.paciente_id) : null,
+          profissional_id: r.profissional_id ? Number(r.profissional_id) : null,
+          especialidade_id: r.especialidade_id ? Number(r.especialidade_id) : null,
+          procedimento_id: r.procedimento_id ? Number(r.procedimento_id) : null,
+          status_id: r.status_id ? Number(r.status_id) : null,
+          unidade_id: r.unidade_id ? Number(r.unidade_id) : null,
+          local_id: r.local_id ? Number(r.local_id) : null,
+          canal_id: r.canal_id ? Number(r.canal_id) : null,
+          convenio_id: r.convenio_id ? Number(r.convenio_id) : null,
+          plano_id: r.plano_id ? Number(r.plano_id) : null,
+          tabela_id: r.tabela_id ? Number(r.tabela_id) : null,
+          valor_total: v.valor,
+          valor_origem: v.origem,
+          qtd_procedimentos: v.qtd,
+          procedimentos_detalhe: v.detalhe,
+          telemedicina: Boolean(r.telemedicina),
+          encaixe: Boolean(r.encaixe),
+          retorno: Boolean(r.retorno),
+          primeiro_agendamento: Boolean(r.primeiro_agendamento ?? r.first_time),
+          agendado_em: r.agendado_em ?? null,
+          agendado_por: r.agendado_por ?? null,
+          notas: r.notas ?? r.observacoes ?? null,
+          // Duração: Feegow devolve 0 na maioria dos slots → cai no default de 30 min.
+          duracao_min: (() => { const d = Number(r.duracao ?? r.duration ?? 0); return d > 0 ? d : 30; })(),
+        });
+      }
+      {
+        const validos = mapped.filter((r: any) => r.agendamento_id && r.data);
+        mapped.length = 0; mapped.push(...validos);
+      }
+
       // Dedupe por agendamento_id (evita "ON CONFLICT ... cannot affect row a second time")
       const seen = new Set<number>();
       const unique = mapped.filter((r: any) => {
