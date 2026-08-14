@@ -386,15 +386,48 @@ function DashboardPage() {
             </SheetDescription>
           </SheetHeader>
           <div className="mt-4 space-y-2">
-            {detalheItens.map((it) => (
-              <div key={it.nome} className="rounded-lg border border-border p-3">
-                <div className="text-sm font-medium break-words">{it.nome}</div>
-                <div className="mt-1 flex items-baseline justify-between text-xs text-muted-foreground">
-                  <span className="text-sm font-semibold text-foreground">{brl(it.valor)}</span>
-                  <span>{num(it.qtd)} lanç. · ticket {brl(it.qtd > 0 ? it.valor / it.qtd : 0)}</span>
+            {detalheItens.map((it) => {
+              const aberto = itemAberto === it.nome;
+              return (
+                <div key={it.nome} className="rounded-lg border border-border p-3">
+                  <button
+                    type="button"
+                    className="w-full text-left"
+                    onClick={() => setItemAberto(aberto ? null : it.nome)}
+                  >
+                    <div className="text-sm font-medium break-words">{it.nome}</div>
+                    <div className="mt-1 flex items-baseline justify-between text-xs text-muted-foreground">
+                      <span className="text-sm font-semibold text-foreground">{brl(it.valor)}</span>
+                      <span>{num(it.qtd)} lanç. · ticket {brl(it.qtd > 0 ? it.valor / it.qtd : 0)}</span>
+                    </div>
+                    <div className="mt-1 text-[11px] text-primary">
+                      {aberto ? "Ocultar lançamentos" : "Ver cada lançamento"}
+                    </div>
+                  </button>
+
+                  {aberto && (
+                    <div className="mt-2 space-y-1 border-t border-border pt-2">
+                      {[...it.lancamentos]
+                        .sort((a, b) => (b.data ?? "").localeCompare(a.data ?? ""))
+                        .map((l, idx) => (
+                          <div key={idx} className="flex items-baseline justify-between gap-2 text-xs">
+                            <div className="min-w-0">
+                              <div className="text-foreground">
+                                {l.data ? new Date(`${l.data}T12:00:00`).toLocaleDateString("pt-BR") : "Sem data"}
+                              </div>
+                              <div className="truncate text-muted-foreground" title={l.categoria ?? ""}>
+                                {(l.categoria ?? "Sem categoria")} · {l.convenio ? "Convênio" : "Particular"}
+                                {l.status ? ` · ${l.status}` : ""}
+                              </div>
+                            </div>
+                            <span className="shrink-0 font-medium text-foreground">{brl(l.valor)}</span>
+                          </div>
+                        ))}
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </SheetContent>
       </Sheet>
