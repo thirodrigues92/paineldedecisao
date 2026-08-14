@@ -71,6 +71,7 @@ const fmtData = (d: string) =>
 function RelatorioAtendimentosPage() {
   const f = useFilters();
   const [busca, setBusca] = useState("");
+  const [filtroFaturado, setFiltroFaturado] = useState<"todos" | "faturados" | "nao">("todos");
   const [ordem, setOrdem] = useState<{ key: keyof Linha; dir: "asc" | "desc" }>({
     key: "data",
     dir: "desc",
