@@ -33,7 +33,9 @@ export type FinancialRow = {
   convenio_id: number | null;
   procedimento_id: number | null;
   descricao_item: string | null;
+  agendamento_id: number | null;
 };
+
 
 
 function toISO(d: Date) {
