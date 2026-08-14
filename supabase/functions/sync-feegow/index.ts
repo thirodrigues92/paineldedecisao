@@ -309,17 +309,18 @@ async function syncSupport(supabase: any) {
   }
 }
 
-// ===== Tabelas de preço por procedimento =====
-// /procedures/list?tabela_id=X devolve { procedimento_id, valor } com valor em CENTAVOS.
-// Usado para precificar agendamentos de convênio, em que a Feegow devolve valor null.
-const priceCache = new Map<number, Map<number, number>>();
+// ===== Tabela de preços de referência =====
+// /procedures/list devolve { procedimento_id, valor } com valor em CENTAVOS.
+// ATENÇÃO: a API IGNORA tabela_id/convenio_id — sempre devolve a MESMA tabela (particular).
+// Por isso esse preço nunca entra em valor_total; serve só como ESTIMATIVA (valor_estimado)
+// para os atendimentos de convênio, em que a Feegow não devolve preço nenhum.
+let precoRefCache: Map<number, number> | null = null;
 
-async function getTabelaPrecos(tabelaId: number): Promise<Map<number, number>> {
-  const cached = priceCache.get(tabelaId);
-  if (cached) return cached;
+async function getTabelaPrecos(): Promise<Map<number, number>> {
+  if (precoRefCache) return precoRefCache;
   const map = new Map<number, number>();
   try {
-    const rows = asArray(await feegow("/procedures/list", { tabela_id: String(tabelaId) }));
+    const rows = asArray(await feegow("/procedures/list"));
     for (const r of rows) {
       const pid = Number(r.procedimento_id ?? r.id);
       const bruto = r.valor ?? r.value;
@@ -331,49 +332,56 @@ async function getTabelaPrecos(tabelaId: number): Promise<Map<number, number>> {
       if (Number.isFinite(v)) map.set(pid, v);
     }
   } catch (e) {
-    console.warn(`tabela de preços ${tabelaId}`, e);
+    console.warn("tabela de preços de referência", e);
   }
-  priceCache.set(tabelaId, map);
+  precoRefCache = map;
   return map;
 }
 
-/** Valor do agendamento: soma dos procedimentos; se vierem nulos, precifica pela tabela. */
+/**
+ * Valor do agendamento.
+ * valor    = somente o que a Feegow informou (soma dos procedimentos ou total do topo).
+ * estimado = referência da tabela particular para os itens sem preço (não entra na receita).
+ */
 async function calcularValorAgendamento(r: any): Promise<{
-  valor: number; origem: string; qtd: number; detalhe: Array<Record<string, unknown>>;
+  valor: number; estimado: number; origem: string; qtd: number; detalhe: Array<Record<string, unknown>>;
 }> {
   const procs = asArray(r.procedimentos ?? r.procedures ?? r.itens ?? r.items ?? []);
-  const tabelaId = Number(r.tabela_id ?? 0) || 0;
   const detalhe: Array<Record<string, unknown>> = [];
+  const topo = parseCurrency(r.valor_total_agendamento ?? r.valor_total ?? r.total_value ?? 0);
   let soma = 0;
-  let algumNulo = false;
-  let algumTabela = false;
+  let estimado = 0;
+  let semPreco = 0;
 
   for (const p of procs) {
     const pid = Number(p.procedimentoID ?? p.procedimento_id ?? p.id ?? 0) || null;
     const bruto = p.valor ?? p.value;
-    let v = bruto == null ? null : parseCurrency(bruto);
+    const v = bruto == null ? 0 : parseCurrency(bruto);
+    let ref = v;
     let origem = "feegow";
-    if ((v == null || v === 0) && pid && tabelaId) {
-      const tabela = await getTabelaPrecos(tabelaId);
-      const preco = tabela.get(pid);
-      if (preco != null) { v = preco; origem = "tabela_preco"; algumTabela = true; }
+    if (v === 0) {
+      semPreco += 1;
+      origem = "sem_valor";
+      ref = pid ? ((await getTabelaPrecos()).get(pid) ?? 0) : 0;
     }
-    if (v == null) { v = 0; algumNulo = true; origem = "sem_valor"; }
     soma += v;
-    detalhe.push({ procedimento_id: pid, valor: v, origem });
+    estimado += ref;
+    detalhe.push({ procedimento_id: pid, valor: v, valor_referencia: ref, origem });
   }
 
   if (!procs.length) {
-    const topo = parseCurrency(r.valor_total_agendamento ?? r.valor_total ?? r.total_value ?? r.valor ?? 0);
-    return { valor: topo, origem: topo > 0 ? "feegow_topo" : "sem_valor", qtd: 0, detalhe: [] };
+    const t = topo || parseCurrency(r.valor ?? 0);
+    return { valor: t, estimado: t, origem: t > 0 ? "feegow_topo" : "sem_valor", qtd: 0, detalhe: [] };
   }
 
-  const topo = parseCurrency(r.valor_total_agendamento ?? r.valor_total ?? r.total_value ?? 0);
-  if (soma === 0 && topo > 0) return { valor: topo, origem: "feegow_topo", qtd: procs.length, detalhe };
+  if (soma === 0 && topo > 0) {
+    return { valor: topo, estimado: Math.max(topo, estimado), origem: "feegow_topo", qtd: procs.length, detalhe };
+  }
 
-  const origem = algumTabela ? (algumNulo ? "misto" : "tabela_preco") : (algumNulo ? "parcial" : "feegow");
-  return { valor: soma, origem, qtd: procs.length, detalhe };
+  const origem = soma === 0 ? "sem_valor" : (semPreco > 0 ? "parcial" : "feegow");
+  return { valor: soma, estimado: Math.max(soma, estimado), origem, qtd: procs.length, detalhe };
 }
+
 
 async function syncAgendamentos(supabase: any, from: Date, to: Date) {
 
