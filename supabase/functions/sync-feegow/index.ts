@@ -817,8 +817,8 @@ const cleanText = (v: unknown) => {
 
 /**
  * Sincroniza pacientes que aparecem na agenda, buscando o detalhe (/patient/search),
- * que é o único endpoint com CEP/cidade/estado. LGPD: gravamos apenas campos agregáveis
- * (sexo, ano de nascimento, CEP, bairro, cidade, estado, convênio) — nunca nome/CPF/telefone.
+ * que é o único endpoint com nome/CEP/cidade/estado. Gravamos nome + campos agregáveis
+ * (sexo, ano de nascimento, CEP, bairro, cidade, estado, convênio) — nunca CPF/telefone.
  * Processa em lotes para caber no tempo da função; devolve quantos ainda faltam.
  */
 async function syncPacientes(supabase: any, limit: number) {
@@ -826,15 +826,23 @@ async function syncPacientes(supabase: any, limit: number) {
   let total = 0;
   try {
     const [existentes, agenda] = await Promise.all([
-      selectAllColumn(supabase, "pacientes", "paciente_id"),
+      selectAllColumn(supabase, "pacientes", "paciente_id, nome"),
       selectAllColumn(supabase, "agendamentos", "paciente_id", (q: any) => q.not("paciente_id", "is", null)),
     ]);
-    const jaTem = new Set(existentes.map((r: any) => Number(r.paciente_id)));
-    const pendentesSet = new Set<number>();
+    // Já resolvido = existe no banco E já tem nome; sem nome volta para a fila.
+    const jaTem = new Set(
+      existentes.filter((r: any) => cleanText(r.nome)).map((r: any) => Number(r.paciente_id)),
+    );
+    const semNome = existentes
+      .filter((r: any) => !cleanText(r.nome))
+      .map((r: any) => Number(r.paciente_id))
+      .filter((n: number) => Number.isFinite(n) && n > 0);
+    const pendentesSet = new Set<number>(semNome);
     for (const r of agenda) {
       const pid = Number(r.paciente_id);
       if (Number.isFinite(pid) && pid > 0 && !jaTem.has(pid)) pendentesSet.add(pid);
     }
+
     const pendentes = [...pendentesSet];
     const lote = pendentes.slice(0, limit);
     console.log(`[SYNC] pacientes pendentes=${pendentes.length} lote=${lote.length}`);
