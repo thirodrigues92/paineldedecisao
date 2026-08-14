@@ -300,6 +300,7 @@ export type Database = {
         Row: {
           ano_nascimento: number | null
           bairro: string | null
+          celular: string | null
           cep: string | null
           cidade: string | null
           convenio_id: number | null
@@ -317,6 +318,7 @@ export type Database = {
         Insert: {
           ano_nascimento?: number | null
           bairro?: string | null
+          celular?: string | null
           cep?: string | null
           cidade?: string | null
           convenio_id?: number | null
@@ -334,6 +336,7 @@ export type Database = {
         Update: {
           ano_nascimento?: number | null
           bairro?: string | null
+          celular?: string | null
           cep?: string | null
           cidade?: string | null
           convenio_id?: number | null
