@@ -234,7 +234,7 @@ function RelatorioAtendimentosPage() {
                       <td className="whitespace-nowrap px-3 py-2">{l.celular}</td>
                       <td className="whitespace-nowrap px-3 py-2">{fmtData(l.data)}</td>
                       <td className="whitespace-nowrap px-3 py-2 text-right">
-                        {l.faturado > 0 ? brl(l.faturado) : <span className="text-muted-foreground">Não</span>}
+                        <span className={l.faturado > 0 ? "" : "text-muted-foreground"}>{brl(l.faturado)}</span>
                       </td>
                       <td className="whitespace-nowrap px-3 py-2">{l.hora}</td>
                       <td className="px-3 py-2">{l.local}</td>
