@@ -821,27 +821,30 @@ const cleanText = (v: unknown) => {
  * (sexo, ano de nascimento, CEP, bairro, cidade, estado, convênio) — nunca CPF/telefone.
  * Processa em lotes para caber no tempo da função; devolve quantos ainda faltam.
  */
-async function syncPacientes(supabase: any, limit: number) {
+async function syncPacientes(supabase: any, limit: number, recarregar = false) {
   const id = await logStart(supabase, `pacientes (lote ${limit})`);
   let total = 0;
   try {
     const [existentes, agenda] = await Promise.all([
-      selectAllColumn(supabase, "pacientes", "paciente_id, nome"),
+      selectAllColumn(supabase, "pacientes", "paciente_id, nome, celular, contato_sincronizado_em"),
       selectAllColumn(supabase, "agendamentos", "paciente_id", (q: any) => q.not("paciente_id", "is", null)),
     ]);
-    // Já resolvido = existe no banco E já tem nome; sem nome volta para a fila.
+    // Resolvido = já tem nome e já passou pela busca de contato (celular pode ser vazio de verdade).
+    const resolvido = (r: any) =>
+      Boolean(cleanText(r.nome)) && (recarregar ? Boolean(r.contato_sincronizado_em) : true);
     const jaTem = new Set(
-      existentes.filter((r: any) => cleanText(r.nome)).map((r: any) => Number(r.paciente_id)),
+      existentes.filter(resolvido).map((r: any) => Number(r.paciente_id)),
     );
-    const semNome = existentes
-      .filter((r: any) => !cleanText(r.nome))
+    const faltando = existentes
+      .filter((r: any) => !resolvido(r))
       .map((r: any) => Number(r.paciente_id))
       .filter((n: number) => Number.isFinite(n) && n > 0);
-    const pendentesSet = new Set<number>(semNome);
+    const pendentesSet = new Set<number>(faltando);
     for (const r of agenda) {
       const pid = Number(r.paciente_id);
       if (Number.isFinite(pid) && pid > 0 && !jaTem.has(pid)) pendentesSet.add(pid);
     }
+
 
     const pendentes = [...pendentesSet];
     const lote = pendentes.slice(0, limit);
