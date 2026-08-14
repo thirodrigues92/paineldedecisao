@@ -568,9 +568,11 @@ async function syncFinancial(supabase: any, from: Date, to: Date) {
           if (!valor || !dataVencimento) return;
           // Item da fatura correspondente (quando houver 1:1 com os detalhes)
           const item = itens[detailIndex] ?? (itens.length === 1 ? itens[0] : undefined) ?? itemComCategoria ?? {};
+          // ATENÇÃO: item_id é o id da linha da fatura, NÃO o procedimento — não usar como fallback.
           const procId = Number(
-            det.procedimento_id ?? det.procedure_id ?? item?.procedimento_id ?? item?.procedure_id ?? item?.item_id ?? 0,
+            det.procedimento_id ?? det.procedure_id ?? item?.procedimento_id ?? item?.procedure_id ?? 0,
           );
+          const agendaId = Number(item?.agendamento_id ?? det.agendamento_id ?? 0);
           const descricaoItem =
             String(item?.descricao ?? item?.description ?? item?.nome ?? det.descricao ?? det.historico ?? "").trim() || null;
           mapped.push({
@@ -578,8 +580,9 @@ async function syncFinancial(supabase: any, from: Date, to: Date) {
             tipo: tipoTransacao === "C" ? "receita" : "despesa",
             categoria: categoriaNome,
             centro_custo: centroNome,
-            unidade_id: det.unidade_id || invoice.unidade_id ? Number(det.unidade_id ?? invoice.unidade_id) : null,
+            unidade_id: Number(det.unidade_id ?? invoice.unidade_id ?? 0) > 0 ? Number(det.unidade_id ?? invoice.unidade_id) : null,
             convenio_id: pickConvenioId(det, item, invoice, itemComCategoria),
+            agendamento_id: Number.isFinite(agendaId) && agendaId > 0 ? agendaId : null,
             procedimento_id: Number.isFinite(procId) && procId > 0 ? procId : null,
             descricao_item: descricaoItem,
             valor,
@@ -587,6 +590,7 @@ async function syncFinancial(supabase: any, from: Date, to: Date) {
             data_pagamento: dataPagamento,
             status: financialStatus(valor, pagamentos, det),
           });
+
         });
 
       });
