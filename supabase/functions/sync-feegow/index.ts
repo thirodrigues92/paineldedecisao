@@ -1088,23 +1088,17 @@ Deno.serve(async (req) => {
       });
       const topo = (r: any) => parseCurrency(r.valor_total ?? r.valor_total_agendamento ?? r.total_value ?? r.valor ?? 0);
       const zerados = rows.filter((r: any) => topo(r) === 0);
-      // Candidatos de total do dia, para bater com o relatório da Feegow.
-      let candPrincipal = 0;      // apenas r.valor (procedimento principal)
-      let candPrincipalTab = 0;   // r.valor, com fallback na tabela de preço
-      let candSomaProcs = 0;      // soma de todos os procedimentos, com tabela
-      let candTopo = 0;           // valor_total_agendamento
+      // Candidatos de total do dia, para conferir com o relatório da Feegow.
+      let candPrincipal = 0;   // apenas r.valor (procedimento principal)
+      let candReal = 0;        // soma dos procedimentos com preço informado
+      let candEstimado = 0;    // idem, completando os sem preço pela tabela de referência
+      let candTopo = 0;        // valor_total_agendamento
       for (const r of rows as any[]) {
         const v = await calcularValorAgendamento(r);
-        candSomaProcs += v.valor;
+        candReal += v.valor;
+        candEstimado += v.estimado;
         candTopo += parseCurrency(r.valor_total_agendamento ?? 0);
-        const principal = parseCurrency(r.valor ?? 0);
-        candPrincipal += principal;
-        if (principal > 0) candPrincipalTab += principal;
-        else {
-          const tab = Number(r.tabela_id ?? 0) || 0;
-          const pid = Number(r.procedimento_id ?? 0) || 0;
-          candPrincipalTab += tab && pid ? ((await getTabelaPrecos(tab)).get(pid) ?? 0) : 0;
-        }
+        candPrincipal += parseCurrency(r.valor ?? 0);
       }
       extra = {
         ...extra,
@@ -1113,11 +1107,12 @@ Deno.serve(async (req) => {
         comValorTopo: rows.length - zerados.length,
         semValorTopo: zerados.length,
         candidatos: {
-          somaProcedimentosComTabela: candSomaProcs,
+          somaProcedimentosInformados: candReal,
+          somaComEstimativa: candEstimado,
           valorTotalAgendamento: candTopo,
           procedimentoPrincipal: candPrincipal,
-          procedimentoPrincipalComTabela: candPrincipalTab,
         },
+
         chaves: [...new Set(rows.flatMap((r: any) => Object.keys(r ?? {})))],
         chavesProcedimentos: [...new Set(rows.flatMap((r: any) =>
           asArray(r.procedimentos ?? r.procedures ?? r.itens ?? r.items ?? []).flatMap((i: any) => Object.keys(i ?? {}))))],
