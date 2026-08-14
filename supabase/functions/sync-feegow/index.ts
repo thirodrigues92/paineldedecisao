@@ -590,6 +590,41 @@ async function syncFinancial(supabase: any, from: Date, to: Date) {
       });
     }
 
+    // Contas a receber / faturamento em lote de convênio (fora do caixa de /list-invoice)
+    const receb = await fetchRecebiveis(from, to);
+    console.log(`[SYNC] recebíveis: ${receb.diagnostico.join(" | ")}`);
+    if (receb.rows.length) {
+      receb.rows.forEach((r: any, i: number) => {
+        const valor = parseFinancialCurrency(r.valor ?? r.value ?? r.valor_total);
+        const dataVencimento = parseFeegowDate(r.data_vencimento ?? r.vencimento ?? r.data);
+        if (!valor || !dataVencimento) return;
+        const srcId = Number(r.id ?? r.receivable_id ?? r.invoice_id ?? 0);
+        mapped.push({
+          id: 3 * 1_000_000_000_000 + (srcId > 0 ? srcId : i + 1),
+          tipo: "receita",
+          categoria: String(r.categoria ?? r.category ?? "").trim() || "Faturamento convênio",
+          centro_custo: null,
+          unidade_id: Number(r.unidade_id) > 0 ? Number(r.unidade_id) : null,
+          convenio_id: pickConvenioId(r),
+          procedimento_id: Number(r.procedimento_id) > 0 ? Number(r.procedimento_id) : null,
+          descricao_item: String(r.descricao ?? r.description ?? r.historico ?? "").trim() || null,
+          valor,
+          data_vencimento: dataVencimento,
+          data_pagamento: parseFeegowDate(r.data_pagamento ?? r.pagamento),
+          status: financialStatus(valor, asArray(r.pagamentos ?? r.payments ?? []), r),
+        });
+      });
+    } else {
+      errors.push(`recebíveis indisponíveis → ${receb.diagnostico.join(" | ")}`);
+    }
+
+    // Convênio ausente na fatura → tenta deduzir pela agenda
+    try {
+      await inferirConvenioPelaAgenda(supabase, mapped);
+    } catch (e) {
+      console.warn("inferir convenio", String(e).slice(0, 200));
+    }
+
 
     const seen = new Set<number>();
     const unique = mapped.filter((r) => {
