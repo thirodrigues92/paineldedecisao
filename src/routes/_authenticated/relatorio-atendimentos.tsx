@@ -224,6 +224,14 @@ function RelatorioAtendimentosPage() {
                 <SelectItem value="nao">Não faturados</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={filtroValor} onValueChange={(v) => setFiltroValor(v as typeof filtroValor)}>
+              <SelectTrigger className="h-9 w-[180px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os valores</SelectItem>
+                <SelectItem value="confirmado">Valor confirmado</SelectItem>
+                <SelectItem value="estimado">Valor estimado</SelectItem>
+              </SelectContent>
+            </Select>
             <Button variant="outline" size="sm" onClick={exportarCsv} disabled={!linhas.length}>
               <Download className="mr-1 h-4 w-4" /> CSV
             </Button>
