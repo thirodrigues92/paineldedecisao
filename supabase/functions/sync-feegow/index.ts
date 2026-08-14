@@ -821,27 +821,30 @@ const cleanText = (v: unknown) => {
  * (sexo, ano de nascimento, CEP, bairro, cidade, estado, convênio) — nunca CPF/telefone.
  * Processa em lotes para caber no tempo da função; devolve quantos ainda faltam.
  */
-async function syncPacientes(supabase: any, limit: number) {
+async function syncPacientes(supabase: any, limit: number, recarregar = false) {
   const id = await logStart(supabase, `pacientes (lote ${limit})`);
   let total = 0;
   try {
     const [existentes, agenda] = await Promise.all([
-      selectAllColumn(supabase, "pacientes", "paciente_id, nome"),
+      selectAllColumn(supabase, "pacientes", "paciente_id, nome, celular, contato_sincronizado_em"),
       selectAllColumn(supabase, "agendamentos", "paciente_id", (q: any) => q.not("paciente_id", "is", null)),
     ]);
-    // Já resolvido = existe no banco E já tem nome; sem nome volta para a fila.
+    // Resolvido = já tem nome e já passou pela busca de contato (celular pode ser vazio de verdade).
+    const resolvido = (r: any) =>
+      Boolean(cleanText(r.nome)) && (recarregar ? Boolean(r.contato_sincronizado_em) : true);
     const jaTem = new Set(
-      existentes.filter((r: any) => cleanText(r.nome)).map((r: any) => Number(r.paciente_id)),
+      existentes.filter(resolvido).map((r: any) => Number(r.paciente_id)),
     );
-    const semNome = existentes
-      .filter((r: any) => !cleanText(r.nome))
+    const faltando = existentes
+      .filter((r: any) => !resolvido(r))
       .map((r: any) => Number(r.paciente_id))
       .filter((n: number) => Number.isFinite(n) && n > 0);
-    const pendentesSet = new Set<number>(semNome);
+    const pendentesSet = new Set<number>(faltando);
     for (const r of agenda) {
       const pid = Number(r.paciente_id);
       if (Number.isFinite(pid) && pid > 0 && !jaTem.has(pid)) pendentesSet.add(pid);
     }
+
 
     const pendentes = [...pendentesSet];
     const lote = pendentes.slice(0, limit);
@@ -860,9 +863,21 @@ async function syncPacientes(supabase: any, limit: number) {
           const ano = nasc ? Number(nasc.slice(0, 4)) : null;
           const cep = String(p.cep ?? "").replace(/\D/g, "");
           const sexoRaw = String(p.sexo ?? "").toLowerCase();
+          // celulares/telefones vêm como array com DDD solto e números incompletos.
+          const fones = [...asArray(p.celulares), ...asArray(p.telefones)]
+            .map((t: unknown) => String(t ?? "").replace(/\D/g, ""))
+            .filter((t: string) => t.length >= 10);
+          const celular = fones[0]
+            ? fones[0].length === 11
+              ? `(${fones[0].slice(0, 2)}) ${fones[0].slice(2, 7)}-${fones[0].slice(7)}`
+              : `(${fones[0].slice(0, 2)}) ${fones[0].slice(2, 6)}-${fones[0].slice(6)}`
+            : null;
           return {
             paciente_id: pid,
             nome: cleanText(p.nome ?? p.name ?? p.paciente ?? p.nome_completo ?? p.fullName),
+            celular,
+            contato_sincronizado_em: new Date().toISOString(),
+
 
             sexo: sexoRaw.startsWith("m") ? "M" : sexoRaw.startsWith("f") ? "F" : null,
             ano_nascimento: ano && ano > 1900 && ano <= new Date().getFullYear() ? ano : null,
@@ -1036,7 +1051,11 @@ Deno.serve(async (req) => {
     }
 
     let extra: Record<string, unknown> = {};
-    if (mode === "pacientes") extra = { ...extra, pacientes: await syncPacientes(supabase, limit || 400) };
+    if (mode === "pacientes") {
+      const recarregar = url.searchParams.get("recarregar") === "1";
+      extra = { ...extra, pacientes: await syncPacientes(supabase, limit || 400, recarregar) };
+    }
+
     if (mode === "probe") {
       // Diagnóstico bruto: descobre quais endpoints financeiros existem nesta conta Feegow.
       const to = new Date(); to.setDate(to.getDate() + 30);
@@ -1073,6 +1092,26 @@ Deno.serve(async (req) => {
       }
       extra = { ...extra, probe: results };
     }
+    if (mode === "probe-paciente") {
+      // Descobre campos crus do paciente (celular/origem) e catálogos de origem/local.
+      const results: Record<string, unknown> = {};
+      const { data: algum } = await supabase.from("pacientes").select("paciente_id").limit(1);
+      const pid = Number(url.searchParams.get("paciente_id") ?? algum?.[0]?.paciente_id ?? 0);
+      try {
+        const c = await feegow("/patient/search", { paciente_id: String(pid) });
+        const p: any = Array.isArray(c) ? c[0] : c;
+        results["paciente_chaves"] = Object.keys(p ?? {});
+        results["paciente_amostra"] = JSON.stringify(p ?? null).slice(0, 1500);
+      } catch (e) { results["paciente"] = String(e).slice(0, 200); }
+      for (const p of ["/patient/list-origin", "/patient/origin", "/patient/list-origins", "/company/list-locals", "/company/list-rooms", "/company/list-unity"]) {
+        try {
+          const rows = asArray(await feegow(p));
+          results[`GET ${p}`] = `${rows.length} registros | ${JSON.stringify(rows[0] ?? null).slice(0, 300)}`;
+        } catch (e) { results[`GET ${p}`] = String(e).slice(0, 160); }
+      }
+      extra = { ...extra, probe_paciente: results };
+    }
+
     if (mode === "probe-invoice") {
       const to = new Date(); to.setDate(to.getDate() + 30);
       const fromD = new Date(); fromD.setDate(fromD.getDate() - 30);

@@ -1,0 +1,1 @@
+ALTER TABLE public.pacientes ADD COLUMN IF NOT EXISTS contato_sincronizado_em timestamptz;

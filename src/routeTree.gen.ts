@@ -13,6 +13,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedUnidadesRouteImport } from './routes/_authenticated/unidades'
+import { Route as AuthenticatedRelatorioAtendimentosRouteImport } from './routes/_authenticated/relatorio-atendimentos'
 import { Route as AuthenticatedProfissionaisRouteImport } from './routes/_authenticated/profissionais'
 import { Route as AuthenticatedNoShowRouteImport } from './routes/_authenticated/no-show'
 import { Route as AuthenticatedMapaRouteImport } from './routes/_authenticated/mapa'
@@ -46,6 +47,12 @@ const AuthenticatedUnidadesRoute = AuthenticatedUnidadesRouteImport.update({
   path: '/unidades',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedRelatorioAtendimentosRoute =
+  AuthenticatedRelatorioAtendimentosRouteImport.update({
+    id: '/relatorio-atendimentos',
+    path: '/relatorio-atendimentos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedProfissionaisRoute =
   AuthenticatedProfissionaisRouteImport.update({
     id: '/profissionais',
@@ -129,6 +136,7 @@ export interface FileRoutesByFullPath {
   '/mapa': typeof AuthenticatedMapaRoute
   '/no-show': typeof AuthenticatedNoShowRoute
   '/profissionais': typeof AuthenticatedProfissionaisRoute
+  '/relatorio-atendimentos': typeof AuthenticatedRelatorioAtendimentosRoute
   '/unidades': typeof AuthenticatedUnidadesRoute
   '/analytics/aplicacoes': typeof AuthenticatedAnalyticsAplicacoesRoute
   '/analytics/capacidade': typeof AuthenticatedAnalyticsCapacidadeRoute
@@ -147,6 +155,7 @@ export interface FileRoutesByTo {
   '/mapa': typeof AuthenticatedMapaRoute
   '/no-show': typeof AuthenticatedNoShowRoute
   '/profissionais': typeof AuthenticatedProfissionaisRoute
+  '/relatorio-atendimentos': typeof AuthenticatedRelatorioAtendimentosRoute
   '/unidades': typeof AuthenticatedUnidadesRoute
   '/analytics/aplicacoes': typeof AuthenticatedAnalyticsAplicacoesRoute
   '/analytics/capacidade': typeof AuthenticatedAnalyticsCapacidadeRoute
@@ -167,6 +176,7 @@ export interface FileRoutesById {
   '/_authenticated/mapa': typeof AuthenticatedMapaRoute
   '/_authenticated/no-show': typeof AuthenticatedNoShowRoute
   '/_authenticated/profissionais': typeof AuthenticatedProfissionaisRoute
+  '/_authenticated/relatorio-atendimentos': typeof AuthenticatedRelatorioAtendimentosRoute
   '/_authenticated/unidades': typeof AuthenticatedUnidadesRoute
   '/_authenticated/analytics/aplicacoes': typeof AuthenticatedAnalyticsAplicacoesRoute
   '/_authenticated/analytics/capacidade': typeof AuthenticatedAnalyticsCapacidadeRoute
@@ -187,6 +197,7 @@ export interface FileRouteTypes {
     | '/mapa'
     | '/no-show'
     | '/profissionais'
+    | '/relatorio-atendimentos'
     | '/unidades'
     | '/analytics/aplicacoes'
     | '/analytics/capacidade'
@@ -205,6 +216,7 @@ export interface FileRouteTypes {
     | '/mapa'
     | '/no-show'
     | '/profissionais'
+    | '/relatorio-atendimentos'
     | '/unidades'
     | '/analytics/aplicacoes'
     | '/analytics/capacidade'
@@ -224,6 +236,7 @@ export interface FileRouteTypes {
     | '/_authenticated/mapa'
     | '/_authenticated/no-show'
     | '/_authenticated/profissionais'
+    | '/_authenticated/relatorio-atendimentos'
     | '/_authenticated/unidades'
     | '/_authenticated/analytics/aplicacoes'
     | '/_authenticated/analytics/capacidade'
@@ -266,6 +279,13 @@ declare module '@tanstack/react-router' {
       path: '/unidades'
       fullPath: '/unidades'
       preLoaderRoute: typeof AuthenticatedUnidadesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/relatorio-atendimentos': {
+      id: '/_authenticated/relatorio-atendimentos'
+      path: '/relatorio-atendimentos'
+      fullPath: '/relatorio-atendimentos'
+      preLoaderRoute: typeof AuthenticatedRelatorioAtendimentosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/profissionais': {
@@ -371,6 +391,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMapaRoute: typeof AuthenticatedMapaRoute
   AuthenticatedNoShowRoute: typeof AuthenticatedNoShowRoute
   AuthenticatedProfissionaisRoute: typeof AuthenticatedProfissionaisRoute
+  AuthenticatedRelatorioAtendimentosRoute: typeof AuthenticatedRelatorioAtendimentosRoute
   AuthenticatedUnidadesRoute: typeof AuthenticatedUnidadesRoute
   AuthenticatedAnalyticsAplicacoesRoute: typeof AuthenticatedAnalyticsAplicacoesRoute
   AuthenticatedAnalyticsCapacidadeRoute: typeof AuthenticatedAnalyticsCapacidadeRoute
@@ -388,6 +409,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMapaRoute: AuthenticatedMapaRoute,
   AuthenticatedNoShowRoute: AuthenticatedNoShowRoute,
   AuthenticatedProfissionaisRoute: AuthenticatedProfissionaisRoute,
+  AuthenticatedRelatorioAtendimentosRoute:
+    AuthenticatedRelatorioAtendimentosRoute,
   AuthenticatedUnidadesRoute: AuthenticatedUnidadesRoute,
   AuthenticatedAnalyticsAplicacoesRoute: AuthenticatedAnalyticsAplicacoesRoute,
   AuthenticatedAnalyticsCapacidadeRoute: AuthenticatedAnalyticsCapacidadeRoute,

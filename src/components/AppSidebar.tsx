@@ -1,7 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, CalendarClock, UserX, DollarSign,
-  Stethoscope, Building2, MapPinned, Settings, LogOut,
+  Stethoscope, Building2, MapPinned, Settings, LogOut, Table2,
   TrendingUp, PieChart, Activity, LineChart as LineIcon, Syringe, ShieldCheck,
 } from "lucide-react";
 import {
@@ -17,6 +17,7 @@ const navMain = [
   { title: "Financeiro", url: "/financeiro", icon: DollarSign },
   { title: "Profissionais", url: "/profissionais", icon: Stethoscope },
   { title: "Unidades", url: "/unidades", icon: Building2 },
+  { title: "Relatório de Atendimentos", url: "/relatorio-atendimentos", icon: Table2 },
   
 ];
 
