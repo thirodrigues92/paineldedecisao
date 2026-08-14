@@ -49,6 +49,7 @@ type Linha = {
   procedimento: string;
   status: string;
   valor: number;
+  estimado: boolean;
 };
 
 type Coluna = { key: keyof Linha; label: string; align?: "right" };
@@ -73,6 +74,7 @@ function RelatorioAtendimentosPage() {
   const f = useFilters();
   const [busca, setBusca] = useState("");
   const [filtroFaturado, setFiltroFaturado] = useState<"todos" | "faturados" | "nao">("todos");
+  const [filtroValor, setFiltroValor] = useState<"todos" | "confirmado" | "estimado">("todos");
   const [ordem, setOrdem] = useState<{ key: keyof Linha; dir: "asc" | "desc" }>({
     key: "data",
     dir: "desc",
@@ -91,6 +93,9 @@ function RelatorioAtendimentosPage() {
 
       const linhas: Linha[] = agendamentos.map((a) => {
         const c = a.paciente_id ? contatos.get(Number(a.paciente_id)) : undefined;
+        const real = Number(a.valor_total || 0);
+        const est = Number(a.valor_estimado || 0);
+        const usaEstimado = real <= 0 && est > 0;
         return {
           agendamento_id: Number(a.agendamento_id),
           celular: c?.celular ?? "—",
@@ -102,7 +107,8 @@ function RelatorioAtendimentosPage() {
           paciente: c?.nome ?? (a.paciente_id ? `Paciente #${a.paciente_id}` : "—"),
           procedimento: a.procedimentos?.nome ?? "—",
           status: a.status_agendamento?.descricao ?? a.status_agendamento?.categoria ?? "—",
-          valor: Number(a.valor_total || 0),
+          valor: usaEstimado ? est : real,
+          estimado: usaEstimado,
         };
       });
       return linhas;
@@ -122,6 +128,8 @@ function RelatorioAtendimentosPage() {
     }
     if (filtroFaturado === "faturados") base = base.filter((l) => l.faturado > 0);
     if (filtroFaturado === "nao") base = base.filter((l) => l.faturado <= 0);
+    if (filtroValor === "confirmado") base = base.filter((l) => !l.estimado);
+    if (filtroValor === "estimado") base = base.filter((l) => l.estimado);
     const dir = ordem.dir === "asc" ? 1 : -1;
     return [...base].sort((a, b) => {
       const va = a[ordem.key];
@@ -129,24 +137,30 @@ function RelatorioAtendimentosPage() {
       if (typeof va === "number" && typeof vb === "number") return (va - vb) * dir;
       return String(va).localeCompare(String(vb), "pt-BR") * dir;
     });
-  }, [query.data, busca, ordem, filtroFaturado]);
+  }, [query.data, busca, ordem, filtroFaturado, filtroValor]);
 
-  const totalValor = linhas.reduce((s, l) => s + l.valor, 0);
+  const totalConfirmado = linhas.reduce((s, l) => s + (l.estimado ? 0 : l.valor), 0);
+  const totalEstimado = linhas.reduce((s, l) => s + (l.estimado ? l.valor : 0), 0);
+  const totalValor = totalConfirmado + totalEstimado;
   const totalFaturado = linhas.reduce((s, l) => s + l.faturado, 0);
+  const qtdEstimado = linhas.filter((l) => l.estimado).length;
 
   const alternarOrdem = (key: keyof Linha) =>
     setOrdem((o) => (o.key === key ? { key, dir: o.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" }));
 
   const exportarCsv = () => {
-    const cab = COLUNAS.map((c) => c.label).join(";");
+    const cab = [...COLUNAS.map((c) => c.label), "Origem do valor"].join(";");
     const corpo = linhas
       .map((l) =>
-        COLUNAS.map((c) => {
-          const v = l[c.key];
-          if (c.key === "data") return fmtData(l.data);
-          if (typeof v === "number") return v.toFixed(2).replace(".", ",");
-          return `"${String(v).replace(/"/g, '""')}"`;
-        }).join(";"),
+        [
+          ...COLUNAS.map((c) => {
+            const v = l[c.key];
+            if (c.key === "data") return fmtData(l.data);
+            if (typeof v === "number") return v.toFixed(2).replace(".", ",");
+            return `"${String(v).replace(/"/g, '""')}"`;
+          }),
+          l.estimado ? "estimado" : "confirmado",
+        ].join(";"),
       )
       .join("\n");
     const blob = new Blob([`\uFEFF${cab}\n${corpo}`], { type: "text/csv;charset=utf-8" });
@@ -159,7 +173,7 @@ function RelatorioAtendimentosPage() {
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-medium text-muted-foreground">Atendimentos</CardTitle>
@@ -168,7 +182,22 @@ function RelatorioAtendimentosPage() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-medium text-muted-foreground">Valor na agenda</CardTitle>
+            <CardTitle className="text-xs font-medium text-muted-foreground">Valor confirmado</CardTitle>
+          </CardHeader>
+          <CardContent className="text-2xl font-semibold">{brl(totalConfirmado)}</CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-medium text-muted-foreground">Valor estimado</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-semibold">{brl(totalEstimado)}</p>
+            <p className="text-xs text-muted-foreground">{num(qtdEstimado)} sem preço na API</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-medium text-muted-foreground">Total combinado</CardTitle>
           </CardHeader>
           <CardContent className="text-2xl font-semibold">{brl(totalValor)}</CardContent>
         </Card>
@@ -196,6 +225,14 @@ function RelatorioAtendimentosPage() {
                 <SelectItem value="todos">Todos</SelectItem>
                 <SelectItem value="faturados">Somente faturados</SelectItem>
                 <SelectItem value="nao">Não faturados</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={filtroValor} onValueChange={(v) => setFiltroValor(v as typeof filtroValor)}>
+              <SelectTrigger className="h-9 w-[180px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os valores</SelectItem>
+                <SelectItem value="confirmado">Valor confirmado</SelectItem>
+                <SelectItem value="estimado">Valor estimado</SelectItem>
               </SelectContent>
             </Select>
             <Button variant="outline" size="sm" onClick={exportarCsv} disabled={!linhas.length}>
@@ -255,7 +292,19 @@ function RelatorioAtendimentosPage() {
                       <td className="px-3 py-2">{l.paciente}</td>
                       <td className="px-3 py-2">{l.procedimento}</td>
                       <td className="whitespace-nowrap px-3 py-2">{l.status}</td>
-                      <td className="whitespace-nowrap px-3 py-2 text-right">{brl(l.valor)}</td>
+                      <td className="whitespace-nowrap px-3 py-2 text-right">
+                        {l.estimado ? (
+                          <span
+                            className="text-muted-foreground"
+                            title="A Feegow não devolve o preço do convênio pela API neste agendamento. Valor de referência da tabela de preços."
+                          >
+                            {brl(l.valor)}{" "}
+                            <span className="ml-1 rounded border border-border px-1 text-[10px] uppercase">est</span>
+                          </span>
+                        ) : (
+                          brl(l.valor)
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

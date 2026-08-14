@@ -7,6 +7,9 @@ export type DashboardAppointment = {
   horario: string | null;
   paciente_id: number | null;
   valor_total: number | string | null;
+  valor_estimado?: number | string | null;
+  valor_origem?: string | null;
+
 
   especialidade_id: number | null;
   profissional_id: number | null;
@@ -152,7 +155,7 @@ export async function fetchDashboardAppointments(
     for (let from = 0; from < limit; from += pageSize) {
       let q = supabase
         .from("agendamentos")
-        .select("agendamento_id, data, horario, paciente_id, valor_total, especialidade_id, profissional_id, procedimento_id, unidade_id, convenio_id, primeiro_agendamento, status_id")
+        .select("agendamento_id, data, horario, paciente_id, valor_total, valor_estimado, valor_origem, especialidade_id, profissional_id, procedimento_id, unidade_id, convenio_id, primeiro_agendamento, status_id")
         .gte("data", toISO(f.from))
         .lte("data", toISO(f.to))
         .order("data", { ascending: true })
