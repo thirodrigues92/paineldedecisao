@@ -198,16 +198,64 @@ async function syncSupport(supabase: any) {
       if (mapped.length) { await supabase.from("profissionais").upsert(mapped, { onConflict: "profissional_id" }); total += mapped.length; }
     } catch (e) { console.warn("profissionais", e); }
 
-    // Convênios
-    try {
-      const rows = await feegow("/insurance/list");
-      const mapped = asArray(rows).map((r) => ({
-        convenio_id: Number(r.id ?? r.insurance_id),
-        nome: String(r.name ?? r.nome ?? ""),
-        planos: r.plans ?? r.planos ?? [],
-      })).filter((r) => r.convenio_id);
-      if (mapped.length) { await supabase.from("convenios").upsert(mapped, { onConflict: "convenio_id" }); total += mapped.length; }
-    } catch (e) { console.warn("convenios", e); }
+    // Convênios — a Feegow expõe esse catálogo em caminhos diferentes conforme a conta.
+    // Tenta em cascata e registra em sync_logs qual respondeu (ou todos os erros).
+    {
+      const candidatos = [
+        "/insurance/list",
+        "/insurance/list-insurance",
+        "/insurance/list-insurance-plans",
+        "/insurance/search",
+      ];
+      const convId = await logStart(supabase, "convenios");
+      const falhas: string[] = [];
+      let gravados = 0;
+      let usado = "";
+      for (const path of candidatos) {
+        try {
+          const rows = await feegow(path);
+          const mapped = asArray(rows).map((r: any) => ({
+            convenio_id: Number(r.id ?? r.insurance_id ?? r.convenio_id),
+            nome: String(r.name ?? r.nome ?? r.insurance_name ?? r.descricao ?? "").trim() || `Convênio ${r.id}`,
+            planos: r.plans ?? r.planos ?? [],
+          })).filter((r: any) => Number.isFinite(r.convenio_id) && r.convenio_id > 0);
+          const seenConv = new Set<number>();
+          const uniq = mapped.filter((r: any) => !seenConv.has(r.convenio_id) && seenConv.add(r.convenio_id));
+          if (!uniq.length) { falhas.push(`${path}: 0 registros`); continue; }
+          const { error } = await supabase.from("convenios").upsert(uniq, { onConflict: "convenio_id" });
+          if (error) { falhas.push(`${path}: ${error.message}`); continue; }
+          gravados = uniq.length;
+          usado = path;
+          total += gravados;
+          break;
+        } catch (e) {
+          falhas.push(`${path}: ${String(e).slice(0, 200)}`);
+        }
+      }
+      // Fallback: garante que todo convenio_id visto na agenda exista no catálogo,
+      // para os filtros e gráficos não ficarem sem rótulo.
+      try {
+        const agendaConv = await selectAllColumn(
+          supabase, "agendamentos", "convenio_id", (q: any) => q.not("convenio_id", "is", null),
+        );
+        const { data: existentes } = await supabase.from("convenios").select("convenio_id");
+        const jaTem = new Set((existentes ?? []).map((r: any) => Number(r.convenio_id)));
+        const faltando = [...new Set(agendaConv.map((r: any) => Number(r.convenio_id)))]
+          .filter((cid) => Number.isFinite(cid) && cid > 0 && !jaTem.has(cid))
+          .map((cid) => ({ convenio_id: cid, nome: `Convênio ${cid}`, planos: [] }));
+        if (faltando.length) {
+          await supabase.from("convenios").upsert(faltando, { onConflict: "convenio_id" });
+          gravados += faltando.length;
+        }
+      } catch (e) {
+        falhas.push(`fallback agenda: ${String(e).slice(0, 200)}`);
+      }
+      await logEnd(
+        supabase, convId, gravados > 0, gravados,
+        gravados > 0 && !falhas.length ? undefined : `usado=${usado || "nenhum"} | ${falhas.join(" | ")}`,
+      );
+    }
+
 
     // Unidades — endpoint retorna { matriz: [...], unidades: [...] }
     try {
@@ -391,10 +439,122 @@ async function loadFinancialLookups() {
   return { categorias, centros };
 }
 
+/**
+ * A Feegow espalha o convênio em nomes/níveis diferentes conforme o tipo de fatura.
+ * Varre todos os candidatos e devolve o primeiro id válido (>0). Particular = null.
+ */
+function pickConvenioId(...sources: any[]): number | null {
+  const chaves = [
+    "convenio_id", "insurance_id", "convenioId", "id_convenio",
+    "plano_convenio_id", "health_plan_id", "payer_id",
+  ];
+  for (const src of sources) {
+    if (!src || typeof src !== "object") continue;
+    for (const k of chaves) {
+      const v = Number(src[k]);
+      if (Number.isFinite(v) && v > 0) return v;
+    }
+    for (const nested of ["convenio", "insurance", "payer", "plano"]) {
+      const obj = src[nested];
+      if (obj && typeof obj === "object") {
+        const v = Number(obj.id ?? obj.convenio_id ?? obj.insurance_id);
+        if (Number.isFinite(v) && v > 0) return v;
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * A fatura da Feegow não traz convênio em nenhum nível, mas os itens trazem
+ * agendamento_id. Usamos esse vínculo real para herdar convênio, unidade e
+ * procedimento do atendimento que originou a receita.
+ * Retorna quantos lançamentos foram enriquecidos e quantos ficaram sem vínculo.
+ */
+async function enriquecerPelaAgenda(supabase: any, rows: any[]) {
+  const agenda = await selectAllColumn(
+    supabase, "agendamentos", "agendamento_id, convenio_id, unidade_id, procedimento_id",
+  );
+  const porId = new Map<number, any>();
+  for (const a of agenda) porId.set(Number(a.agendamento_id), a);
+
+  let comVinculo = 0, semVinculo = 0, convenioAplicado = 0;
+  for (const r of rows) {
+    if (r.tipo !== "receita") continue;
+    const a = r.agendamento_id ? porId.get(Number(r.agendamento_id)) : null;
+    if (!a) { semVinculo++; continue; }
+    comVinculo++;
+    if (r.convenio_id == null && a.convenio_id != null) { r.convenio_id = Number(a.convenio_id); convenioAplicado++; }
+    if (r.unidade_id == null && a.unidade_id != null) r.unidade_id = Number(a.unidade_id);
+    if (r.procedimento_id == null && a.procedimento_id != null) r.procedimento_id = Number(a.procedimento_id);
+  }
+  console.log(`[SYNC] receitas com agendamento=${comVinculo} sem=${semVinculo} convenio herdado=${convenioAplicado}`);
+  return { comVinculo, semVinculo, convenioAplicado };
+}
+
+/** Normaliza nome de convênio para comparação (sem acento, sem espaço, minúsculo). */
+function normNome(s: string) {
+  return String(s ?? "")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+/**
+ * A Feegow grava o nome do convênio na CATEGORIA do lançamento
+ * (ex.: "Medprev", "Iparv", "Cassi"). Casa esse texto com o catálogo de convênios.
+ */
+async function mapearConvenioPorCategoria(supabase: any, rows: any[]) {
+  const { data: convs } = await supabase.from("convenios").select("convenio_id, nome");
+  if (!convs?.length) return 0;
+  const catalogo = convs.map((c: any) => ({ id: Number(c.convenio_id), n: normNome(c.nome) }))
+    .filter((c: any) => c.n.length >= 3);
+  let aplicados = 0;
+  for (const r of rows) {
+    if (r.tipo !== "receita" || r.convenio_id != null) continue;
+    const alvo = normNome(r.categoria);
+    if (alvo.length < 3) continue;
+    const hit = catalogo.find((c: any) => c.n === alvo)
+      ?? catalogo.find((c: any) => c.n.includes(alvo) || alvo.includes(c.n));
+    if (hit) { r.convenio_id = hit.id; aplicados++; }
+  }
+  console.log(`[SYNC] convenio pela categoria: ${aplicados}`);
+  return aplicados;
+}
+
+
+
+/**
+ * Contas a receber / faturamento em lote de convênio. Os caminhos variam por conta:
+ * tenta em cascata e devolve as linhas do primeiro que responder, além do diagnóstico.
+ */
+async function fetchRecebiveis(from: Date, to: Date) {
+  const candidatos: Array<[string, Record<string, string>]> = [
+    ["/financial/list-account-receivable", { data_start: toFeegowDate(from), data_end: toFeegowDate(to) }],
+    ["/financial/list-receivable", { data_start: toFeegowDate(from), data_end: toFeegowDate(to) }],
+    ["/financial/list-billing", { data_start: toFeegowDate(from), data_end: toFeegowDate(to) }],
+    ["/financial/list-batch", { data_start: toFeegowDate(from), data_end: toFeegowDate(to) }],
+  ];
+  const diagnostico: string[] = [];
+  for (const [path, params] of candidatos) {
+    try {
+      const content = await feegow(path, params);
+      const rows = asArray(content);
+      diagnostico.push(`${path}: ${rows.length} registros`);
+      if (rows.length) return { path, rows, diagnostico };
+    } catch (e) {
+      diagnostico.push(`${path}: ${String(e).slice(0, 160)}`);
+    }
+  }
+  return { path: "", rows: [] as any[], diagnostico };
+}
+
 async function syncFinancial(supabase: any, from: Date, to: Date) {
+
   const id = await logStart(supabase, `financeiro ${toFeegowDate(from)}→${toFeegowDate(to)}`);
   let total = 0;
   const errors: string[] = [];
+  let diagnosticoReceb = "";
+
   try {
     const { categorias, centros } = await loadFinancialLookups();
     const mapped: any[] = [];
@@ -431,9 +591,11 @@ async function syncFinancial(supabase: any, from: Date, to: Date) {
           if (!valor || !dataVencimento) return;
           // Item da fatura correspondente (quando houver 1:1 com os detalhes)
           const item = itens[detailIndex] ?? (itens.length === 1 ? itens[0] : undefined) ?? itemComCategoria ?? {};
+          // ATENÇÃO: item_id é o id da linha da fatura, NÃO o procedimento — não usar como fallback.
           const procId = Number(
-            det.procedimento_id ?? det.procedure_id ?? item?.procedimento_id ?? item?.procedure_id ?? item?.item_id ?? 0,
+            det.procedimento_id ?? det.procedure_id ?? item?.procedimento_id ?? item?.procedure_id ?? 0,
           );
+          const agendaId = Number(item?.agendamento_id ?? det.agendamento_id ?? 0);
           const descricaoItem =
             String(item?.descricao ?? item?.description ?? item?.nome ?? det.descricao ?? det.historico ?? "").trim() || null;
           mapped.push({
@@ -441,8 +603,9 @@ async function syncFinancial(supabase: any, from: Date, to: Date) {
             tipo: tipoTransacao === "C" ? "receita" : "despesa",
             categoria: categoriaNome,
             centro_custo: centroNome,
-            unidade_id: det.unidade_id || invoice.unidade_id ? Number(det.unidade_id ?? invoice.unidade_id) : null,
-            convenio_id: det.convenio_id || invoice.convenio_id ? Number(det.convenio_id ?? invoice.convenio_id) : null,
+            unidade_id: Number(det.unidade_id ?? invoice.unidade_id ?? 0) > 0 ? Number(det.unidade_id ?? invoice.unidade_id) : null,
+            convenio_id: pickConvenioId(det, item, invoice, itemComCategoria),
+            agendamento_id: Number.isFinite(agendaId) && agendaId > 0 ? agendaId : null,
             procedimento_id: Number.isFinite(procId) && procId > 0 ? procId : null,
             descricao_item: descricaoItem,
             valor,
@@ -450,10 +613,59 @@ async function syncFinancial(supabase: any, from: Date, to: Date) {
             data_pagamento: dataPagamento,
             status: financialStatus(valor, pagamentos, det),
           });
+
         });
 
       });
     }
+
+    // Contas a receber / faturamento em lote de convênio (fora do caixa de /list-invoice)
+    const receb = await fetchRecebiveis(from, to);
+    console.log(`[SYNC] recebíveis: ${receb.diagnostico.join(" | ")}`);
+    if (receb.rows.length) {
+      receb.rows.forEach((r: any, i: number) => {
+        const valor = parseFinancialCurrency(r.valor ?? r.value ?? r.valor_total);
+        const dataVencimento = parseFeegowDate(r.data_vencimento ?? r.vencimento ?? r.data);
+        if (!valor || !dataVencimento) return;
+        const srcId = Number(r.id ?? r.receivable_id ?? r.invoice_id ?? 0);
+        mapped.push({
+          id: 3 * 1_000_000_000_000 + (srcId > 0 ? srcId : i + 1),
+          tipo: "receita",
+          categoria: String(r.categoria ?? r.category ?? "").trim() || "Faturamento convênio",
+          centro_custo: null,
+          unidade_id: Number(r.unidade_id) > 0 ? Number(r.unidade_id) : null,
+          convenio_id: pickConvenioId(r),
+          procedimento_id: Number(r.procedimento_id) > 0 ? Number(r.procedimento_id) : null,
+          descricao_item: String(r.descricao ?? r.description ?? r.historico ?? "").trim() || null,
+          valor,
+          data_vencimento: dataVencimento,
+          data_pagamento: parseFeegowDate(r.data_pagamento ?? r.pagamento),
+          status: financialStatus(valor, asArray(r.pagamentos ?? r.payments ?? []), r),
+        });
+      });
+    } else {
+      diagnosticoReceb = `recebíveis indisponíveis → ${receb.diagnostico.join(" | ")}`;
+    }
+
+    // Convênio ausente na fatura → herda do agendamento vinculado ao item
+    let vinculo = { comVinculo: 0, semVinculo: 0, convenioAplicado: 0 };
+    try {
+      vinculo = await enriquecerPelaAgenda(supabase, mapped);
+    } catch (e) {
+      console.warn("enriquecer pela agenda", String(e).slice(0, 200));
+    }
+    let porCategoria = 0;
+    try {
+      porCategoria = await mapearConvenioPorCategoria(supabase, mapped);
+    } catch (e) {
+      console.warn("convenio por categoria", String(e).slice(0, 200));
+    }
+    diagnosticoReceb = [
+      diagnosticoReceb,
+      `vinculo agenda: ${vinculo.comVinculo} com / ${vinculo.semVinculo} sem, convênio herdado ${vinculo.convenioAplicado}, por categoria ${porCategoria}`,
+    ].filter(Boolean).join(" || ");
+
+
 
 
     const seen = new Set<number>();
@@ -476,8 +688,9 @@ async function syncFinancial(supabase: any, from: Date, to: Date) {
       }
     }
 
-    if (errors.length) await logEnd(supabase, id, false, total, `Upsert errors: ${errors.slice(0, 3).join(" | ")}`);
-    else await logEnd(supabase, id, true, total);
+    if (errors.length) await logEnd(supabase, id, false, total, `Upsert errors: ${errors.slice(0, 3).join(" | ")} ${diagnosticoReceb}`);
+    else await logEnd(supabase, id, true, total, diagnosticoReceb || undefined);
+
   } catch (e) {
     await logEnd(supabase, id, false, total, String(e));
     throw e;
@@ -724,6 +937,60 @@ Deno.serve(async (req) => {
 
     let extra: Record<string, unknown> = {};
     if (mode === "pacientes") extra = { ...extra, pacientes: await syncPacientes(supabase, limit || 400) };
+    if (mode === "probe") {
+      // Diagnóstico bruto: descobre quais endpoints financeiros existem nesta conta Feegow.
+      const to = new Date(); to.setDate(to.getDate() + 30);
+      const fromD = new Date(); fromD.setDate(fromD.getDate() - 90);
+      const ds = toFeegowDate(fromD), de = toFeegowDate(to);
+      const gets: Array<[string, Record<string, string>]> = [
+        ["/financial/list-account-receivable", { data_start: ds, data_end: de }],
+        ["/financial/list-account-receivable", { data_inicio: ds, data_fim: de }],
+        ["/financial/list-invoice", { data_start: ds, data_end: de, tipo_transacao: "C", status: "0" }],
+        ["/financial/list-bank-account", {}],
+        ["/financial/list-payment-method", {}],
+        ["/insurance/list-tiss-batch", { data_start: ds, data_end: de }],
+        ["/insurance/list-guides", { data_start: ds, data_end: de }],
+      ];
+      const posts: Array<[string, Record<string, unknown>]> = [
+        ["/core/financial/base/account-receivable", { page: 1, perPage: 5 }],
+        ["/core/financial/receivable", { page: 1, perPage: 5 }],
+        ["/core/financial/movement", { page: 1, perPage: 5 }],
+        ["/core/insurance/base/insurance", { page: 1, perPage: 5 }],
+      ];
+      const results: Record<string, string> = {};
+      for (const [p, params] of gets) {
+        try {
+          const c = await feegow(p, params);
+          const rows = asArray(c);
+          results[`GET ${p} ${JSON.stringify(params)}`] = `${rows.length} registros | amostra: ${JSON.stringify(rows[0] ?? null).slice(0, 400)}`;
+        } catch (e) { results[`GET ${p} ${JSON.stringify(params)}`] = String(e).slice(0, 200); }
+      }
+      for (const [p, body] of posts) {
+        try {
+          const rows = await feegowCore(p, body);
+          results[`POST ${p}`] = `${rows.length} registros | amostra: ${JSON.stringify(rows[0] ?? null).slice(0, 400)}`;
+        } catch (e) { results[`POST ${p}`] = String(e).slice(0, 200); }
+      }
+      extra = { ...extra, probe: results };
+    }
+    if (mode === "probe-invoice") {
+      const to = new Date(); to.setDate(to.getDate() + 30);
+      const fromD = new Date(); fromD.setDate(fromD.getDate() - 30);
+      const c = await feegow("/financial/list-invoice", {
+        data_start: toFeegowDate(fromD), data_end: toFeegowDate(to), tipo_transacao: "C",
+      });
+      const rows = asArray(c);
+      extra = {
+        ...extra,
+        totalFaturas: rows.length,
+        amostras: rows.slice(0, 2).map((r) => JSON.stringify(r).slice(0, 2500)),
+        chaves: [...new Set(rows.flatMap((r: any) => Object.keys(r ?? {})))],
+        chavesItens: [...new Set(rows.flatMap((r: any) => asArray(r.itens ?? r.items ?? []).flatMap((i: any) => Object.keys(i ?? {}))))],
+        chavesDetalhes: [...new Set(rows.flatMap((r: any) => asArray(r.detalhes ?? r.details ?? []).flatMap((i: any) => Object.keys(i ?? {}))))],
+      };
+
+    }
+
     if (mode === "geocode") extra = { ...extra, geocode: await geocodeBairros(supabase, limit || 30) };
 
     await refreshViews(supabase);
