@@ -466,39 +466,32 @@ function pickConvenioId(...sources: any[]): number | null {
 }
 
 /**
- * Preenche convenio_id nos lançamentos que a fatura não identificou, usando a agenda:
- * mesma data + mesmo procedimento → convênio do agendamento, apenas quando há
- * um único convênio possível para aquela combinação (evita atribuição errada).
+ * A fatura da Feegow não traz convênio em nenhum nível, mas os itens trazem
+ * agendamento_id. Usamos esse vínculo real para herdar convênio, unidade e
+ * procedimento do atendimento que originou a receita.
+ * Retorna quantos lançamentos foram enriquecidos e quantos ficaram sem vínculo.
  */
-async function inferirConvenioPelaAgenda(supabase: any, rows: any[]) {
-  const semConv = rows.filter((r) => r.convenio_id == null && r.procedimento_id && r.tipo === "receita");
-  if (!semConv.length) return 0;
+async function enriquecerPelaAgenda(supabase: any, rows: any[]) {
   const agenda = await selectAllColumn(
-    supabase, "agendamentos", "data, procedimento_id, convenio_id",
-    (q: any) => q.not("procedimento_id", "is", null),
+    supabase, "agendamentos", "agendamento_id, convenio_id, unidade_id, procedimento_id",
   );
-  const porChave = new Map<string, Set<number | null>>();
-  for (const a of agenda) {
-    const key = `${a.data}|${a.procedimento_id}`;
-    const set = porChave.get(key) ?? new Set<number | null>();
-    set.add(a.convenio_id == null ? null : Number(a.convenio_id));
-    porChave.set(key, set);
+  const porId = new Map<number, any>();
+  for (const a of agenda) porId.set(Number(a.agendamento_id), a);
+
+  let comVinculo = 0, semVinculo = 0, convenioAplicado = 0;
+  for (const r of rows) {
+    if (r.tipo !== "receita") continue;
+    const a = r.agendamento_id ? porId.get(Number(r.agendamento_id)) : null;
+    if (!a) { semVinculo++; continue; }
+    comVinculo++;
+    if (r.convenio_id == null && a.convenio_id != null) { r.convenio_id = Number(a.convenio_id); convenioAplicado++; }
+    if (r.unidade_id == null && a.unidade_id != null) r.unidade_id = Number(a.unidade_id);
+    if (r.procedimento_id == null && a.procedimento_id != null) r.procedimento_id = Number(a.procedimento_id);
   }
-  let aplicados = 0;
-  for (const r of semConv) {
-    for (const campoData of [r.data_pagamento, r.data_vencimento]) {
-      if (!campoData) continue;
-      const set = porChave.get(`${campoData}|${r.procedimento_id}`);
-      if (set && set.size === 1) {
-        const [only] = [...set];
-        if (only != null) { r.convenio_id = only; aplicados++; }
-        break;
-      }
-    }
-  }
-  console.log(`[SYNC] convenio inferido pela agenda: ${aplicados}`);
-  return aplicados;
+  console.log(`[SYNC] receitas com agendamento=${comVinculo} sem=${semVinculo} convenio herdado=${convenioAplicado}`);
+  return { comVinculo, semVinculo, convenioAplicado };
 }
+
 
 /**
  * Contas a receber / faturamento em lote de convênio. Os caminhos variam por conta:
