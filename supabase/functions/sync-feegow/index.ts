@@ -990,6 +990,29 @@ Deno.serve(async (req) => {
       };
 
     }
+    if (mode === "probe-appoint") {
+      // Diagnóstico bruto dos agendamentos de um dia: mostra o JSON cru dos que vêm com valor 0.
+      const dia = url.searchParams.get("data") ?? toFeegowDate(new Date());
+      const rows = await feegowPaginated("/appoints/search", {
+        data_start: dia, data_end: dia, list_procedures: "1",
+      });
+      const topo = (r: any) => parseCurrency(r.valor_total ?? r.valor_total_agendamento ?? r.total_value ?? r.valor ?? 0);
+      const zerados = rows.filter((r: any) => topo(r) === 0);
+      extra = {
+        ...extra,
+        dia,
+        totalAgendamentos: rows.length,
+        comValorTopo: rows.length - zerados.length,
+        semValorTopo: zerados.length,
+        somaTopo: rows.reduce((s: number, r: any) => s + topo(r), 0),
+        chaves: [...new Set(rows.flatMap((r: any) => Object.keys(r ?? {})))],
+        chavesProcedimentos: [...new Set(rows.flatMap((r: any) =>
+          asArray(r.procedimentos ?? r.procedures ?? r.itens ?? r.items ?? []).flatMap((i: any) => Object.keys(i ?? {}))))],
+        amostrasZeradas: zerados.slice(0, 3).map((r: any) => JSON.stringify(r).slice(0, 2500)),
+        amostrasComValor: rows.filter((r: any) => topo(r) > 0).slice(0, 2).map((r: any) => JSON.stringify(r).slice(0, 2000)),
+      };
+    }
+
 
     if (mode === "geocode") extra = { ...extra, geocode: await geocodeBairros(supabase, limit || 30) };
 
