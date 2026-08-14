@@ -617,12 +617,18 @@ async function syncFinancial(supabase: any, from: Date, to: Date) {
       diagnosticoReceb = `recebíveis indisponíveis → ${receb.diagnostico.join(" | ")}`;
     }
 
-    // Convênio ausente na fatura → tenta deduzir pela agenda
+    // Convênio ausente na fatura → herda do agendamento vinculado ao item
+    let vinculo = { comVinculo: 0, semVinculo: 0, convenioAplicado: 0 };
     try {
-      await inferirConvenioPelaAgenda(supabase, mapped);
+      vinculo = await enriquecerPelaAgenda(supabase, mapped);
     } catch (e) {
-      console.warn("inferir convenio", String(e).slice(0, 200));
+      console.warn("enriquecer pela agenda", String(e).slice(0, 200));
     }
+    diagnosticoReceb = [
+      diagnosticoReceb,
+      `vinculo agenda: ${vinculo.comVinculo} com / ${vinculo.semVinculo} sem, convênio herdado ${vinculo.convenioAplicado}`,
+    ].filter(Boolean).join(" || ");
+
 
 
     const seen = new Set<number>();
