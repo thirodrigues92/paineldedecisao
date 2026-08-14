@@ -648,8 +648,9 @@ async function syncFinancial(supabase: any, from: Date, to: Date) {
       }
     }
 
-    if (errors.length) await logEnd(supabase, id, false, total, `Upsert errors: ${errors.slice(0, 3).join(" | ")}`);
-    else await logEnd(supabase, id, true, total);
+    if (errors.length) await logEnd(supabase, id, false, total, `Upsert errors: ${errors.slice(0, 3).join(" | ")} ${diagnosticoReceb}`);
+    else await logEnd(supabase, id, true, total, diagnosticoReceb || undefined);
+
   } catch (e) {
     await logEnd(supabase, id, false, total, String(e));
     throw e;
