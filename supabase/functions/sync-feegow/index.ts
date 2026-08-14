@@ -492,6 +492,36 @@ async function enriquecerPelaAgenda(supabase: any, rows: any[]) {
   return { comVinculo, semVinculo, convenioAplicado };
 }
 
+/** Normaliza nome de convênio para comparação (sem acento, sem espaço, minúsculo). */
+function normNome(s: string) {
+  return String(s ?? "")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+/**
+ * A Feegow grava o nome do convênio na CATEGORIA do lançamento
+ * (ex.: "Medprev", "Iparv", "Cassi"). Casa esse texto com o catálogo de convênios.
+ */
+async function mapearConvenioPorCategoria(supabase: any, rows: any[]) {
+  const { data: convs } = await supabase.from("convenios").select("convenio_id, nome");
+  if (!convs?.length) return 0;
+  const catalogo = convs.map((c: any) => ({ id: Number(c.convenio_id), n: normNome(c.nome) }))
+    .filter((c: any) => c.n.length >= 3);
+  let aplicados = 0;
+  for (const r of rows) {
+    if (r.tipo !== "receita" || r.convenio_id != null) continue;
+    const alvo = normNome(r.categoria);
+    if (alvo.length < 3) continue;
+    const hit = catalogo.find((c: any) => c.n === alvo)
+      ?? catalogo.find((c: any) => c.n.includes(alvo) || alvo.includes(c.n));
+    if (hit) { r.convenio_id = hit.id; aplicados++; }
+  }
+  console.log(`[SYNC] convenio pela categoria: ${aplicados}`);
+  return aplicados;
+}
+
+
 
 /**
  * Contas a receber / faturamento em lote de convênio. Os caminhos variam por conta:
