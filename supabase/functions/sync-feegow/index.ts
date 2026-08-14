@@ -933,6 +933,23 @@ Deno.serve(async (req) => {
       }
       extra = { ...extra, probe: results };
     }
+    if (mode === "probe-invoice") {
+      const to = new Date(); to.setDate(to.getDate() + 30);
+      const fromD = new Date(); fromD.setDate(fromD.getDate() - 30);
+      const c = await feegow("/financial/list-invoice", {
+        data_start: toFeegowDate(fromD), data_end: toFeegowDate(to), tipo_transacao: "C",
+      });
+      const rows = asArray(c);
+      extra = {
+        ...extra,
+        totalFaturas: rows.length,
+        amostras: rows.slice(0, 2).map((r) => JSON.stringify(r).slice(0, 2500)),
+        chaves: [...new Set(rows.flatMap((r: any) => Object.keys(r ?? {})))],
+        chavesItens: [...new Set(rows.flatMap((r: any) => asArray(r.itens ?? r.items ?? []).flatMap((i: any) => Object.keys(i ?? {}))))],
+        chavesDetalhes: [...new Set(rows.flatMap((r: any) => asArray(r.detalhes ?? r.details ?? []).flatMap((i: any) => Object.keys(i ?? {}))))],
+      };
+
+    }
 
     if (mode === "geocode") extra = { ...extra, geocode: await geocodeBairros(supabase, limit || 30) };
 
