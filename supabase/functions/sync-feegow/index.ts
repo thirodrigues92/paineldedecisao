@@ -1013,6 +1013,32 @@ Deno.serve(async (req) => {
       };
     }
 
+    if (mode === "probe-precos") {
+      // Diagnóstico bruto: procura tabelas de preço por procedimento/convênio.
+      const gets: Array<[string, Record<string, string>]> = [
+        ["/procedures/list-values", {}],
+        ["/procedures/values", {}],
+        ["/procedures/list-price", {}],
+        ["/procedures/price-table", {}],
+        ["/procedures/list", { tabela_id: "13" }],
+        ["/procedures/list-procedure-value", { tabela_id: "13" }],
+        ["/settings/list-price-table", {}],
+        ["/company/list-price-table", {}],
+        ["/insurance/list-price-table", {}],
+        ["/insurance/list-plans", {}],
+        ["/procedures/list-table", {}],
+      ];
+      const results: Record<string, string> = {};
+      for (const [p, params] of gets) {
+        try {
+          const c = await feegow(p, params);
+          const rows = asArray(c);
+          results[`GET ${p} ${JSON.stringify(params)}`] = `${rows.length} registros | amostra: ${JSON.stringify(rows[0] ?? null).slice(0, 500)}`;
+        } catch (e) { results[`GET ${p} ${JSON.stringify(params)}`] = String(e).slice(0, 180); }
+      }
+      extra = { ...extra, probePrecos: results };
+    }
+
 
     if (mode === "geocode") extra = { ...extra, geocode: await geocodeBairros(supabase, limit || 30) };
 
