@@ -423,6 +423,8 @@ async function syncAgendamentos(supabase: any, from: Date, to: Date) {
           plano_id: r.plano_id ? Number(r.plano_id) : null,
           tabela_id: r.tabela_id ? Number(r.tabela_id) : null,
           valor_total: v.valor,
+          valor_estimado: v.estimado,
+
           valor_origem: v.origem,
           qtd_procedimentos: v.qtd,
           procedimentos_detalhe: v.detalhe,
