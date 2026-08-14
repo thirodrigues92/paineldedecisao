@@ -1073,6 +1073,26 @@ Deno.serve(async (req) => {
       }
       extra = { ...extra, probe: results };
     }
+    if (mode === "probe-paciente") {
+      // Descobre campos crus do paciente (celular/origem) e catálogos de origem/local.
+      const results: Record<string, unknown> = {};
+      const { data: algum } = await supabase.from("pacientes").select("paciente_id").limit(1);
+      const pid = Number(url.searchParams.get("paciente_id") ?? algum?.[0]?.paciente_id ?? 0);
+      try {
+        const c = await feegow("/patient/search", { paciente_id: String(pid) });
+        const p: any = Array.isArray(c) ? c[0] : c;
+        results["paciente_chaves"] = Object.keys(p ?? {});
+        results["paciente_amostra"] = JSON.stringify(p ?? null).slice(0, 1500);
+      } catch (e) { results["paciente"] = String(e).slice(0, 200); }
+      for (const p of ["/patient/list-origin", "/patient/origin", "/patient/list-origins", "/company/list-locals", "/company/list-rooms", "/company/list-unity"]) {
+        try {
+          const rows = asArray(await feegow(p));
+          results[`GET ${p}`] = `${rows.length} registros | ${JSON.stringify(rows[0] ?? null).slice(0, 300)}`;
+        } catch (e) { results[`GET ${p}`] = String(e).slice(0, 160); }
+      }
+      extra = { ...extra, probe_paciente: results };
+    }
+
     if (mode === "probe-invoice") {
       const to = new Date(); to.setDate(to.getDate() + 30);
       const fromD = new Date(); fromD.setDate(fromD.getDate() - 30);
