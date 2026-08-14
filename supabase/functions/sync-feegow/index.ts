@@ -490,7 +490,7 @@ async function syncFinancial(supabase: any, from: Date, to: Date) {
             categoria: categoriaNome,
             centro_custo: centroNome,
             unidade_id: det.unidade_id || invoice.unidade_id ? Number(det.unidade_id ?? invoice.unidade_id) : null,
-            convenio_id: det.convenio_id || invoice.convenio_id ? Number(det.convenio_id ?? invoice.convenio_id) : null,
+            convenio_id: pickConvenioId(det, item, invoice, itemComCategoria),
             procedimento_id: Number.isFinite(procId) && procId > 0 ? procId : null,
             descricao_item: descricaoItem,
             valor,
