@@ -49,6 +49,7 @@ type Linha = {
   procedimento: string;
   status: string;
   valor: number;
+  estimado: boolean;
 };
 
 type Coluna = { key: keyof Linha; label: string; align?: "right" };
