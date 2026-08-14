@@ -1,30 +1,34 @@
-# Detalhar cada lançamento do faturamento
+# Corrigir valores dos atendimentos (14/08/2026)
 
-Hoje, ao abrir um item da "Composição do faturamento", cada lançamento mostra só data, categoria, particular/convênio e status — quase sempre "Não classificado · Particular · pago". Dá para mostrar bem mais, usando o vínculo do lançamento com o agendamento.
+## O que os dados mostram hoje
 
-## O que existe hoje no banco (verificado)
+Consultei o banco para 14/08/2026:
 
-- 6.289 lançamentos de receita: todos têm categoria e status, 4.514 (72%) já têm agendamento vinculado, apenas 155 têm convênio direto e nenhum tem unidade.
-- Pelo agendamento vinculado dá para puxar: paciente, profissional, especialidade, procedimento, data/hora do atendimento, status do agendamento e convênio (6.229 dos 16.077 agendamentos têm convênio, em 8 convênios do catálogo).
-- Unidade não está preenchida em nenhuma tabela — não dá para exibir.
+| Métrica | Feegow (relatório) | Painel (banco) |
+|---|---|---|
+| Quantidade total | 188 | 189 |
+| Valor total | 27.470,34 | 19.299,05 |
+| Atendidos (qtd) | 152 | 152 |
+| Atendidos (valor) | 20.615,23 | 13.880,25 |
 
-## O que passa a aparecer em cada lançamento
+A quantidade bate (152 atendidos exatos). O que não bate é o **valor**.
 
-Por linha, dentro do item aberto:
+Causa confirmada: **100 dos 189 agendamentos do dia estão com valor 0** no banco. A sincronização lê o valor apenas do campo de topo do agendamento (`valor_total`/`total_value`), e a Feegow não devolve esse campo preenchido em boa parte dos registros — o valor real está na lista de procedimentos de cada agendamento (a chamada já pede `list_procedures=1`, mas esses itens não são somados).
 
-- Valor e data do pagamento/vencimento
-- Procedimento (nome real, do catálogo) e especialidade
-- Profissional que atendeu
-- Paciente (identificador; a base não guarda nome, só o ID e bairro/cidade)
-- Convênio pelo nome (ou "Particular") em vez do rótulo genérico
-- Data e hora do atendimento + status do agendamento
-- ID do lançamento, para conferência na Feegow
-- Quando não há agendamento vinculado, a linha mostra "Sem vínculo com a agenda" e exibe o que existe (categoria bruta, descrição do item da fatura)
+A diferença de 1 registro na quantidade (189 x 188) é provavelmente um agendamento com status que o relatório da Feegow não conta (ex.: excluído/remarcado) — será verificado junto.
 
-Ordenação por data decrescente, com as linhas em formato de lista compacta e legível.
+## O que fazer
+
+1. **Diagnóstico bruto (primeiro passo obrigatório)**: rodar um probe na Feegow para um dia conhecido e imprimir o JSON cru de agendamentos com valor 0, listando todas as chaves disponíveis (itens de procedimento, preço por item, valor de convênio x particular). Sem interpretação — dados brutos.
+2. **Corrigir a extração do valor** na sincronização: somar o valor dos procedimentos do agendamento quando o campo de topo vier zerado/ausente, cobrindo as variações de nome de campo que o probe revelar.
+3. **Guardar o detalhe**: gravar também a quantidade de procedimentos e o valor por procedimento do agendamento, para permitir conferência linha a linha contra o relatório da Feegow.
+4. **Ressincronizar** o período afetado e comparar novamente 14/08/2026 contra os números do relatório (188 / 27.470,34 / 152 / 20.615,23), documentando qualquer resíduo.
+5. **Explicar a diferença de contagem**: identificar qual agendamento entra no painel e não no relatório (status) e alinhar o critério de contagem.
+6. **Aba de conferência na tela de Auditoria**: uma comparação por dia — quantidade, valor e média por status — para você bater com o relatório da Feegow a qualquer momento.
 
 ## Detalhes técnicos
 
-- `fetchFinancialRows` passa a trazer também `id` e `agendamento_id`.
-- No dashboard, os lançamentos de cada bucket de serviço são cruzados com os agendamentos já carregados (mapa por `agendamento_id`) e com os catálogos de profissionais, especialidades, procedimentos e convênios; carregar `convenios` (nome) junto dos demais catálogos.
-- Apenas apresentação: nenhuma alteração de schema, sincronização ou cálculo de KPI.
+- `supabase/functions/sync-feegow/index.ts`, função `syncAgendamentos`: `valor_total` hoje usa apenas `parseCurrency(r.valor_total ?? r.valor_total_agendamento ?? r.total_value ?? r.valor ?? 0)`. Passa a somar os itens de `r.procedimentos / r.procedures / r.itens` quando o topo for 0.
+- Novos campos em `agendamentos` via migração: `qtd_procedimentos` (int) e `procedimentos_detalhe` (jsonb) para rastreabilidade.
+- Modo de probe temporário (`?mode=probe-appoint&data=DD-MM-YYYY`) para inspeção do JSON cru, sem escrever no banco.
+- Backfill: reexecutar `syncAgendamentos` no intervalo histórico após a correção.
