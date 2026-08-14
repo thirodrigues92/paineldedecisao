@@ -128,7 +128,7 @@ function RelatorioAtendimentosPage() {
       if (typeof va === "number" && typeof vb === "number") return (va - vb) * dir;
       return String(va).localeCompare(String(vb), "pt-BR") * dir;
     });
-  }, [query.data, busca, ordem]);
+  }, [query.data, busca, ordem, filtroFaturado]);
 
   const totalValor = linhas.reduce((s, l) => s + l.valor, 0);
   const totalFaturado = linhas.reduce((s, l) => s + l.faturado, 0);
