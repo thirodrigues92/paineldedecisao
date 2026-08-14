@@ -1051,7 +1051,11 @@ Deno.serve(async (req) => {
     }
 
     let extra: Record<string, unknown> = {};
-    if (mode === "pacientes") extra = { ...extra, pacientes: await syncPacientes(supabase, limit || 400) };
+    if (mode === "pacientes") {
+      const recarregar = url.searchParams.get("recarregar") === "1";
+      extra = { ...extra, pacientes: await syncPacientes(supabase, limit || 400, recarregar) };
+    }
+
     if (mode === "probe") {
       // Diagnóstico bruto: descobre quais endpoints financeiros existem nesta conta Feegow.
       const to = new Date(); to.setDate(to.getDate() + 30);
