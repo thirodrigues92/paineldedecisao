@@ -2,7 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, CalendarClock, UserX, DollarSign,
   Stethoscope, Building2, MapPinned, Settings, LogOut,
-  TrendingUp, PieChart, Activity, LineChart as LineIcon, Syringe,
+  TrendingUp, PieChart, Activity, LineChart as LineIcon, Syringe, ShieldCheck,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
