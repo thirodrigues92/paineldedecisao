@@ -133,13 +133,21 @@ function DashboardPage() {
       (r.procedimento_id ? procNomes.get(Number(r.procedimento_id)) : null) ?? r.descricao_item ?? null;
     const nome = categoriaServico(nomeProc);
     if (nomeProc && nome !== "Faturamento em lote (convênio)") classificado += valor;
-    const cur = byServico.get(nome) ?? { nome, valor: 0, qtd: 0, itens: new Map<string, { nome: string; valor: number; qtd: number }>() };
+    const cur: ServicoBucket = byServico.get(nome) ?? { nome, valor: 0, qtd: 0, itens: new Map<string, ItemServico>() };
     cur.valor += valor;
     cur.qtd += 1;
     const itemNome = (nomeProc ?? "").trim() || "Sem descrição na fatura";
-    const it = cur.itens.get(itemNome) ?? { nome: itemNome, valor: 0, qtd: 0 };
+    const it: ItemServico = cur.itens.get(itemNome) ?? { nome: itemNome, valor: 0, qtd: 0, lancamentos: [] };
     it.valor += valor;
     it.qtd += 1;
+    it.lancamentos.push({
+      nome: itemNome,
+      valor,
+      data: r.data_pagamento ?? r.data_vencimento ?? null,
+      status: r.status ?? null,
+      categoria: r.categoria ?? null,
+      convenio: Boolean(r.convenio_id),
+    });
     cur.itens.set(itemNome, it);
     byServico.set(nome, cur);
   }
