@@ -439,7 +439,94 @@ async function loadFinancialLookups() {
   return { categorias, centros };
 }
 
+/**
+ * A Feegow espalha o convênio em nomes/níveis diferentes conforme o tipo de fatura.
+ * Varre todos os candidatos e devolve o primeiro id válido (>0). Particular = null.
+ */
+function pickConvenioId(...sources: any[]): number | null {
+  const chaves = [
+    "convenio_id", "insurance_id", "convenioId", "id_convenio",
+    "plano_convenio_id", "health_plan_id", "payer_id",
+  ];
+  for (const src of sources) {
+    if (!src || typeof src !== "object") continue;
+    for (const k of chaves) {
+      const v = Number(src[k]);
+      if (Number.isFinite(v) && v > 0) return v;
+    }
+    for (const nested of ["convenio", "insurance", "payer", "plano"]) {
+      const obj = src[nested];
+      if (obj && typeof obj === "object") {
+        const v = Number(obj.id ?? obj.convenio_id ?? obj.insurance_id);
+        if (Number.isFinite(v) && v > 0) return v;
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Preenche convenio_id nos lançamentos que a fatura não identificou, usando a agenda:
+ * mesma data + mesmo procedimento → convênio do agendamento, apenas quando há
+ * um único convênio possível para aquela combinação (evita atribuição errada).
+ */
+async function inferirConvenioPelaAgenda(supabase: any, rows: any[]) {
+  const semConv = rows.filter((r) => r.convenio_id == null && r.procedimento_id && r.tipo === "receita");
+  if (!semConv.length) return 0;
+  const agenda = await selectAllColumn(
+    supabase, "agendamentos", "data, procedimento_id, convenio_id",
+    (q: any) => q.not("procedimento_id", "is", null),
+  );
+  const porChave = new Map<string, Set<number | null>>();
+  for (const a of agenda) {
+    const key = `${a.data}|${a.procedimento_id}`;
+    const set = porChave.get(key) ?? new Set<number | null>();
+    set.add(a.convenio_id == null ? null : Number(a.convenio_id));
+    porChave.set(key, set);
+  }
+  let aplicados = 0;
+  for (const r of semConv) {
+    for (const campoData of [r.data_pagamento, r.data_vencimento]) {
+      if (!campoData) continue;
+      const set = porChave.get(`${campoData}|${r.procedimento_id}`);
+      if (set && set.size === 1) {
+        const [only] = [...set];
+        if (only != null) { r.convenio_id = only; aplicados++; }
+        break;
+      }
+    }
+  }
+  console.log(`[SYNC] convenio inferido pela agenda: ${aplicados}`);
+  return aplicados;
+}
+
+/**
+ * Contas a receber / faturamento em lote de convênio. Os caminhos variam por conta:
+ * tenta em cascata e devolve as linhas do primeiro que responder, além do diagnóstico.
+ */
+async function fetchRecebiveis(from: Date, to: Date) {
+  const candidatos: Array<[string, Record<string, string>]> = [
+    ["/financial/list-account-receivable", { data_start: toFeegowDate(from), data_end: toFeegowDate(to) }],
+    ["/financial/list-receivable", { data_start: toFeegowDate(from), data_end: toFeegowDate(to) }],
+    ["/financial/list-billing", { data_start: toFeegowDate(from), data_end: toFeegowDate(to) }],
+    ["/financial/list-batch", { data_start: toFeegowDate(from), data_end: toFeegowDate(to) }],
+  ];
+  const diagnostico: string[] = [];
+  for (const [path, params] of candidatos) {
+    try {
+      const content = await feegow(path, params);
+      const rows = asArray(content);
+      diagnostico.push(`${path}: ${rows.length} registros`);
+      if (rows.length) return { path, rows, diagnostico };
+    } catch (e) {
+      diagnostico.push(`${path}: ${String(e).slice(0, 160)}`);
+    }
+  }
+  return { path: "", rows: [] as any[], diagnostico };
+}
+
 async function syncFinancial(supabase: any, from: Date, to: Date) {
+
   const id = await logStart(supabase, `financeiro ${toFeegowDate(from)}→${toFeegowDate(to)}`);
   let total = 0;
   const errors: string[] = [];
