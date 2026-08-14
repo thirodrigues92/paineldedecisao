@@ -189,6 +189,14 @@ function RelatorioAtendimentosPage() {
               placeholder="Buscar paciente, celular, procedimento…"
               className="h-9 w-64"
             />
+            <Select value={filtroFaturado} onValueChange={(v) => setFiltroFaturado(v as typeof filtroFaturado)}>
+              <SelectTrigger className="h-9 w-[170px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                <SelectItem value="faturados">Somente faturados</SelectItem>
+                <SelectItem value="nao">Não faturados</SelectItem>
+              </SelectContent>
+            </Select>
             <Button variant="outline" size="sm" onClick={exportarCsv} disabled={!linhas.length}>
               <Download className="mr-1 h-4 w-4" /> CSV
             </Button>
