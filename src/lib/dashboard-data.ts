@@ -33,7 +33,9 @@ export type FinancialRow = {
   convenio_id: number | null;
   procedimento_id: number | null;
   descricao_item: string | null;
+  agendamento_id: number | null;
 };
+
 
 
 function toISO(d: Date) {
@@ -76,7 +78,26 @@ export async function fetchPacientesRegioes(limit = 20_000): Promise<Map<number,
   return map;
 }
 
+/** Mapa paciente_id → nome (para exibir a quem pertence cada lançamento). */
+export async function fetchPacienteNomes(limit = 40_000): Promise<Map<number, string>> {
+  const map = new Map<number, string>();
+  const pageSize = 1_000;
+  for (let from = 0; from < limit; from += pageSize) {
+    const { data, error } = await supabase
+      .from("pacientes")
+      .select("paciente_id, nome")
+      .not("nome", "is", null)
+      .order("paciente_id", { ascending: true })
+      .range(from, from + pageSize - 1);
+    if (error) throw error;
+    for (const p of data ?? []) if (p.nome) map.set(p.paciente_id, p.nome);
+    if (!data || data.length < pageSize) break;
+  }
+  return map;
+}
+
 /** Mapa procedimento_id → nome (catálogo completo). */
+
 export async function fetchProcedimentoNomes(): Promise<Map<number, string>> {
   const map = new Map<number, string>();
   const pageSize = 1_000;
@@ -102,7 +123,7 @@ export async function fetchFinancialRows(f: DashboardFilters, limit = 20_000): P
   for (let from = 0; from < limit; from += pageSize) {
     let q = supabase
       .from("financeiro_lancamentos")
-      .select("tipo, valor, data_vencimento, data_pagamento, status, categoria, unidade_id, convenio_id, procedimento_id, descricao_item")
+      .select("tipo, valor, data_vencimento, data_pagamento, status, categoria, unidade_id, convenio_id, procedimento_id, descricao_item, agendamento_id")
       .gte("data_vencimento", toISO(f.from))
       .lte("data_vencimento", toISO(f.to))
       .order("data_vencimento", { ascending: true })

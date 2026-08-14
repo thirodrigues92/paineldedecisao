@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useFilters } from "@/lib/filters-context";
-import { dashboardQueryKey, fetchDashboardAppointments, fetchFinancialRows, fetchProcedimentoNomes } from "@/lib/dashboard-data";
+import { dashboardQueryKey, fetchDashboardAppointments, fetchFinancialRows, fetchPacienteNomes, fetchProcedimentoNomes } from "@/lib/dashboard-data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { brl, num, pct } from "@/lib/format";
 import { Calendar, DollarSign, UserPlus, UserX, Activity, TrendingUp } from "lucide-react";
@@ -37,6 +37,8 @@ type LancamentoDetalhe = {
   status: string | null;
   categoria: string | null;
   convenio: boolean;
+  pacienteId: number | null;
+  pacienteNome: string | null;
 };
 type ItemServico = { nome: string; valor: number; qtd: number; lancamentos: LancamentoDetalhe[] };
 type ServicoBucket = { nome: string; valor: number; qtd: number; itens: Map<string, ItemServico> };
@@ -52,13 +54,14 @@ function DashboardPage() {
   const query = useQuery({
     queryKey: dashboardQueryKey("dashboard", f),
     queryFn: async () => {
-      const [appointments, financial, procNomes] = await Promise.all([
+      const [appointments, financial, procNomes, pacienteNomes] = await Promise.all([
         fetchDashboardAppointments(f, 30_000),
         fetchFinancialRows(f, 20_000),
         fetchProcedimentoNomes(),
+        fetchPacienteNomes(),
       ]);
 
-      return { appointments, financial, procNomes };
+      return { appointments, financial, procNomes, pacienteNomes };
     },
   });
 
@@ -125,6 +128,13 @@ function DashboardPage() {
   // Feegow não envia o item, cai em "Sem detalhamento da Feegow".
   const procNomes = query.data?.procNomes ?? new Map<number, string>();
 
+  const pacienteNomes = query.data?.pacienteNomes ?? new Map<number, string>();
+  // agendamento_id → paciente_id, para nomear cada lançamento do financeiro.
+  const pacientePorAgendamento = new Map<number, number>();
+  for (const a of rows as any[]) {
+    if (a.agendamento_id && a.paciente_id) pacientePorAgendamento.set(Number(a.agendamento_id), Number(a.paciente_id));
+  }
+
   const receitas = financialRows.filter((r) => r.tipo === "receita");
   const byServico = new Map<string, ServicoBucket>();
   let classificado = 0;
@@ -141,7 +151,10 @@ function DashboardPage() {
     const it: ItemServico = cur.itens.get(itemNome) ?? { nome: itemNome, valor: 0, qtd: 0, lancamentos: [] };
     it.valor += valor;
     it.qtd += 1;
+    const pacienteId = r.agendamento_id ? pacientePorAgendamento.get(Number(r.agendamento_id)) ?? null : null;
     it.lancamentos.push({
+      pacienteId,
+      pacienteNome: pacienteId ? pacienteNomes.get(pacienteId) ?? null : null,
       nome: itemNome,
       valor,
       data: r.data_pagamento ?? r.data_vencimento ?? null,
@@ -413,7 +426,11 @@ function DashboardPage() {
                         .map((l, idx) => (
                           <div key={idx} className="flex items-baseline justify-between gap-2 text-xs">
                             <div className="min-w-0">
-                              <div className="text-foreground">
+                              <div className="truncate text-foreground" title={l.pacienteNome ?? ""}>
+                                {l.pacienteNome
+                                  ?? (l.pacienteId ? `Paciente #${l.pacienteId}` : "Paciente não vinculado")}
+                              </div>
+                              <div className="text-muted-foreground">
                                 {l.data ? new Date(`${l.data}T12:00:00`).toLocaleDateString("pt-BR") : "Sem data"}
                               </div>
                               <div className="truncate text-muted-foreground" title={l.categoria ?? ""}>

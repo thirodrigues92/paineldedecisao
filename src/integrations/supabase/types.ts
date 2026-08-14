@@ -308,6 +308,7 @@ export type Database = {
           latitude: number | null
           longitude: number | null
           metricas: Json
+          nome: string | null
           origem_id: number | null
           paciente_id: number
           sexo: string | null
@@ -324,6 +325,7 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           metricas?: Json
+          nome?: string | null
           origem_id?: number | null
           paciente_id: number
           sexo?: string | null
@@ -340,6 +342,7 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           metricas?: Json
+          nome?: string | null
           origem_id?: number | null
           paciente_id?: number
           sexo?: string | null
