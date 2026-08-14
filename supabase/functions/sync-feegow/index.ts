@@ -530,6 +530,8 @@ async function syncFinancial(supabase: any, from: Date, to: Date) {
   const id = await logStart(supabase, `financeiro ${toFeegowDate(from)}→${toFeegowDate(to)}`);
   let total = 0;
   const errors: string[] = [];
+  let diagnosticoReceb = "";
+
   try {
     const { categorias, centros } = await loadFinancialLookups();
     const mapped: any[] = [];
@@ -615,7 +617,7 @@ async function syncFinancial(supabase: any, from: Date, to: Date) {
         });
       });
     } else {
-      errors.push(`recebíveis indisponíveis → ${receb.diagnostico.join(" | ")}`);
+      diagnosticoReceb = `recebíveis indisponíveis → ${receb.diagnostico.join(" | ")}`;
     }
 
     // Convênio ausente na fatura → tenta deduzir pela agenda
