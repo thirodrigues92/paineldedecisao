@@ -193,6 +193,7 @@ export type Database = {
       }
       financeiro_lancamentos: {
         Row: {
+          agendamento_id: number | null
           categoria: string | null
           centro_custo: string | null
           convenio_id: number | null
@@ -209,6 +210,7 @@ export type Database = {
           valor: number
         }
         Insert: {
+          agendamento_id?: number | null
           categoria?: string | null
           centro_custo?: string | null
           convenio_id?: number | null
@@ -225,6 +227,7 @@ export type Database = {
           valor?: number
         }
         Update: {
+          agendamento_id?: number | null
           categoria?: string | null
           centro_custo?: string | null
           convenio_id?: number | null
