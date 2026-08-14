@@ -74,6 +74,7 @@ function RelatorioAtendimentosPage() {
   const f = useFilters();
   const [busca, setBusca] = useState("");
   const [filtroFaturado, setFiltroFaturado] = useState<"todos" | "faturados" | "nao">("todos");
+  const [filtroValor, setFiltroValor] = useState<"todos" | "confirmado" | "estimado">("todos");
   const [ordem, setOrdem] = useState<{ key: keyof Linha; dir: "asc" | "desc" }>({
     key: "data",
     dir: "desc",
@@ -127,6 +128,8 @@ function RelatorioAtendimentosPage() {
     }
     if (filtroFaturado === "faturados") base = base.filter((l) => l.faturado > 0);
     if (filtroFaturado === "nao") base = base.filter((l) => l.faturado <= 0);
+    if (filtroValor === "confirmado") base = base.filter((l) => !l.estimado);
+    if (filtroValor === "estimado") base = base.filter((l) => l.estimado);
     const dir = ordem.dir === "asc" ? 1 : -1;
     return [...base].sort((a, b) => {
       const va = a[ordem.key];
@@ -134,10 +137,13 @@ function RelatorioAtendimentosPage() {
       if (typeof va === "number" && typeof vb === "number") return (va - vb) * dir;
       return String(va).localeCompare(String(vb), "pt-BR") * dir;
     });
-  }, [query.data, busca, ordem, filtroFaturado]);
+  }, [query.data, busca, ordem, filtroFaturado, filtroValor]);
 
-  const totalValor = linhas.reduce((s, l) => s + l.valor, 0);
+  const totalConfirmado = linhas.reduce((s, l) => s + (l.estimado ? 0 : l.valor), 0);
+  const totalEstimado = linhas.reduce((s, l) => s + (l.estimado ? l.valor : 0), 0);
+  const totalValor = totalConfirmado + totalEstimado;
   const totalFaturado = linhas.reduce((s, l) => s + l.faturado, 0);
+  const qtdEstimado = linhas.filter((l) => l.estimado).length;
 
   const alternarOrdem = (key: keyof Linha) =>
     setOrdem((o) => (o.key === key ? { key, dir: o.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" }));
