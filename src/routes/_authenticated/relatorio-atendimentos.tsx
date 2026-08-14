@@ -11,6 +11,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { brl, num } from "@/lib/format";
 import { ArrowDown, ArrowUp, Download } from "lucide-react";
@@ -71,6 +72,7 @@ const fmtData = (d: string) =>
 function RelatorioAtendimentosPage() {
   const f = useFilters();
   const [busca, setBusca] = useState("");
+  const [filtroFaturado, setFiltroFaturado] = useState<"todos" | "faturados" | "nao">("todos");
   const [ordem, setOrdem] = useState<{ key: keyof Linha; dir: "asc" | "desc" }>({
     key: "data",
     dir: "desc",
@@ -109,14 +111,17 @@ function RelatorioAtendimentosPage() {
 
   const linhas = useMemo(() => {
     const termo = busca.trim().toLowerCase();
-    const base = termo
-      ? (query.data ?? []).filter((l) =>
-          [l.paciente, l.celular, l.procedimento, l.local, l.status, l.origem]
-            .join(" ")
-            .toLowerCase()
-            .includes(termo),
-        )
-      : (query.data ?? []);
+    let base = query.data ?? [];
+    if (termo) {
+      base = base.filter((l) =>
+        [l.paciente, l.celular, l.procedimento, l.local, l.status, l.origem]
+          .join(" ")
+          .toLowerCase()
+          .includes(termo),
+      );
+    }
+    if (filtroFaturado === "faturados") base = base.filter((l) => l.faturado > 0);
+    if (filtroFaturado === "nao") base = base.filter((l) => l.faturado <= 0);
     const dir = ordem.dir === "asc" ? 1 : -1;
     return [...base].sort((a, b) => {
       const va = a[ordem.key];
@@ -124,7 +129,7 @@ function RelatorioAtendimentosPage() {
       if (typeof va === "number" && typeof vb === "number") return (va - vb) * dir;
       return String(va).localeCompare(String(vb), "pt-BR") * dir;
     });
-  }, [query.data, busca, ordem]);
+  }, [query.data, busca, ordem, filtroFaturado]);
 
   const totalValor = linhas.reduce((s, l) => s + l.valor, 0);
   const totalFaturado = linhas.reduce((s, l) => s + l.faturado, 0);
@@ -185,6 +190,14 @@ function RelatorioAtendimentosPage() {
               placeholder="Buscar paciente, celular, procedimento…"
               className="h-9 w-64"
             />
+            <Select value={filtroFaturado} onValueChange={(v) => setFiltroFaturado(v as typeof filtroFaturado)}>
+              <SelectTrigger className="h-9 w-[170px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                <SelectItem value="faturados">Somente faturados</SelectItem>
+                <SelectItem value="nao">Não faturados</SelectItem>
+              </SelectContent>
+            </Select>
             <Button variant="outline" size="sm" onClick={exportarCsv} disabled={!linhas.length}>
               <Download className="mr-1 h-4 w-4" /> CSV
             </Button>
@@ -234,7 +247,7 @@ function RelatorioAtendimentosPage() {
                       <td className="whitespace-nowrap px-3 py-2">{l.celular}</td>
                       <td className="whitespace-nowrap px-3 py-2">{fmtData(l.data)}</td>
                       <td className="whitespace-nowrap px-3 py-2 text-right">
-                        {l.faturado > 0 ? brl(l.faturado) : <span className="text-muted-foreground">Não</span>}
+                        <span className={l.faturado > 0 ? "" : "text-muted-foreground"}>{brl(l.faturado)}</span>
                       </td>
                       <td className="whitespace-nowrap px-3 py-2">{l.hora}</td>
                       <td className="px-3 py-2">{l.local}</td>
