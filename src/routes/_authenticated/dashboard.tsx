@@ -30,7 +30,15 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 const compactBrl = (n: number) =>
   Math.abs(n) >= 1000 ? `R$ ${(n / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 0 })}k` : brl(n);
 
-type ItemServico = { nome: string; valor: number; qtd: number };
+type LancamentoDetalhe = {
+  nome: string;
+  valor: number;
+  data: string | null;
+  status: string | null;
+  categoria: string | null;
+  convenio: boolean;
+};
+type ItemServico = { nome: string; valor: number; qtd: number; lancamentos: LancamentoDetalhe[] };
 type ServicoBucket = { nome: string; valor: number; qtd: number; itens: Map<string, ItemServico> };
 
 
@@ -39,6 +47,7 @@ type ServicoBucket = { nome: string; valor: number; qtd: number; itens: Map<stri
 function DashboardPage() {
   const f = useFilters();
   const [detalhe, setDetalhe] = useState<string | null>(null);
+  const [itemAberto, setItemAberto] = useState<string | null>(null);
 
   const query = useQuery({
     queryKey: dashboardQueryKey("dashboard", f),
@@ -125,13 +134,21 @@ function DashboardPage() {
       (r.procedimento_id ? procNomes.get(Number(r.procedimento_id)) : null) ?? r.descricao_item ?? null;
     const nome = categoriaServico(nomeProc);
     if (nomeProc && nome !== "Faturamento em lote (convênio)") classificado += valor;
-    const cur = byServico.get(nome) ?? { nome, valor: 0, qtd: 0, itens: new Map<string, { nome: string; valor: number; qtd: number }>() };
+    const cur: ServicoBucket = byServico.get(nome) ?? { nome, valor: 0, qtd: 0, itens: new Map<string, ItemServico>() };
     cur.valor += valor;
     cur.qtd += 1;
     const itemNome = (nomeProc ?? "").trim() || "Sem descrição na fatura";
-    const it = cur.itens.get(itemNome) ?? { nome: itemNome, valor: 0, qtd: 0 };
+    const it: ItemServico = cur.itens.get(itemNome) ?? { nome: itemNome, valor: 0, qtd: 0, lancamentos: [] };
     it.valor += valor;
     it.qtd += 1;
+    it.lancamentos.push({
+      nome: itemNome,
+      valor,
+      data: r.data_pagamento ?? r.data_vencimento ?? null,
+      status: r.status ?? null,
+      categoria: r.categoria ?? null,
+      convenio: Boolean(r.convenio_id),
+    });
     cur.itens.set(itemNome, it);
     byServico.set(nome, cur);
   }
@@ -370,15 +387,48 @@ function DashboardPage() {
             </SheetDescription>
           </SheetHeader>
           <div className="mt-4 space-y-2">
-            {detalheItens.map((it) => (
-              <div key={it.nome} className="rounded-lg border border-border p-3">
-                <div className="text-sm font-medium break-words">{it.nome}</div>
-                <div className="mt-1 flex items-baseline justify-between text-xs text-muted-foreground">
-                  <span className="text-sm font-semibold text-foreground">{brl(it.valor)}</span>
-                  <span>{num(it.qtd)} lanç. · ticket {brl(it.qtd > 0 ? it.valor / it.qtd : 0)}</span>
+            {detalheItens.map((it) => {
+              const aberto = itemAberto === it.nome;
+              return (
+                <div key={it.nome} className="rounded-lg border border-border p-3">
+                  <button
+                    type="button"
+                    className="w-full text-left"
+                    onClick={() => setItemAberto(aberto ? null : it.nome)}
+                  >
+                    <div className="text-sm font-medium break-words">{it.nome}</div>
+                    <div className="mt-1 flex items-baseline justify-between text-xs text-muted-foreground">
+                      <span className="text-sm font-semibold text-foreground">{brl(it.valor)}</span>
+                      <span>{num(it.qtd)} lanç. · ticket {brl(it.qtd > 0 ? it.valor / it.qtd : 0)}</span>
+                    </div>
+                    <div className="mt-1 text-[11px] text-primary">
+                      {aberto ? "Ocultar lançamentos" : "Ver cada lançamento"}
+                    </div>
+                  </button>
+
+                  {aberto && (
+                    <div className="mt-2 space-y-1 border-t border-border pt-2">
+                      {[...it.lancamentos]
+                        .sort((a, b) => (b.data ?? "").localeCompare(a.data ?? ""))
+                        .map((l, idx) => (
+                          <div key={idx} className="flex items-baseline justify-between gap-2 text-xs">
+                            <div className="min-w-0">
+                              <div className="text-foreground">
+                                {l.data ? new Date(`${l.data}T12:00:00`).toLocaleDateString("pt-BR") : "Sem data"}
+                              </div>
+                              <div className="truncate text-muted-foreground" title={l.categoria ?? ""}>
+                                {(l.categoria ?? "Sem categoria")} · {l.convenio ? "Convênio" : "Particular"}
+                                {l.status ? ` · ${l.status}` : ""}
+                              </div>
+                            </div>
+                            <span className="shrink-0 font-medium text-foreground">{brl(l.valor)}</span>
+                          </div>
+                        ))}
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </SheetContent>
       </Sheet>
