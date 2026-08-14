@@ -897,6 +897,43 @@ Deno.serve(async (req) => {
 
     let extra: Record<string, unknown> = {};
     if (mode === "pacientes") extra = { ...extra, pacientes: await syncPacientes(supabase, limit || 400) };
+    if (mode === "probe") {
+      // Diagnóstico bruto: descobre quais endpoints financeiros existem nesta conta Feegow.
+      const to = new Date(); to.setDate(to.getDate() + 30);
+      const fromD = new Date(); fromD.setDate(fromD.getDate() - 90);
+      const ds = toFeegowDate(fromD), de = toFeegowDate(to);
+      const gets: Array<[string, Record<string, string>]> = [
+        ["/financial/list-account-receivable", { data_start: ds, data_end: de }],
+        ["/financial/list-account-receivable", { data_inicio: ds, data_fim: de }],
+        ["/financial/list-invoice", { data_start: ds, data_end: de, tipo_transacao: "C", status: "0" }],
+        ["/financial/list-bank-account", {}],
+        ["/financial/list-payment-method", {}],
+        ["/insurance/list-tiss-batch", { data_start: ds, data_end: de }],
+        ["/insurance/list-guides", { data_start: ds, data_end: de }],
+      ];
+      const posts: Array<[string, Record<string, unknown>]> = [
+        ["/core/financial/base/account-receivable", { page: 1, perPage: 5 }],
+        ["/core/financial/receivable", { page: 1, perPage: 5 }],
+        ["/core/financial/movement", { page: 1, perPage: 5 }],
+        ["/core/insurance/base/insurance", { page: 1, perPage: 5 }],
+      ];
+      const results: Record<string, string> = {};
+      for (const [p, params] of gets) {
+        try {
+          const c = await feegow(p, params);
+          const rows = asArray(c);
+          results[`GET ${p} ${JSON.stringify(params)}`] = `${rows.length} registros | amostra: ${JSON.stringify(rows[0] ?? null).slice(0, 400)}`;
+        } catch (e) { results[`GET ${p} ${JSON.stringify(params)}`] = String(e).slice(0, 200); }
+      }
+      for (const [p, body] of posts) {
+        try {
+          const rows = await feegowCore(p, body);
+          results[`POST ${p}`] = `${rows.length} registros | amostra: ${JSON.stringify(rows[0] ?? null).slice(0, 400)}`;
+        } catch (e) { results[`POST ${p}`] = String(e).slice(0, 200); }
+      }
+      extra = { ...extra, probe: results };
+    }
+
     if (mode === "geocode") extra = { ...extra, geocode: await geocodeBairros(supabase, limit || 30) };
 
     await refreshViews(supabase);
