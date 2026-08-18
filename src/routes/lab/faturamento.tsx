@@ -102,13 +102,12 @@ function LabFaturamento() {
   const scanListInvoice = async () => {
     setLoading(true);
     setResult(null);
+    setSequenceResults([]); // Limpa ANTES de iniciar a varredura
+    
     const steps = [
-      { m: "GET", p: { data_start: "01-01-2026", data_end: "31-12-2026", tipo_transacao: "D", unidade_id: "0" }, desc: "D (Débito) 2026" },
-      { m: "GET", p: { data_start: "01-01-2026", data_end: "31-12-2026", tipo_transacao: "C", unidade_id: "0" }, desc: "C (Crédito) 2026" },
-      { m: "GET", p: { data_start: "01-01-2026", data_end: "31-12-2026", tipo_transacao: "R", unidade_id: "0" }, desc: "R (Receita) 2026" },
-      { m: "GET", p: { data_start: "01-01-2026", data_end: "31-12-2026", unidade_id: "0" }, desc: "Sem tipo_transacao 2026" },
-      { m: "GET", p: { data_start: "01-01-2019", data_end: "31-12-2019", tipo_transacao: "D", unidade_id: "0" }, desc: "D (Débito) 2019" },
-      { m: "GET", p: {}, desc: "Sem parâmetros (Erro)" },
+      { m: "GET", p: { data_start: "01-01-2026", data_end: "31-12-2026", tipo_transacao: "C", unidade_id: "0", start: "0", offset: "50" }, desc: "C (Crédito) 2026" },
+      { m: "GET", p: { data_start: "01-01-2026", data_end: "31-12-2026", tipo_transacao: "D", unidade_id: "0", start: "0", offset: "50" }, desc: "D (Débito) 2026" },
+      { m: "GET", p: { data_start: "01-01-2026", data_end: "31-12-2026", tipo_transacao: "T", unidade_id: "0", start: "0", offset: "50" }, desc: "T (Transferência) 2026" },
     ];
 
     const results = [];
@@ -136,7 +135,7 @@ function LabFaturamento() {
         raw: res
       };
       results.push(item);
-      if (!firstSuccess && res.http_status === 200 && res.api_success) {
+      if (!firstSuccess && res.http_status === 200 && res.api_success && s.p.tipo_transacao === "C") {
         firstSuccess = res;
       }
     }
