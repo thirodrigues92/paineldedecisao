@@ -44,8 +44,8 @@ function LabFaturamento() {
   });
 
   const syncMutation = useMutation({
-    mutationFn: async (type: 'particular' | 'convenio') => {
-      if (type === 'particular') return labSyncParticular({ data: { data_inicio: dateRange.start, data_fim: dateRange.end } });
+    mutationFn: async ({ type, tipoTransacao }: { type: 'particular' | 'convenio', tipoTransacao?: string }) => {
+      if (type === 'particular') return labSyncParticular({ data: { data_inicio: dateRange.start, data_fim: dateRange.end, tipo_transacao: tipoTransacao } });
       return labSyncConvenio({ data: { data_inicio: dateRange.start, data_fim: dateRange.end } });
     },
     onSuccess: () => {
@@ -267,14 +267,14 @@ function LabFaturamento() {
                   <Input type="date" value={dateRange.end} onChange={e => setDateRange(prev => ({ ...prev, end: e.target.value }))} />
                 </div>
                 <Button onClick={async () => {
-                  await syncMutation.mutateAsync('particular'); // Default 'C'
-                  toast.info("Iniciando sync de despesas (D)...");
-                  // Aqui poderíamos chamar com tipo_transacao: 'D' se a função aceitasse o override via mutate
-                  // Por simplicidade, o mutate de particular agora faz o default configurado.
+                  toast.info("Sincronizando Receitas (C)...");
+                  await syncMutation.mutateAsync({ type: 'particular', tipoTransacao: 'C' });
+                  toast.info("Sincronizando Despesas (D)...");
+                  await syncMutation.mutateAsync({ type: 'particular', tipoTransacao: 'D' });
                 }} disabled={syncMutation.isPending}>
-                  Sync Particular (Accounts)
+                  Sync Particular (Receitas + Despesas)
                 </Button>
-                <Button onClick={() => syncMutation.mutate('convenio')} disabled={syncMutation.isPending}>
+                <Button onClick={() => syncMutation.mutate({ type: 'convenio' })} disabled={syncMutation.isPending}>
                   Sync Convênio (Insurances)
                 </Button>
               </div>
