@@ -49,6 +49,7 @@ export const labDebugFeegow = createServerFn({ method: "POST" })
       url.searchParams.set("data_start", "01-08-2026");
       url.searchParams.set("data_end", "31-08-2026");
       url.searchParams.set("unidade_id", "0");
+      url.searchParams.set("tipo_transacao", "C"); // Adicionado default obrigatório
       url.searchParams.set("start", "0");
       url.searchParams.set("offset", "50");
     }
@@ -83,10 +84,15 @@ export const labDebugFeegow = createServerFn({ method: "POST" })
 
     let content = body.content ?? [];
     if (!Array.isArray(content) && content && typeof content === "object") {
-       for (const k of ["list", "data", "items", "rows", "appointments", "billing"]) {
-         if (Array.isArray(content[k])) {
-            content = content[k];
-            break;
+       // list-invoice retorna { list: [...] }
+       if (Array.isArray((content as any).list)) {
+          content = (content as any).list;
+       } else {
+         for (const k of ["data", "items", "rows", "appointments", "billing"]) {
+           if (Array.isArray((content as any)[k])) {
+              content = (content as any)[k];
+              break;
+           }
          }
        }
     }
@@ -114,7 +120,7 @@ export const labSyncParticular = createServerFn({ method: "POST" })
     
     const ds = toFeegowDate(data.data_inicio);
     const de = toFeegowDate(data.data_fim);
-    const tipoTransacao = data.tipo_transacao || "R"; // Default para Receita (a confirmar na varredura)
+    const tipoTransacao = data.tipo_transacao || "C"; // Confirmado: 'C' para Receita (Crédito)
 
     let totalRegistros = 0;
     let start = 0;
@@ -151,6 +157,7 @@ export const labSyncParticular = createServerFn({ method: "POST" })
             valor_faturado: parseValorBR(det.valor),
             data_competencia: parseDataFeegow(det.data),
             paciente_id: invoice.paciente_id ? Number(invoice.paciente_id) : null,
+            tipo_transacao: tipoTransacao,
             payload_raw: { ...det, movement_id: invoice.movement_id, conta_id: invoice.conta_id, tipo_conta: invoice.tipo_conta, NFe: invoice.NFe, dataNFe: invoice.dataNFe }
           });
         }
@@ -179,6 +186,7 @@ export const labSyncParticular = createServerFn({ method: "POST" })
             acrescimo: acre,
             valor_faturado: val - desc + acre,
             is_cancelado: item.is_cancelado === true || item.is_cancelado === 1,
+            tipo_transacao: tipoTransacao,
             payload_raw: item
           });
         }

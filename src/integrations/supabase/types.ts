@@ -355,6 +355,7 @@ export type Database = {
           profissional_id: number | null
           synced_at: string | null
           tabela_id: number | null
+          tipo_transacao: string | null
           unidade_id: number | null
           valor_bruto: number | null
           valor_faturado: number | null
@@ -387,6 +388,7 @@ export type Database = {
           profissional_id?: number | null
           synced_at?: string | null
           tabela_id?: number | null
+          tipo_transacao?: string | null
           unidade_id?: number | null
           valor_bruto?: number | null
           valor_faturado?: number | null
@@ -419,6 +421,7 @@ export type Database = {
           profissional_id?: number | null
           synced_at?: string | null
           tabela_id?: number | null
+          tipo_transacao?: string | null
           unidade_id?: number | null
           valor_bruto?: number | null
           valor_faturado?: number | null

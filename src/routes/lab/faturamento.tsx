@@ -44,8 +44,8 @@ function LabFaturamento() {
   });
 
   const syncMutation = useMutation({
-    mutationFn: async (type: 'particular' | 'convenio') => {
-      if (type === 'particular') return labSyncParticular({ data: { data_inicio: dateRange.start, data_fim: dateRange.end } });
+    mutationFn: async ({ type, tipoTransacao }: { type: 'particular' | 'convenio', tipoTransacao?: string }) => {
+      if (type === 'particular') return labSyncParticular({ data: { data_inicio: dateRange.start, data_fim: dateRange.end, tipo_transacao: tipoTransacao } });
       return labSyncConvenio({ data: { data_inicio: dateRange.start, data_fim: dateRange.end } });
     },
     onSuccess: () => {
@@ -102,13 +102,12 @@ function LabFaturamento() {
   const scanListInvoice = async () => {
     setLoading(true);
     setResult(null);
+    setSequenceResults([]); // Limpa ANTES de iniciar a varredura
+    
     const steps = [
-      { m: "GET", p: { data_start: "01-01-2026", data_end: "31-12-2026", tipo_transacao: "D", unidade_id: "0" }, desc: "D (Débito) 2026" },
-      { m: "GET", p: { data_start: "01-01-2026", data_end: "31-12-2026", tipo_transacao: "C", unidade_id: "0" }, desc: "C (Crédito) 2026" },
-      { m: "GET", p: { data_start: "01-01-2026", data_end: "31-12-2026", tipo_transacao: "R", unidade_id: "0" }, desc: "R (Receita) 2026" },
-      { m: "GET", p: { data_start: "01-01-2026", data_end: "31-12-2026", unidade_id: "0" }, desc: "Sem tipo_transacao 2026" },
-      { m: "GET", p: { data_start: "01-01-2019", data_end: "31-12-2019", tipo_transacao: "D", unidade_id: "0" }, desc: "D (Débito) 2019" },
-      { m: "GET", p: {}, desc: "Sem parâmetros (Erro)" },
+      { m: "GET", p: { data_start: "01-01-2026", data_end: "31-12-2026", tipo_transacao: "C", unidade_id: "0", start: "0", offset: "50" }, desc: "C (Crédito) 2026" },
+      { m: "GET", p: { data_start: "01-01-2026", data_end: "31-12-2026", tipo_transacao: "D", unidade_id: "0", start: "0", offset: "50" }, desc: "D (Débito) 2026" },
+      { m: "GET", p: { data_start: "01-01-2026", data_end: "31-12-2026", tipo_transacao: "T", unidade_id: "0", start: "0", offset: "50" }, desc: "T (Transferência) 2026" },
     ];
 
     const results = [];
@@ -136,7 +135,7 @@ function LabFaturamento() {
         raw: res
       };
       results.push(item);
-      if (!firstSuccess && res.http_status === 200 && res.api_success) {
+      if (!firstSuccess && res.http_status === 200 && res.api_success && s.p.tipo_transacao === "C") {
         firstSuccess = res;
       }
     }
@@ -267,10 +266,15 @@ function LabFaturamento() {
                   <label className="text-xs font-bold uppercase">Fim</label>
                   <Input type="date" value={dateRange.end} onChange={e => setDateRange(prev => ({ ...prev, end: e.target.value }))} />
                 </div>
-                <Button onClick={() => syncMutation.mutate('particular')} disabled={syncMutation.isPending}>
-                  Sync Particular (Accounts)
+                <Button onClick={async () => {
+                  toast.info("Sincronizando Receitas (C)...");
+                  await syncMutation.mutateAsync({ type: 'particular', tipoTransacao: 'C' });
+                  toast.info("Sincronizando Despesas (D)...");
+                  await syncMutation.mutateAsync({ type: 'particular', tipoTransacao: 'D' });
+                }} disabled={syncMutation.isPending}>
+                  Sync Particular (Receitas + Despesas)
                 </Button>
-                <Button onClick={() => syncMutation.mutate('convenio')} disabled={syncMutation.isPending}>
+                <Button onClick={() => syncMutation.mutate({ type: 'convenio' })} disabled={syncMutation.isPending}>
                   Sync Convênio (Insurances)
                 </Button>
               </div>
@@ -343,17 +347,23 @@ function LabFaturamento() {
                   <Button size="sm" variant="outline" onClick={() => testEndpoint('financial/list-invoice')} disabled={loading}>
                     financial/list-invoice
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => testEndpoint('financial/dmed')} disabled={loading}>
+                  <Button size="sm" variant="outline" onClick={() => {
+                    toast.info("Endpoint dmed exige CPF e datas. Testando manual...");
+                    testEndpoint('financial/dmed', { cpf: '00000000000', dataInicio: '01-01-2026', dataFim: '31-12-2026' });
+                  }} disabled={loading}>
                     financial/dmed
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => testEndpoint('financial/financial-category')} disabled={loading}>
-                    financial/financial-category
+                  <Button size="sm" variant="outline" onClick={() => testEndpoint('core/financial/base/financial-category', {}, 'POST')} disabled={loading}>
+                    financial-category
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => testEndpoint('financial/cost-center')} disabled={loading}>
+                  <Button size="sm" variant="outline" onClick={() => {
+                     toast.warning("financial/cost-center retornou 403 (Permissão). Verificar token no Feegow.");
+                     testEndpoint('financial/cost-center');
+                  }} disabled={loading}>
                     financial/cost-center
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => testEndpoint('financial/list-transfers')} disabled={loading}>
-                    financial/list-transfers
+                  <Button size="sm" variant="outline" onClick={() => testEndpoint('financial/list-transfers', { data_start: '01-08-2026', data_end: '31-08-2026' })} disabled={loading}>
+                    list-transfers
                   </Button>
                   <Button size="sm" variant="secondary" onClick={testBillingDateFilter} disabled={loading}>
                     Testar filtro de data: insurances-billing
@@ -384,17 +394,17 @@ function LabFaturamento() {
                             onClick={() => setResult(r.raw)}
                           >
                             <TableCell>{r.id}</TableCell>
-                            <TableCell className="font-mono">{r.tipo_transacao}</TableCell>
-                            <TableCell className="text-xs">{r.periodo}</TableCell>
-                            <TableCell>{r.status}</TableCell>
-                            <TableCell>{r.success ? "✅" : "❌"}</TableCell>
-                            <TableCell className="font-bold">{r.total}</TableCell>
+                            <TableCell className="font-mono">{r.tipo_transacao || "—"}</TableCell>
+                            <TableCell className="text-xs">{r.periodo || "—"}</TableCell>
+                            <TableCell>{r.status || "—"}</TableCell>
+                            <TableCell>{r.status ? (r.success ? "✅" : "❌") : "—"}</TableCell>
+                            <TableCell className="font-bold">{r.total ?? "—"}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
                     </Table>
                     <div className="p-3 bg-muted rounded text-xs text-muted-foreground italic">
-                      Dica: Clique em uma linha para ver o JSON completo e descobrir qual tipo_transacao traz as receitas.
+                      Dica: Clique em uma linha para ver o JSON completo. O tipo 'C' (Crédito) é o faturamento de receita.
                     </div>
                   </div>
                 )}
