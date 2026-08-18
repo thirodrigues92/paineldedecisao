@@ -77,7 +77,7 @@ function LabFaturamento() {
   const { data: logs } = useQuery({
     queryKey: ['lab-logs'],
     queryFn: async () => {
-      const { data } = await supabase.from('lab_sync_log').select('*').order('criado_em', { ascending: false }).limit(20);
+      const { data } = await supabase.from('lab_sync_log').select('*').order('executado_em', { ascending: false }).limit(20);
       return data || [];
     }
   });
@@ -523,7 +523,11 @@ function LabFaturamento() {
                         <option value={3}>3 dias (Recomendado)</option>
                         <option value={7}>7 dias (Rápido)</option>
                       </select>
+                      <p className="text-[10px] text-muted-foreground leading-tight">
+                        O endpoint <code>financial/list-invoice</code> ignora <code>start</code>/<code>offset</code> e sempre devolve o período inteiro numa resposta só. O controle de volume é feito aqui pelo tamanho da janela.
+                      </p>
                     </div>
+
 
                     <div className="space-y-3 pt-2">
                       <div className="flex items-center gap-2 cursor-pointer" onClick={() => setSyncConfig(prev => ({ ...prev, dryRun: !prev.dryRun }))}>
