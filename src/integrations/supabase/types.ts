@@ -296,6 +296,48 @@ export type Database = {
         }
         Relationships: []
       }
+      lab_dim_agendamento: {
+        Row: {
+          agendamento_id: number
+          canal_id: number | null
+          convenio_id: number | null
+          criado_em: string | null
+          data: string | null
+          especialidade_id: number | null
+          paciente_id: number | null
+          plano_id: number | null
+          profissional_id: number | null
+          status_id: number | null
+          unidade_id: number | null
+        }
+        Insert: {
+          agendamento_id: number
+          canal_id?: number | null
+          convenio_id?: number | null
+          criado_em?: string | null
+          data?: string | null
+          especialidade_id?: number | null
+          paciente_id?: number | null
+          plano_id?: number | null
+          profissional_id?: number | null
+          status_id?: number | null
+          unidade_id?: number | null
+        }
+        Update: {
+          agendamento_id?: number
+          canal_id?: number | null
+          convenio_id?: number | null
+          criado_em?: string | null
+          data?: string | null
+          especialidade_id?: number | null
+          paciente_id?: number | null
+          plano_id?: number | null
+          profissional_id?: number | null
+          status_id?: number | null
+          unidade_id?: number | null
+        }
+        Relationships: []
+      }
       lab_dim_categoria: {
         Row: {
           id: number
@@ -326,6 +368,33 @@ export type Database = {
         }
         Relationships: []
       }
+      lab_dim_procedimento: {
+        Row: {
+          criado_em: string | null
+          grupo_id: number | null
+          grupo_nome: string | null
+          nome: string | null
+          procedimento_id: number
+          tipo: string | null
+        }
+        Insert: {
+          criado_em?: string | null
+          grupo_id?: number | null
+          grupo_nome?: string | null
+          nome?: string | null
+          procedimento_id: number
+          tipo?: string | null
+        }
+        Update: {
+          criado_em?: string | null
+          grupo_id?: number | null
+          grupo_nome?: string | null
+          nome?: string | null
+          procedimento_id?: number
+          tipo?: string | null
+        }
+        Relationships: []
+      }
       lab_faturamento: {
         Row: {
           acrescimo: number | null
@@ -340,7 +409,10 @@ export type Database = {
           data_vencimento: string | null
           desconto: number | null
           documento_id: number
+          especialidade_id: number | null
           glosado: number | null
+          grupo_id: number | null
+          grupo_nome: string | null
           guia_status: string | null
           id: string
           is_cancelado: boolean | null
@@ -373,7 +445,10 @@ export type Database = {
           data_vencimento?: string | null
           desconto?: number | null
           documento_id: number
+          especialidade_id?: number | null
           glosado?: number | null
+          grupo_id?: number | null
+          grupo_nome?: string | null
           guia_status?: string | null
           id?: string
           is_cancelado?: boolean | null
@@ -406,7 +481,10 @@ export type Database = {
           data_vencimento?: string | null
           desconto?: number | null
           documento_id?: number
+          especialidade_id?: number | null
           glosado?: number | null
+          grupo_id?: number | null
+          grupo_nome?: string | null
           guia_status?: string | null
           id?: string
           is_cancelado?: boolean | null
@@ -425,6 +503,33 @@ export type Database = {
           unidade_id?: number | null
           valor_bruto?: number | null
           valor_faturado?: number | null
+        }
+        Relationships: []
+      }
+      lab_invoice_header: {
+        Row: {
+          criado_em: string | null
+          data: string | null
+          invoice_id: number
+          paciente_id: number | null
+          unidade_id: number | null
+          valor_total: number | null
+        }
+        Insert: {
+          criado_em?: string | null
+          data?: string | null
+          invoice_id: number
+          paciente_id?: number | null
+          unidade_id?: number | null
+          valor_total?: number | null
+        }
+        Update: {
+          criado_em?: string | null
+          data?: string | null
+          invoice_id?: number
+          paciente_id?: number | null
+          unidade_id?: number | null
+          valor_total?: number | null
         }
         Relationships: []
       }
@@ -768,13 +873,11 @@ export type Database = {
       }
       lab_vw_faturado_x_recebido: {
         Row: {
-          convenio_id: number | null
+          grupo_nome: string | null
           mes: string | null
           origem: string | null
-          pct_recebimento: number | null
           saldo_a_receber: number | null
           total_faturado: number | null
-          total_glosado: number | null
           total_recebido: number | null
         }
         Relationships: []
