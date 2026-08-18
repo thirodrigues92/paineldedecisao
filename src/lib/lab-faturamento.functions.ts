@@ -120,7 +120,7 @@ export const labSyncParticular = createServerFn({ method: "POST" })
     
     const ds = toFeegowDate(data.data_inicio);
     const de = toFeegowDate(data.data_fim);
-    const tipoTransacao = data.tipo_transacao || "C"; // Confirmado: 'C' para Receita (Crédito)
+    const tipoTransacao = data.tipo_transacao || "D"; // 'D' (Débito) foi identificado como o que traz Receitas Particulares (Accounts)
 
     let totalRegistros = 0;
     let start = 0;
