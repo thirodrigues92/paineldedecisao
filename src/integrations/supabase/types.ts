@@ -1006,6 +1006,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      lab_enriquecer_faturamento: { Args: never; Returns: undefined }
       refresh_dashboard_views: { Args: never; Returns: undefined }
     }
     Enums: {
