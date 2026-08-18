@@ -16,13 +16,15 @@ export const Route = createFileRoute("/lab/faturamento")({
   component: LabFaturamento,
 });
 
-function LabFaturamento() {
+ function LabFaturamento() {
+  const [tab, setTab] = useState("faturamento");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [dateRange, setDateRange] = useState({ 
     start: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0],
     end: new Date().toISOString().split('T')[0]
   });
+
   
   const queryClient = useQueryClient();
 
@@ -64,15 +66,16 @@ function LabFaturamento() {
     }
   });
 
-  const testEndpoint = async (endpoint: string) => {
+  const testEndpoint = async (endpoint: string, params: Record<string, string> = {}) => {
     setLoading(true);
     try {
-      const res = await labDebugFeegow({ data: { endpoint, params: {} } });
+      const res = await labDebugFeegow({ data: { endpoint, params } });
       setResult({ endpoint, ...res });
     } finally {
       setLoading(false);
     }
   };
+
 
   const totals = useMemo(() => {
     if (!stats) return { faturado: 0, recebido: 0, diff: 0 };
@@ -127,15 +130,20 @@ function LabFaturamento() {
         </Card>
       </div>
 
-      <Tabs defaultValue="faturamento" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="faturamento"><BarChart3 className="w-4 h-4 mr-2" /> Faturado x Recebido</TabsTrigger>
-          <TabsTrigger value="sincronizacao"><RefreshCw className="w-4 h-4 mr-2" /> Sincronização</TabsTrigger>
-          <TabsTrigger value="auditoria"><ShieldCheck className="w-4 h-4 mr-2" /> Auditoria</TabsTrigger>
-          <TabsTrigger value="diagnostico"><Search className="w-4 h-4 mr-2" /> Debug API</TabsTrigger>
-        </TabsList>
+      <div className="space-y-4">
+        <div className="flex border-b">
+          <button onClick={() => setTab("faturamento")} className={`px-4 py-2 ${tab === "faturamento" ? "border-b-2 border-primary font-bold" : ""}`}>Faturado x Recebido</button>
+          <button onClick={() => setTab("sincronizacao")} className={`px-4 py-2 ${tab === "sincronizacao" ? "border-b-2 border-primary font-bold" : ""}`}>Sincronização</button>
+          <button onClick={() => setTab("auditoria")} className={`px-4 py-2 ${tab === "auditoria" ? "border-b-2 border-primary font-bold" : ""}`}>Auditoria</button>
+          <button onClick={() => setTab("diagnostico")} className={`px-4 py-2 ${tab === "diagnostico" ? "border-b-2 border-primary font-bold" : ""}`}>Debug API</button>
+        </div>
 
-        <TabsContent value="faturamento">
+
+
+
+
+
+        {tab === "faturamento" && (
           <Card>
             <CardHeader>
               <CardTitle>Composição por Origem</CardTitle>
@@ -171,10 +179,11 @@ function LabFaturamento() {
                 </TableBody>
               </Table>
             </CardContent>
-          </Card>
-        </TabsContent>
+           </Card>
+         )}
+ 
+         {tab === "sincronizacao" && (
 
-        <TabsContent value="sincronizacao" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Controle de Sincronização</CardTitle>
@@ -223,10 +232,11 @@ function LabFaturamento() {
                 </Table>
               </div>
             </CardContent>
-          </Card>
-        </TabsContent>
+           </Card>
+         )}
+ 
+         {tab === "auditoria" && (
 
-        <TabsContent value="auditoria">
            <Card>
              <CardHeader>
                <CardTitle>Diagnóstico de Integridade</CardTitle>
@@ -253,21 +263,27 @@ function LabFaturamento() {
                 </div>
              </CardContent>
            </Card>
-        </TabsContent>
+         )}
+ 
+         {tab === "diagnostico" && (
 
-        <TabsContent value="diagnostico" className="space-y-4">
           <Card>
              <CardHeader>
                <CardTitle>Explorador de Endpoints Feegow</CardTitle>
              </CardHeader>
              <CardContent className="space-y-4">
-                <div className="flex gap-2 flex-wrap">
-                  {["financial/list-accounts", "billing/insurances-billing", "insurance/list"].map(ep => (
-                    <Button key={ep} size="sm" variant="outline" onClick={() => testEndpoint(ep)} disabled={loading}>
-                      JSON Bruto: {ep}
-                    </Button>
-                  ))}
+                 <div className="flex gap-2 flex-wrap">
+                  <Button size="sm" variant="outline" onClick={() => testEndpoint('financial/list-accounts')} disabled={loading}>
+                    JSON Bruto: financial/list-accounts
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => testEndpoint('billing/insurances-billing', { billing_type_id: '1', billing: '1' })} disabled={loading}>
+                    JSON Bruto: billing/insurances-billing
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => testEndpoint('insurance/list')} disabled={loading}>
+                    JSON Bruto: insurance/list
+                  </Button>
                 </div>
+
                 {result && (
                   <div className="space-y-2">
                     <div className="flex justify-between items-center text-xs font-mono bg-muted p-2 rounded">
@@ -282,9 +298,10 @@ function LabFaturamento() {
                   </div>
                 )}
              </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+           </Card>
+         )}
+      </div>
     </div>
   );
 }
+
