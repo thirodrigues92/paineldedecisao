@@ -307,12 +307,19 @@ function LabFaturamento() {
       setSyncStatus(prev => ({ ...prev, currentWindow: i + 1 }));
 
       try {
-        const res: any = await syncMutation.mutateAsync({
+        // 4. Front — nunca ficar preso em "Parar" (30s timeout)
+        const syncPromise = syncMutation.mutateAsync({
           type: 'particular',
           tipoTransacao: syncConfig.tipo,
           start: startStr,
           end: endStr
         });
+
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("Erro: sem resposta (timeout 30s)")), 30000)
+        );
+
+        const res: any = await Promise.race([syncPromise, timeoutPromise]);
         
         const windowRes = res.resumo?.janelas?.find((j: any) => j.ds === toFeegowDate(startStr));
         
@@ -327,16 +334,22 @@ function LabFaturamento() {
           }, ...prev.logs],
           summary: (i === totalSteps - 1 && res.resumo) ? res.resumo : prev.summary
         }));
-      } catch (err) {
+
+        // 5. Log geral sempre visível (atualizar após cada janela)
+        queryClient.invalidateQueries({ queryKey: ['lab-logs'] });
+      } catch (err: any) {
         setSyncStatus(prev => ({
           ...prev,
           errorCount: prev.errorCount + 1,
           logs: [{
             periodo: `${startStr} a ${endStr}`,
             status: 'error',
-            msg: String(err)
+            msg: String(err.message || err)
           }, ...prev.logs]
         }));
+        
+        // Se houver erro, também invalidar logs para mostrar o log de erro do servidor
+        queryClient.invalidateQueries({ queryKey: ['lab-logs'] });
       }
       
       // Delay pequeno entre janelas
@@ -692,6 +705,7 @@ function LabFaturamento() {
                       <TableHead>Data/Hora</TableHead>
                       <TableHead>Endpoint</TableHead>
                       <TableHead>Parâmetros</TableHead>
+                      <TableHead>Erro/Obs</TableHead>
                       <TableHead className="text-center">Registros</TableHead>
                       <TableHead className="text-center">Status</TableHead>
                     </TableRow>
@@ -699,7 +713,7 @@ function LabFaturamento() {
                   <TableBody>
                     {logs?.map((l: any) => (
                       <TableRow key={l.id} className="text-xs">
-                        <TableCell className="whitespace-nowrap">{new Date(l.criado_em).toLocaleString('pt-BR')}</TableCell>
+                        <TableCell className="whitespace-nowrap">{new Date(l.executado_em || l.criado_em).toLocaleString('pt-BR')}</TableCell>
                         <TableCell className="font-mono opacity-70">{l.endpoint}</TableCell>
                         <TableCell>
                           <div className="flex gap-1 flex-wrap">
@@ -708,12 +722,18 @@ function LabFaturamento() {
                             ))}
                           </div>
                         </TableCell>
+                        <TableCell className="max-w-[150px] truncate" title={l.erro}>
+                          {l.erro}
+                        </TableCell>
                         <TableCell className="text-center font-bold">{l.registros || 0}</TableCell>
                         <TableCell className="text-center">
                           {l.api_success ? (
                             <div className="flex items-center justify-center text-emerald-500 font-bold"><Check className="w-3 h-3 mr-1" /> OK</div>
                           ) : (
-                            <div className="flex items-center justify-center text-destructive font-bold"><X className="w-3 h-3 mr-1" /> Falha</div>
+                            <div className="flex items-center justify-center text-destructive font-bold">
+                              {l.erro === 'iniciado' ? <RefreshCw className="w-3 h-3 mr-1 animate-spin" /> : <X className="w-3 h-3 mr-1" />}
+                              {l.erro === 'iniciado' ? 'Pendente' : 'Falha'}
+                            </div>
                           )}
                         </TableCell>
                       </TableRow>
