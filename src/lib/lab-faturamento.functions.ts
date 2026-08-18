@@ -207,7 +207,7 @@ export const labSyncParticular = createServerFn({ method: "POST" })
       totalRegistros += list.length;
       
       await supabaseAdmin.from("lab_sync_log").insert({
-        endpoint: "/financial/list-invoice",
+        endpoint: "financial/list-invoice",
         parametros: { ds, de, tipoTransacao, start, offset },
         api_success: body.success === true,
         http_status: res.status,
