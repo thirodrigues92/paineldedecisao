@@ -139,7 +139,7 @@ function LabFaturamento() {
 
 
 
-        <TabsContent value="faturamento">
+        <TabsContent value="faturamento" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Composição por Origem</CardTitle>
