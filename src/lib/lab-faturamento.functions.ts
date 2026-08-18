@@ -191,7 +191,7 @@ export const labSyncParticular = createServerFn({ method: "POST" })
 
       try {
         // O endpoint IGNORA start/offset: devolve o período inteiro em uma única resposta.
-        // Por isso fazemos UMA chamada por janela (paginar causava laço infinito).
+        // Por isso fazemos UMA chamada por janela de data (paginar causava laço infinito).
         const url = new URL(`${FEEGOW_BASE}/financial/list-invoice`);
         url.searchParams.set("data_start", ds);
         url.searchParams.set("data_end", de);
@@ -210,6 +210,11 @@ export const labSyncParticular = createServerFn({ method: "POST" })
           });
           clearTimeout(timeoutId);
 
+          if (!res.ok) {
+            const errText = await res.text();
+            throw new Error(`HTTP ${res.status}: ${errText}`);
+          }
+
           body = await res.json();
         } catch (fetchErr: any) {
           const errorMsg = fetchErr.name === 'AbortError' ? 'timeout' : fetchErr.message;
@@ -223,9 +228,10 @@ export const labSyncParticular = createServerFn({ method: "POST" })
               http_status: null
             });
           }
-          throw new Error(errorMsg);
+          throw fetchErr; // Propaga para o catch externo lidar com split
         }
 
+        // Caso a API retorne erro de memória ou limite, forçar split
         if (!body.success && body.cod_erro === 1 && spanDias > 1) {
           throw new Error("RETRY_SPLIT");
         }
@@ -245,8 +251,11 @@ export const labSyncParticular = createServerFn({ method: "POST" })
 
         for (const invoice of lista) {
           const invoice_id = Number(invoice.invoice_id);
-          // Guarda anti-loop / anti-duplicidade dentro da mesma resposta
-          if (vistos.has(invoice_id)) { duplicados++; continue; }
+          // Guarda anti-duplicidade dentro da mesma resposta (mesmo sem laço while, mantemos por segurança)
+          if (vistos.has(invoice_id)) { 
+            duplicados++; 
+            continue; 
+          }
           vistos.add(invoice_id);
 
           const headerVal = parseValorCentavos(invoice.detalhes?.[0]?.valor);
@@ -362,21 +371,41 @@ export const labSyncParticular = createServerFn({ method: "POST" })
             registros: windowContasCount,
             erro: duplicados > 0 ? "paginacao_ignorada_pelo_endpoint" : "concluido"
           });
-        }
-
       } catch (err: any) {
-        if (err.message === "RETRY_SPLIT" && spanDias > 1) {
-          // Split recursivo: divide a janela ao meio (até 1 dia)
+        // Tenta detectar erro de memória ou timeout
+        const isMemoryError = err.message?.includes("memory size") || (err.message === "RETRY_SPLIT");
+        const isTimeout = err.name === 'AbortError' || err.message === 'timeout';
+
+        if ((isMemoryError || isTimeout) && spanDias > 1) {
+          // Split recursivo real: divide a janela ao meio
           const metade = Math.floor(spanDias / 2);
           const meioFim = new Date(janela.ini);
           meioFim.setDate(janela.ini.getDate() + metade - 1);
+          
           const meioIni = new Date(meioFim);
           meioIni.setDate(meioFim.getDate() + 1);
+
+          // Coloca as duas novas metades no início da fila
           fila.unshift({ ini: meioIni, fim: janela.fim });
           fila.unshift({ ini: new Date(janela.ini), fim: meioFim });
-          resumo.janelas.push({ ds, de, status: 'split', error: `Dividida em ${metade}d + ${spanDias - metade}d` });
+          
+          resumo.janelas.push({ 
+            ds, de, 
+            status: 'split', 
+            error: `${isTimeout ? 'Timeout' : 'Memória'}: dividida em ${metade}d + ${spanDias - metade}d` 
+          });
         } else {
-          resumo.janelas.push({ ds, de, status: 'error', error: String(err) });
+          // Erro definitivo para esta janela
+          resumo.janelas.push({ ds, de, status: 'error', error: String(err.message || err) });
+          if (!dry_run) {
+            await supabaseAdmin.from("lab_sync_log").insert({
+              endpoint: "financial/list-invoice",
+              parametros: { ds, de, tipo_transacao },
+              api_success: false,
+              registros: 0,
+              erro: String(err.message || err)
+            });
+          }
         }
       }
 
