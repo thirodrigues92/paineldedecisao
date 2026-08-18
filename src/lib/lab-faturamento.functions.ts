@@ -84,10 +84,15 @@ export const labDebugFeegow = createServerFn({ method: "POST" })
 
     let content = body.content ?? [];
     if (!Array.isArray(content) && content && typeof content === "object") {
-       for (const k of ["list", "data", "items", "rows", "appointments", "billing"]) {
-         if (Array.isArray(content[k])) {
-            content = content[k];
-            break;
+       // list-invoice retorna { list: [...] }
+       if (Array.isArray((content as any).list)) {
+          content = (content as any).list;
+       } else {
+         for (const k of ["data", "items", "rows", "appointments", "billing"]) {
+           if (Array.isArray((content as any)[k])) {
+              content = (content as any)[k];
+              break;
+           }
          }
        }
     }

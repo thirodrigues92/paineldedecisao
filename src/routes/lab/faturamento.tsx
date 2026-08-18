@@ -394,17 +394,17 @@ function LabFaturamento() {
                             onClick={() => setResult(r.raw)}
                           >
                             <TableCell>{r.id}</TableCell>
-                            <TableCell className="font-mono">{r.tipo_transacao}</TableCell>
-                            <TableCell className="text-xs">{r.periodo}</TableCell>
-                            <TableCell>{r.status}</TableCell>
-                            <TableCell>{r.success ? "✅" : "❌"}</TableCell>
-                            <TableCell className="font-bold">{r.total}</TableCell>
+                            <TableCell className="font-mono">{r.tipo_transacao || "—"}</TableCell>
+                            <TableCell className="text-xs">{r.periodo || "—"}</TableCell>
+                            <TableCell>{r.status || "—"}</TableCell>
+                            <TableCell>{r.status ? (r.success ? "✅" : "❌") : "—"}</TableCell>
+                            <TableCell className="font-bold">{r.total ?? "—"}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
                     </Table>
                     <div className="p-3 bg-muted rounded text-xs text-muted-foreground italic">
-                      Dica: Clique em uma linha para ver o JSON completo e descobrir qual tipo_transacao traz as receitas.
+                      Dica: Clique em uma linha para ver o JSON completo. O tipo 'C' (Crédito) é o faturamento de receita.
                     </div>
                   </div>
                 )}
