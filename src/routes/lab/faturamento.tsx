@@ -90,16 +90,14 @@ function LabFaturamento() {
           data: { 
             data_inicio: dataInicio, 
             data_fim: dataFim, 
-            tipo_transacao: tipoTransacao 
+            tipo_transacao: tipoTransacao,
+            dry_run: syncConfig.dryRun,
+            limpar_antes: syncConfig.limparAntes,
+            tamanho_janela: syncConfig.janela
           } 
         });
       }
-      return labSyncConvenio({ 
-        data: { 
-          data_inicio: dataInicio, 
-          data_fim: dataFim 
-        } 
-      });
+      return labSyncConvenio();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['lab-stats'] });
