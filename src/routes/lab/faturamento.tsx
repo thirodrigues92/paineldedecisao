@@ -179,10 +179,11 @@ export const Route = createFileRoute("/lab/faturamento")({
                 </TableBody>
               </Table>
             </CardContent>
-          </Card>
-        </TabsContent>
+           </Card>
+         )}
+ 
+         {tab === "sincronizacao" && (
 
-        <TabsContent value="sincronizacao" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Controle de Sincronização</CardTitle>
