@@ -117,15 +117,78 @@ function LabFaturamento() {
     }
   });
 
+  const [manualRequest, setManualRequest] = useState({
+    method: 'GET' as 'GET' | 'POST',
+    endpoint: 'financial/list-invoice',
+    data_start: new Date(),
+    data_end: new Date(),
+    tipo_transacao: 'C',
+    unidade_id: '0',
+    extra_params: 'start=0&offset=5'
+  });
+  const [requestHistory, setRequestHistory] = useState<any[]>([]);
+
+  const formatFeegowDate = (date: Date) => {
+    const dd = String(date.getDate()).padStart(2, "0");
+    const mm = String(date.getMonth() + 1).padStart(2, "0");
+    return `${dd}-${mm}-${date.getFullYear()}`;
+  };
+
+  const mountedUrl = useMemo(() => {
+    try {
+      const url = new URL("https://api.feegow.com/v1/api/" + manualRequest.endpoint.replace(/^\//, ''));
+      url.searchParams.set("data_start", formatFeegowDate(manualRequest.data_start));
+      url.searchParams.set("data_end", formatFeegowDate(manualRequest.data_end));
+      url.searchParams.set("tipo_transacao", manualRequest.tipo_transacao);
+      url.searchParams.set("unidade_id", manualRequest.unidade_id);
+      
+      if (manualRequest.extra_params) {
+        const extra = new URLSearchParams(manualRequest.extra_params);
+        extra.forEach((v, k) => url.searchParams.set(k, v));
+      }
+      return url.toString();
+    } catch (e) {
+      return "URL Inválida";
+    }
+  }, [manualRequest]);
+
   const testEndpoint = async (endpoint: string, params: Record<string, string> = {}, method: "GET" | "POST" = "GET", body?: any) => {
     setLoading(true);
     setSequenceResults([]);
     try {
       const res = await labDebugFeegow({ data: { endpoint, params, method, body } });
       setResult(res);
+      
+      // Adicionar ao histórico se for a requisição manual
+      if (endpoint === manualRequest.endpoint) {
+        setRequestHistory(prev => [{
+          timestamp: new Date().toISOString(),
+          method,
+          endpoint,
+          params,
+          status: res.http_status,
+          success: res.api_success
+        }, ...prev].slice(0, 10));
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  const sendManualRequest = () => {
+    const params: Record<string, string> = {
+      data_start: formatFeegowDate(manualRequest.data_start),
+      data_end: formatFeegowDate(manualRequest.data_end),
+      tipo_transacao: manualRequest.tipo_transacao,
+      unidade_id: manualRequest.unidade_id,
+    };
+    
+    if (manualRequest.extra_params) {
+      const extra = new URLSearchParams(manualRequest.extra_params);
+      extra.forEach((v, k) => params[k] = v);
+    }
+
+    testEndpoint(manualRequest.endpoint, params, manualRequest.method);
   };
 
   const testBillingDateFilter = async () => {
