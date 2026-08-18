@@ -342,17 +342,23 @@ function LabFaturamento() {
                   <Button size="sm" variant="outline" onClick={() => testEndpoint('financial/list-invoice')} disabled={loading}>
                     financial/list-invoice
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => testEndpoint('financial/dmed')} disabled={loading}>
+                  <Button size="sm" variant="outline" onClick={() => {
+                    toast.info("Endpoint dmed exige CPF e datas. Testando manual...");
+                    testEndpoint('financial/dmed', { cpf: '00000000000', dataInicio: '01-01-2026', dataFim: '31-12-2026' });
+                  }} disabled={loading}>
                     financial/dmed
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => testEndpoint('financial/financial-category')} disabled={loading}>
-                    financial/financial-category
+                  <Button size="sm" variant="outline" onClick={() => testEndpoint('core/financial/base/financial-category', {}, 'POST')} disabled={loading}>
+                    financial-category
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => testEndpoint('financial/cost-center')} disabled={loading}>
+                  <Button size="sm" variant="outline" onClick={() => {
+                     toast.warning("financial/cost-center retornou 403 (Permissão). Verificar token no Feegow.");
+                     testEndpoint('financial/cost-center');
+                  }} disabled={loading}>
                     financial/cost-center
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => testEndpoint('financial/list-transfers')} disabled={loading}>
-                    financial/list-transfers
+                  <Button size="sm" variant="outline" onClick={() => testEndpoint('financial/list-transfers', { data_start: '01-08-2026', data_end: '31-08-2026' })} disabled={loading}>
+                    list-transfers
                   </Button>
                   <Button size="sm" variant="secondary" onClick={testBillingDateFilter} disabled={loading}>
                     Testar filtro de data: insurances-billing
