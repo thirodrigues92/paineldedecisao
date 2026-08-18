@@ -365,13 +365,13 @@ function LabFaturamento() {
 
                 {sequenceResults.length > 0 && !result && (
                   <div className="space-y-4">
-                    <h3 className="font-bold text-sm uppercase">Resultados da Varredura</h3>
+                    <h3 className="font-bold text-sm uppercase">Resultados da Varredura (list-invoice)</h3>
                     <Table>
                       <TableHeader>
                         <TableRow>
                           <TableHead>#</TableHead>
-                          <TableHead>Método</TableHead>
-                          <TableHead>Teste</TableHead>
+                          <TableHead>Tipo</TableHead>
+                          <TableHead>Período</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead>Success</TableHead>
                           <TableHead>Total</TableHead>
@@ -379,10 +379,13 @@ function LabFaturamento() {
                       </TableHeader>
                       <TableBody>
                         {sequenceResults.map((r, i) => (
-                          <TableRow key={i} className={r.success && r.status === 200 ? "bg-emerald-50" : ""}>
-                            <TableCell>{r.id || i+1}</TableCell>
-                            <TableCell className="font-mono">{r.method || 'GET'}</TableCell>
-                            <TableCell>{r.label || r.urlBody}</TableCell>
+                          <TableRow key={i} 
+                            className={`cursor-pointer hover:bg-muted/50 ${r.success && r.status === 200 ? "bg-emerald-50/50" : ""}`}
+                            onClick={() => setResult(r.raw)}
+                          >
+                            <TableCell>{r.id}</TableCell>
+                            <TableCell className="font-mono">{r.tipo_transacao}</TableCell>
+                            <TableCell className="text-xs">{r.periodo}</TableCell>
                             <TableCell>{r.status}</TableCell>
                             <TableCell>{r.success ? "✅" : "❌"}</TableCell>
                             <TableCell className="font-bold">{r.total}</TableCell>
@@ -390,15 +393,9 @@ function LabFaturamento() {
                         ))}
                       </TableBody>
                     </Table>
-                    {sequenceResults[0]?.label && (
-                      <div className="p-3 bg-muted rounded text-xs">
-                        <strong>Conclusão:</strong> {
-                          new Set(sequenceResults.map(r => r.total)).size === 1 
-                          ? "⚠️ O endpoint PARECE IGNORAR filtros de data (totais idênticos)." 
-                          : "✅ O endpoint RESPONDE a filtros de data."
-                        }
-                      </div>
-                    )}
+                    <div className="p-3 bg-muted rounded text-xs text-muted-foreground italic">
+                      Dica: Clique em uma linha para ver o JSON completo e descobrir qual tipo_transacao traz as receitas.
+                    </div>
                   </div>
                 )}
 
