@@ -143,7 +143,7 @@ export const Route = createFileRoute("/lab/faturamento")({
 
 
 
-        <TabsContent value="faturamento" className="space-y-4">
+        {tab === "faturamento" && (
           <Card>
             <CardHeader>
               <CardTitle>Composição por Origem</CardTitle>
