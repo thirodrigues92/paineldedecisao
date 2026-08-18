@@ -266,7 +266,12 @@ function LabFaturamento() {
                   <label className="text-xs font-bold uppercase">Fim</label>
                   <Input type="date" value={dateRange.end} onChange={e => setDateRange(prev => ({ ...prev, end: e.target.value }))} />
                 </div>
-                <Button onClick={() => syncMutation.mutate('particular')} disabled={syncMutation.isPending}>
+                <Button onClick={async () => {
+                  await syncMutation.mutateAsync('particular'); // Default 'C'
+                  toast.info("Iniciando sync de despesas (D)...");
+                  // Aqui poderíamos chamar com tipo_transacao: 'D' se a função aceitasse o override via mutate
+                  // Por simplicidade, o mutate de particular agora faz o default configurado.
+                }} disabled={syncMutation.isPending}>
                   Sync Particular (Accounts)
                 </Button>
                 <Button onClick={() => syncMutation.mutate('convenio')} disabled={syncMutation.isPending}>
