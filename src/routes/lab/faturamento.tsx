@@ -262,13 +262,18 @@ function LabFaturamento() {
                <CardTitle>Explorador de Endpoints Feegow</CardTitle>
              </CardHeader>
              <CardContent className="space-y-4">
-                <div className="flex gap-2 flex-wrap">
-                  {["financial/list-accounts", "billing/insurances-billing", "insurance/list"].map(ep => (
-                    <Button key={ep} size="sm" variant="outline" onClick={() => testEndpoint(ep)} disabled={loading}>
-                      JSON Bruto: {ep}
-                    </Button>
-                  ))}
+                 <div className="flex gap-2 flex-wrap">
+                  <Button size="sm" variant="outline" onClick={() => testEndpoint('financial/list-accounts')} disabled={loading}>
+                    JSON Bruto: financial/list-accounts
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => testEndpoint('billing/insurances-billing', { billing_type_id: '1', billing: '1' })} disabled={loading}>
+                    JSON Bruto: billing/insurances-billing
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => testEndpoint('insurance/list')} disabled={loading}>
+                    JSON Bruto: insurance/list
+                  </Button>
                 </div>
+
                 {result && (
                   <div className="space-y-2">
                     <div className="flex justify-between items-center text-xs font-mono bg-muted p-2 rounded">
