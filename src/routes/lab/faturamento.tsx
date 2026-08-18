@@ -263,9 +263,10 @@ export const Route = createFileRoute("/lab/faturamento")({
                 </div>
              </CardContent>
            </Card>
-        </TabsContent>
+         )}
+ 
+         {tab === "diagnostico" && (
 
-        <TabsContent value="diagnostico" className="space-y-4">
           <Card>
              <CardHeader>
                <CardTitle>Explorador de Endpoints Feegow</CardTitle>
