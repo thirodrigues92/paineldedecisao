@@ -391,7 +391,7 @@ function LabFaturamento() {
                   <div className="space-y-4">
                     <div className="bg-slate-900 text-slate-200 p-4 rounded-lg space-y-2 text-xs font-mono border-l-4 border-indigo-500">
                       <div className="flex gap-4">
-                        <Button variant="ghost" size="xs" className="h-4 p-0 text-indigo-400 hover:bg-transparent" onClick={() => setResult(null)}>← Voltar</Button>
+                        <Button variant="ghost" size="sm" className="h-6 px-2 text-indigo-400 hover:bg-slate-800" onClick={() => setResult(null)}>← Voltar</Button>
                         <span className="text-indigo-400 font-bold">{result.method}</span>
                         <span className="text-slate-400 truncate">{result.url}</span>
                       </div>
