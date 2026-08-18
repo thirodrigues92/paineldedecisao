@@ -230,7 +230,7 @@ function LabFaturamento() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="auditoria">
+        <TabsContent value="auditoria" className="space-y-4">
            <Card>
              <CardHeader>
                <CardTitle>Diagnóstico de Integridade</CardTitle>
