@@ -39,15 +39,32 @@ export const labDebugFeegow = createServerFn({ method: "POST" })
     const FEEGOW_TOKEN = process.env.FEEGOW_API_TOKEN ?? "";
     
     const url = new URL(FEEGOW_BASE + (data.endpoint.startsWith("/") ? data.endpoint : "/" + data.endpoint));
+    
+    // Configurações padrão para garantir retorno de dados
+    if (data.endpoint.includes("financial/list-accounts")) {
+      url.searchParams.set("data_inicio", "01-08-2026");
+      url.searchParams.set("data_fim", "31-08-2026");
+      url.searchParams.set("start", "0");
+      url.searchParams.set("offset", "50");
+    }
+
     for (const [k, v] of Object.entries(data.params)) {
       url.searchParams.set(k, String(v));
     }
+
+    console.log(`[LabDebug] Fetching: ${url.toString()}`);
 
     const res = await fetch(url.toString(), {
       headers: { "x-access-token": FEEGOW_TOKEN }
     });
 
     const body = await res.json().catch(() => ({}));
+    
+    // Tratamento de resposta vazia
+    if (!body.success) {
+      console.warn(`[LabDebug] API Failure: ${JSON.stringify(body)}`);
+    }
+
     let content = body.content ?? [];
     if (!Array.isArray(content) && content && typeof content === "object") {
        for (const k of ["list", "data", "items", "rows", "appointments", "billing"]) {
@@ -61,6 +78,7 @@ export const labDebugFeegow = createServerFn({ method: "POST" })
 
     return {
       ok: true,
+      url: url.toString(),
       http_status: res.status,
       api_success: body.success === true,
       total_registros: rows.length,
@@ -68,6 +86,7 @@ export const labDebugFeegow = createServerFn({ method: "POST" })
       raw: { ...body, content: rows.slice(0, 3) }
     };
   });
+
 
 export const labSyncParticular = createServerFn({ method: "POST" })
   .inputValidator((data: { data_inicio: string; data_fim: string }) => data)
