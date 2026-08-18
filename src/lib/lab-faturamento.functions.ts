@@ -177,7 +177,7 @@ export const labSyncParticular = createServerFn({ method: "POST" })
           parametros: { ds, de, tipo_transacao, offset, janela: tamanho_janela, dry_run },
           api_success: false,
           registros: 0,
-          observacao: "iniciado"
+          erro: "iniciado"
         });
       }
 
@@ -212,7 +212,8 @@ export const labSyncParticular = createServerFn({ method: "POST" })
                 parametros: { ds, de, tipo_transacao, offset },
                 api_success: false,
                 registros: 0,
-                observacao: `Erro fetch: ${errorMsg}`
+                erro: `Erro fetch: ${errorMsg}`,
+                http_status: null
               });
             }
             throw new Error(errorMsg);
