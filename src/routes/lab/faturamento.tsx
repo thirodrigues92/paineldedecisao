@@ -99,16 +99,16 @@ function LabFaturamento() {
     setLoading(false);
   };
 
-  const scanListAccounts = async () => {
+  const scanListInvoice = async () => {
     setLoading(true);
     setResult(null);
     const steps = [
-      { m: "GET", p: {}, b: null, desc: "Sem parâmetros" },
-      { m: "GET", p: { data_start: "01-07-2026", data_end: "31-07-2026" }, b: null, desc: "data_start/end" },
-      { m: "GET", p: { data_inicio: "01-07-2026", data_fim: "31-07-2026" }, b: null, desc: "data_inicio/fim" },
-      { m: "GET", p: { data_start: "01-07-2026", data_end: "31-07-2026", tipo: "R", unidade_id: "0" }, b: null, desc: "Full GET" },
-      { m: "POST", p: {}, b: { data_start: "01-07-2026", data_end: "31-07-2026", tipo: "R" }, desc: "POST snake_case" },
-      { m: "POST", p: {}, b: { dataInicio: "01-07-2026", dataFim: "31-07-2026", unidadeId: 0 }, desc: "POST camelCase" },
+      { m: "GET", p: { data_start: "01-01-2026", data_end: "31-12-2026", tipo_transacao: "D", unidade_id: "0" }, desc: "D (Débito) 2026" },
+      { m: "GET", p: { data_start: "01-01-2026", data_end: "31-12-2026", tipo_transacao: "C", unidade_id: "0" }, desc: "C (Crédito) 2026" },
+      { m: "GET", p: { data_start: "01-01-2026", data_end: "31-12-2026", tipo_transacao: "R", unidade_id: "0" }, desc: "R (Receita) 2026" },
+      { m: "GET", p: { data_start: "01-01-2026", data_end: "31-12-2026", unidade_id: "0" }, desc: "Sem tipo_transacao 2026" },
+      { m: "GET", p: { data_start: "01-01-2019", data_end: "31-12-2019", tipo_transacao: "D", unidade_id: "0" }, desc: "D (Débito) 2019" },
+      { m: "GET", p: {}, desc: "Sem parâmetros (Erro)" },
     ];
 
     const results = [];
@@ -117,19 +117,22 @@ function LabFaturamento() {
     for (const [i, s] of steps.entries()) {
       const res = await labDebugFeegow({ 
         data: { 
-          endpoint: "financial/list-accounts", 
+          endpoint: "financial/list-invoice", 
           method: s.m as any, 
-          params: s.p as Record<string, string>, 
-          body: s.b 
+          params: s.p as Record<string, string>,
+          body: null
         } 
       });
       const item = { 
         id: i + 1, 
         method: s.m, 
+        label: s.desc,
         urlBody: s.desc, 
         status: res.http_status, 
         success: res.api_success, 
         total: res.total_registros,
+        tipo_transacao: s.p.tipo_transacao || '-',
+        periodo: s.p.data_start ? `${s.p.data_start} a ${s.p.data_end}` : '-',
         raw: res
       };
       results.push(item);
