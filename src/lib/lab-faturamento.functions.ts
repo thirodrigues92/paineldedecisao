@@ -170,6 +170,17 @@ export const labSyncParticular = createServerFn({ method: "POST" })
       let windowValorRecebido = 0;
       let windowAmostra: any[] = [];
 
+      // 1. Log de INÍCIO obrigatório
+      if (!dry_run) {
+        await supabaseAdmin.from("lab_sync_log").insert({
+          endpoint: "financial/list-invoice",
+          parametros: { ds, de, tipo_transacao, offset, janela: tamanho_janela, dry_run },
+          api_success: false,
+          registros: 0,
+          observacao: "iniciado"
+        });
+      }
+
       try {
         while (true) {
           const url = new URL(`${FEEGOW_BASE}/financial/list-invoice`);
@@ -180,8 +191,32 @@ export const labSyncParticular = createServerFn({ method: "POST" })
           url.searchParams.set("start", String(offset));
           url.searchParams.set("offset", String(limit));
 
-          const res = await fetch(url.toString(), { headers: { "x-access-token": FEEGOW_TOKEN() } });
-          const body = await res.json();
+          // 2. Try/catch + 3. Timeout explícito (20s)
+          let body;
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 20000);
+            
+            const res = await fetch(url.toString(), { 
+              headers: { "x-access-token": FEEGOW_TOKEN() },
+              signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            
+            body = await res.json();
+          } catch (fetchErr: any) {
+            const errorMsg = fetchErr.name === 'AbortError' ? 'timeout' : fetchErr.message;
+            if (!dry_run) {
+              await supabaseAdmin.from("lab_sync_log").insert({
+                endpoint: "financial/list-invoice",
+                parametros: { ds, de, tipo_transacao, offset },
+                api_success: false,
+                registros: 0,
+                observacao: `Erro fetch: ${errorMsg}`
+              });
+            }
+            throw new Error(errorMsg);
+          }
 
           if (!body.success && body.cod_erro === 1 && tamanho_janela > 1) {
              throw new Error("RETRY_SPLIT");
@@ -301,7 +336,8 @@ export const labSyncParticular = createServerFn({ method: "POST" })
              endpoint: "financial/list-invoice",
              parametros: { ds, de, tipo_transacao, offset },
              api_success: true,
-             registros: windowContasCount
+             registros: windowContasCount,
+             observacao: "concluido"
            });
         }
 
