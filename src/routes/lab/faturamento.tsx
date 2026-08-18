@@ -298,9 +298,10 @@ export const Route = createFileRoute("/lab/faturamento")({
                   </div>
                 )}
              </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+           </Card>
+         )}
+      </div>
     </div>
   );
 }
+
