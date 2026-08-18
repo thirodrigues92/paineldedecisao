@@ -137,6 +137,7 @@ function LabFaturamento() {
         </TabsList>
 
 
+
         <TabsContent value="faturamento">
           <Card>
             <CardHeader>
