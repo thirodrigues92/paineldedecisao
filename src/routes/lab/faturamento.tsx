@@ -77,7 +77,7 @@ function LabFaturamento() {
   const { data: logs } = useQuery({
     queryKey: ['lab-logs'],
     queryFn: async () => {
-      const { data } = await supabase.from('lab_sync_log').select('*').order('criado_em', { ascending: false }).limit(20);
+      const { data } = await supabase.from('lab_sync_log').select('*').order('executado_em', { ascending: false }).limit(20);
       return data || [];
     }
   });
