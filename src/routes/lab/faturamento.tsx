@@ -10,19 +10,46 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, CheckCircle2, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { DatePickerWithRange } from "@/components/ui/date-picker-with-range";
+import { Progress } from "@/components/ui/progress";
+import { Check, X, Play, Square, TestTube2 } from "lucide-react";
 
 export const Route = createFileRoute("/lab/faturamento")({
   component: LabFaturamento,
 });
 
 function LabFaturamento() {
-  const [tab, setTab] = useState("faturamento");
+  const [tab, setTab] = useState("sincronizacao");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [sequenceResults, setSequenceResults] = useState<any[]>([]);
-  const [dateRange, setDateRange] = useState({ 
-    start: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0],
-    end: new Date().toISOString().split('T')[0]
+  
+  // Estados para o novo controle de sincronização
+  const [syncConfig, setSyncConfig] = useState({
+    tipo: 'C',
+    janela: 3,
+    dryRun: false,
+    limparAntes: false
+  });
+  const [syncStatus, setSyncStatus] = useState<{
+    isRunning: boolean;
+    currentWindow: number;
+    totalWindows: number;
+    successCount: number;
+    errorCount: number;
+    logs: any[];
+  }>({
+    isRunning: false,
+    currentWindow: 0,
+    totalWindows: 0,
+    successCount: 0,
+    errorCount: 0,
+    logs: []
+  });
+
+  const [dateRange, setDateRange] = useState<{ start: Date; end: Date }>({ 
+    start: new Date(new Date().setDate(new Date().getDate() - 7)),
+    end: new Date()
   });
 
   const queryClient = useQueryClient();
@@ -44,14 +71,39 @@ function LabFaturamento() {
   });
 
   const syncMutation = useMutation({
-    mutationFn: async ({ type, tipoTransacao }: { type: 'particular' | 'convenio', tipoTransacao?: string }) => {
-      if (type === 'particular') return labSyncParticular({ data: { data_inicio: dateRange.start, data_fim: dateRange.end, tipo_transacao: tipoTransacao } });
-      return labSyncConvenio({ data: { data_inicio: dateRange.start, data_fim: dateRange.end } });
+    mutationFn: async ({ 
+      type, 
+      tipoTransacao, 
+      start, 
+      end 
+    }: { 
+      type: 'particular' | 'convenio', 
+      tipoTransacao?: string,
+      start?: string,
+      end?: string
+    }) => {
+      const dataInicio = start || dateRange.start.toISOString().split('T')[0];
+      const dataFim = end || dateRange.end.toISOString().split('T')[0];
+      
+      if (type === 'particular') {
+        return labSyncParticular({ 
+          data: { 
+            data_inicio: dataInicio, 
+            data_fim: dataFim, 
+            tipo_transacao: tipoTransacao 
+          } 
+        });
+      }
+      return labSyncConvenio({ 
+        data: { 
+          data_inicio: dataInicio, 
+          data_fim: dataFim 
+        } 
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['lab-stats'] });
       queryClient.invalidateQueries({ queryKey: ['lab-logs'] });
-      toast.success("Sincronização concluída!");
     },
     onError: (e) => toast.error("Erro na sincronização: " + String(e))
   });
@@ -138,6 +190,89 @@ function LabFaturamento() {
     }
     setSequenceResults(results);
     setLoading(false);
+  };
+
+  const runControlledSync = async () => {
+    if (syncStatus.isRunning) return;
+    
+    setSyncStatus(prev => ({ 
+      ...prev, 
+      isRunning: true, 
+      currentWindow: 0, 
+      successCount: 0, 
+      errorCount: 0, 
+      logs: [] 
+    }));
+
+    const start = new Date(dateRange.start);
+    const end = new Date(dateRange.end);
+    const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    const windowSize = syncConfig.janela;
+    const totalSteps = Math.ceil(days / windowSize);
+
+    setSyncStatus(prev => ({ ...prev, totalWindows: totalSteps }));
+
+    for (let i = 0; i < totalSteps; i++) {
+      const currentStart = new Date(start);
+      currentStart.setDate(start.getDate() + (i * windowSize));
+      
+      const currentEnd = new Date(currentStart);
+      currentEnd.setDate(currentStart.getDate() + windowSize - 1);
+      if (currentEnd > end) currentEnd.setTime(end.getTime());
+
+      const startStr = currentStart.toISOString().split('T')[0];
+      const endStr = currentEnd.toISOString().split('T')[0];
+
+      setSyncStatus(prev => ({ ...prev, currentWindow: i + 1 }));
+
+      try {
+        if (!syncConfig.dryRun) {
+          await syncMutation.mutateAsync({
+            type: 'particular',
+            tipoTransacao: syncConfig.tipo,
+            start: startStr,
+            end: endStr
+          });
+        }
+        
+        setSyncStatus(prev => ({
+          ...prev,
+          successCount: prev.successCount + 1,
+          logs: [{
+            periodo: `${startStr} a ${endStr}`,
+            status: 'success',
+            msg: syncConfig.dryRun ? 'Simulado' : 'Sincronizado'
+          }, ...prev.logs]
+        }));
+      } catch (err) {
+        setSyncStatus(prev => ({
+          ...prev,
+          errorCount: prev.errorCount + 1,
+          logs: [{
+            periodo: `${startStr} a ${endStr}`,
+            status: 'error',
+            msg: String(err)
+          }, ...prev.logs]
+        }));
+      }
+      
+      // Delay pequeno entre janelas
+      await new Promise(r => setTimeout(r, 500));
+    }
+
+    setSyncStatus(prev => ({ ...prev, isRunning: false }));
+    toast.success("Processo finalizado");
+  };
+
+  const setDatePreset = (days: number | 'month') => {
+    const end = new Date();
+    const start = new Date();
+    if (days === 'month') {
+      start.setDate(1);
+    } else {
+      start.setDate(end.getDate() - days);
+    }
+    setDateRange({ start, end });
   };
 
   const totals = useMemo(() => {
@@ -245,55 +380,177 @@ function LabFaturamento() {
             <CardHeader>
               <CardTitle>Controle de Sincronização</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg flex items-start gap-3 text-amber-800 text-sm mb-4">
-                <AlertCircle className="w-5 h-5 shrink-0" />
-                <p>
-                  <strong>Aviso Importante:</strong> A base de guias TISS contém apenas 15 registros de 2019 — módulo aparentemente não utilizado. 
-                  Os dados de faturamento de convênio devem ser extraídos preferencialmente através do módulo financeiro (Accounts).
-                </p>
-              </div>
-              <div className="flex gap-4 items-end bg-muted/50 p-4 rounded-lg flex-wrap">
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase">Início</label>
-                  <Input type="date" value={dateRange.start} onChange={e => setDateRange(prev => ({ ...prev, start: e.target.value }))} />
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                {/* Painel Esquerdo: Config */}
+                <div className="lg:col-span-1 space-y-4 border-r pr-6">
+                  <h3 className="text-xs font-bold uppercase text-muted-foreground flex items-center gap-2">
+                    <RefreshCw className="w-3 h-3" /> Configuração
+                  </h3>
+                  
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase">Tipo de Transação</label>
+                      <select 
+                        className="w-full bg-background border rounded px-2 py-1 text-sm"
+                        value={syncConfig.tipo}
+                        onChange={e => setSyncConfig(prev => ({ ...prev, tipo: e.target.value }))}
+                      >
+                        <option value="C">Receitas (C)</option>
+                        <option value="D">Despesas (D)</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase">Janela (Dias)</label>
+                      <select 
+                        className="w-full bg-background border rounded px-2 py-1 text-sm"
+                        value={syncConfig.janela}
+                        onChange={e => setSyncConfig(prev => ({ ...prev, janela: Number(e.target.value) }))}
+                      >
+                        <option value={1}>1 dia (Mais lento/seguro)</option>
+                        <option value={3}>3 dias (Recomendado)</option>
+                        <option value={7}>7 dias (Rápido)</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-3 pt-2">
+                      <div className="flex items-center gap-2 cursor-pointer" onClick={() => setSyncConfig(prev => ({ ...prev, dryRun: !prev.dryRun }))}>
+                        <div className={`w-8 h-4 rounded-full relative transition-colors ${syncConfig.dryRun ? 'bg-amber-500' : 'bg-slate-200'}`}>
+                          <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${syncConfig.dryRun ? 'right-0.5' : 'left-0.5'}`} />
+                        </div>
+                        <span className="text-xs font-medium">Modo Simulação (Dry-run)</span>
+                      </div>
+
+                      <div className="flex items-center gap-2 cursor-pointer" onClick={() => setSyncConfig(prev => ({ ...prev, limparAntes: !prev.limparAntes }))}>
+                        <div className={`w-8 h-4 rounded-full relative transition-colors ${syncConfig.limparAntes ? 'bg-indigo-500' : 'bg-slate-200'}`}>
+                          <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${syncConfig.limparAntes ? 'right-0.5' : 'left-0.5'}`} />
+                        </div>
+                        <span className="text-xs font-medium">Limpar período antes</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase">Fim</label>
-                  <Input type="date" value={dateRange.end} onChange={e => setDateRange(prev => ({ ...prev, end: e.target.value }))} />
+
+                {/* Painel Central: Datas e Ações */}
+                <div className="lg:col-span-3 space-y-6">
+                  <div className="flex flex-wrap gap-4 items-end bg-muted/30 p-4 rounded-lg">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase text-muted-foreground">Período de Sincronização</label>
+                      <DatePickerWithRange 
+                        from={dateRange.start} 
+                        to={dateRange.end} 
+                        onRangeChange={(from, to) => setDateRange({ start: from, end: to })} 
+                      />
+                    </div>
+                    
+                    <div className="flex gap-1">
+                      <Button variant="outline" size="xs" className="h-9 px-2 text-[10px]" onClick={() => setDatePreset(0)}>Hoje</Button>
+                      <Button variant="outline" size="xs" className="h-9 px-2 text-[10px]" onClick={() => setDatePreset(1)}>Ontem</Button>
+                      <Button variant="outline" size="xs" className="h-9 px-2 text-[10px]" onClick={() => setDatePreset(7)}>7d</Button>
+                      <Button variant="outline" size="xs" className="h-9 px-2 text-[10px]" onClick={() => setDatePreset('month')}>Mês</Button>
+                    </div>
+
+                    <div className="flex gap-2 ml-auto">
+                      <Button 
+                        variant="secondary" 
+                        size="sm" 
+                        className="h-9"
+                        onClick={() => {
+                          setSyncConfig(prev => ({ ...prev, dryRun: true, janela: 1 }));
+                          runControlledSync();
+                        }}
+                        disabled={syncStatus.isRunning}
+                      >
+                        <TestTube2 className="w-4 h-4 mr-2" /> 🔬 Testar 1 dia
+                      </Button>
+                      <Button 
+                        variant={syncStatus.isRunning ? "destructive" : "default"}
+                        size="sm"
+                        className="h-9 min-w-[140px]"
+                        onClick={runControlledSync}
+                      >
+                        {syncStatus.isRunning ? (
+                          <><Square className="w-4 h-4 mr-2" /> Parar</>
+                        ) : (
+                          <><Play className="w-4 h-4 mr-2" /> Sincronizar</>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {syncStatus.isRunning || syncStatus.logs.length > 0 ? (
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-4">
+                          <span className="text-xs font-bold uppercase text-muted-foreground">Progresso</span>
+                          <span className="text-sm font-bold">Janela {syncStatus.currentWindow} de {syncStatus.totalWindows}</span>
+                        </div>
+                        <div className="flex gap-4 text-xs">
+                          <span className="text-emerald-600 font-bold">{syncStatus.successCount} Sucessos</span>
+                          <span className="text-destructive font-bold">{syncStatus.errorCount} Erros</span>
+                        </div>
+                      </div>
+                      <Progress value={(syncStatus.currentWindow / syncStatus.totalWindows) * 100} className="h-2" />
+                      
+                      <div className="max-h-[200px] overflow-auto border rounded divide-y bg-muted/10">
+                        {syncStatus.logs.map((log, idx) => (
+                          <div key={idx} className="p-2 flex items-center justify-between text-xs">
+                            <span className="font-mono text-muted-foreground">{log.periodo}</span>
+                            <div className="flex items-center gap-2">
+                              <span className={log.status === 'success' ? 'text-emerald-600' : 'text-destructive'}>
+                                {log.msg}
+                              </span>
+                              {log.status === 'success' ? <Check className="w-3 h-3 text-emerald-500" /> : <X className="w-3 h-3 text-destructive" />}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="h-[120px] flex items-center justify-center border-2 border-dashed rounded text-muted-foreground text-sm italic">
+                      Configure o período e clique em Sincronizar para iniciar.
+                    </div>
+                  )}
                 </div>
-                <Button onClick={async () => {
-                  toast.info("Sincronizando Receitas (C)...");
-                  await syncMutation.mutateAsync({ type: 'particular', tipoTransacao: 'C' });
-                  toast.info("Sincronizando Despesas (D)...");
-                  await syncMutation.mutateAsync({ type: 'particular', tipoTransacao: 'D' });
-                }} disabled={syncMutation.isPending}>
-                  Sync Particular (Receitas + Despesas)
-                </Button>
-                <Button onClick={() => syncMutation.mutate({ type: 'convenio' })} disabled={syncMutation.isPending}>
-                  Sync Convênio (Insurances)
-                </Button>
               </div>
 
-              <div className="space-y-2">
-                <h3 className="text-sm font-bold uppercase text-muted-foreground">Log de Execuções Recentes</h3>
+              <div className="pt-6 border-t space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-sm font-bold uppercase text-muted-foreground">Log Geral de Execuções</h3>
+                  <Button variant="ghost" size="xs" onClick={() => queryClient.invalidateQueries({ queryKey: ['lab-logs'] })}>
+                    <RefreshCw className="w-3 h-3 mr-2" /> Atualizar Histórico
+                  </Button>
+                </div>
                 <Table>
                   <TableHeader>
-                    <TableRow>
+                    <TableRow className="bg-muted/50">
                       <TableHead>Data/Hora</TableHead>
                       <TableHead>Endpoint</TableHead>
-                      <TableHead>Registros</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead>Parâmetros</TableHead>
+                      <TableHead className="text-center">Registros</TableHead>
+                      <TableHead className="text-center">Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {logs?.map((l: any) => (
-                      <TableRow key={l.id}>
-                        <TableCell className="text-xs">{new Date(l.criado_em).toLocaleString('pt-BR')}</TableCell>
-                        <TableCell className="text-xs font-mono">{l.endpoint}</TableCell>
-                        <TableCell>{l.registros || 0}</TableCell>
+                      <TableRow key={l.id} className="text-xs">
+                        <TableCell className="whitespace-nowrap">{new Date(l.criado_em).toLocaleString('pt-BR')}</TableCell>
+                        <TableCell className="font-mono opacity-70">{l.endpoint}</TableCell>
                         <TableCell>
-                          {l.api_success ? <Badge className="bg-emerald-500 hover:bg-emerald-600">Sucesso</Badge> : <Badge variant="destructive">Erro</Badge>}
+                          <div className="flex gap-1 flex-wrap">
+                            {Object.entries(l.parametros || {}).map(([k, v]) => (
+                              <Badge key={k} variant="outline" className="text-[9px] font-mono px-1 h-4">{k}:{String(v)}</Badge>
+                            ))}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center font-bold">{l.registros || 0}</TableCell>
+                        <TableCell className="text-center">
+                          {l.api_success ? (
+                            <div className="flex items-center justify-center text-emerald-500 font-bold"><Check className="w-3 h-3 mr-1" /> OK</div>
+                          ) : (
+                            <div className="flex items-center justify-center text-destructive font-bold"><X className="w-3 h-3 mr-1" /> Falha</div>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
