@@ -197,6 +197,9 @@ export const labSyncParticular = createServerFn({ method: "POST" })
         url.searchParams.set("data_end", de);
         url.searchParams.set("tipo_transacao", tipo_transacao);
         url.searchParams.set("unidade_id", "0");
+        // Removidos billing=1 e show_items=1 pois podem estar filtrando ou falhando
+
+
 
         // 2. Try/catch + 3. Timeout explícito (20s)
         let body: any;

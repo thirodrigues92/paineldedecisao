@@ -321,7 +321,9 @@ function LabFaturamento() {
 
         const res: any = await Promise.race([syncPromise, timeoutPromise]);
         
-        const windowRes = res.resumo?.janelas?.find((j: any) => j.ds === toFeegowDate(startStr));
+        // Procurar qualquer janela de sucesso no resumo, pois ds pode ter mudado em caso de split
+        const windowRes = res.resumo?.janelas?.find((j: any) => j.status === 'success');
+
         
         setSyncStatus(prev => ({
           ...prev,
@@ -441,11 +443,12 @@ function LabFaturamento() {
 
       <div className="space-y-4">
         <div className="flex border-b overflow-x-auto">
-          <button onClick={() => setTab("faturamento")} className={`px-4 py-2 whitespace-nowrap ${tab === "faturamento" ? "border-b-2 border-primary font-bold" : ""}`}>Faturado x Recebido</button>
-          <button onClick={() => setTab("sincronizacao")} className={`px-4 py-2 whitespace-nowrap ${tab === "sincronizacao" ? "border-b-2 border-primary font-bold" : ""}`}>Sincronização</button>
-          <button onClick={() => setTab("auditoria")} className={`px-4 py-2 whitespace-nowrap ${tab === "auditoria" ? "border-b-2 border-primary font-bold" : ""}`}>Auditoria</button>
-          <button onClick={() => setTab("diagnostico")} className={`px-4 py-2 whitespace-nowrap ${tab === "diagnostico" ? "border-b-2 border-primary font-bold" : ""}`}>Debug API</button>
+          <button onClick={() => setTab("faturamento")} className={`px-4 py-2 whitespace-nowrap cursor-pointer ${tab === "faturamento" ? "border-b-2 border-primary font-bold" : ""}`}>Faturado x Recebido</button>
+          <button onClick={() => setTab("sincronizacao")} className={`px-4 py-2 whitespace-nowrap cursor-pointer ${tab === "sincronizacao" ? "border-b-2 border-primary font-bold" : ""}`}>Sincronização</button>
+          <button onClick={() => setTab("auditoria")} className={`px-4 py-2 whitespace-nowrap cursor-pointer ${tab === "auditoria" ? "border-b-2 border-primary font-bold" : ""}`}>Auditoria</button>
+          <button onClick={() => setTab("diagnostico")} className={`px-4 py-2 whitespace-nowrap cursor-pointer ${tab === "diagnostico" ? "border-b-2 border-primary font-bold" : ""}`}>Debug API</button>
         </div>
+
 
         {tab === "faturamento" && (
           <Card>
