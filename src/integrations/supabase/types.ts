@@ -296,6 +296,216 @@ export type Database = {
         }
         Relationships: []
       }
+      lab_dim_categoria: {
+        Row: {
+          id: number
+          nome: string | null
+        }
+        Insert: {
+          id: number
+          nome?: string | null
+        }
+        Update: {
+          id?: number
+          nome?: string | null
+        }
+        Relationships: []
+      }
+      lab_dim_centro_custo: {
+        Row: {
+          id: number
+          nome: string | null
+        }
+        Insert: {
+          id: number
+          nome?: string | null
+        }
+        Update: {
+          id?: number
+          nome?: string | null
+        }
+        Relationships: []
+      }
+      lab_faturamento: {
+        Row: {
+          acrescimo: number | null
+          agendamento_id: number | null
+          atendimento_id: number | null
+          categoria_id: number | null
+          centro_custo_id: number | null
+          codigo_procedimento: string | null
+          convenio_id: number | null
+          data_atendimento: string | null
+          data_competencia: string | null
+          data_vencimento: string | null
+          desconto: number | null
+          documento_id: number
+          glosado: number | null
+          guia_status: string | null
+          id: string
+          is_cancelado: boolean | null
+          item_id: number | null
+          lote_id: number | null
+          motivo_glosa: string | null
+          origem: string
+          paciente_id: number | null
+          payload_raw: Json | null
+          plano_id: number | null
+          procedimento_id: number | null
+          profissional_id: number | null
+          synced_at: string | null
+          tabela_id: number | null
+          unidade_id: number | null
+          valor_bruto: number | null
+          valor_faturado: number | null
+        }
+        Insert: {
+          acrescimo?: number | null
+          agendamento_id?: number | null
+          atendimento_id?: number | null
+          categoria_id?: number | null
+          centro_custo_id?: number | null
+          codigo_procedimento?: string | null
+          convenio_id?: number | null
+          data_atendimento?: string | null
+          data_competencia?: string | null
+          data_vencimento?: string | null
+          desconto?: number | null
+          documento_id: number
+          glosado?: number | null
+          guia_status?: string | null
+          id?: string
+          is_cancelado?: boolean | null
+          item_id?: number | null
+          lote_id?: number | null
+          motivo_glosa?: string | null
+          origem: string
+          paciente_id?: number | null
+          payload_raw?: Json | null
+          plano_id?: number | null
+          procedimento_id?: number | null
+          profissional_id?: number | null
+          synced_at?: string | null
+          tabela_id?: number | null
+          unidade_id?: number | null
+          valor_bruto?: number | null
+          valor_faturado?: number | null
+        }
+        Update: {
+          acrescimo?: number | null
+          agendamento_id?: number | null
+          atendimento_id?: number | null
+          categoria_id?: number | null
+          centro_custo_id?: number | null
+          codigo_procedimento?: string | null
+          convenio_id?: number | null
+          data_atendimento?: string | null
+          data_competencia?: string | null
+          data_vencimento?: string | null
+          desconto?: number | null
+          documento_id?: number
+          glosado?: number | null
+          guia_status?: string | null
+          id?: string
+          is_cancelado?: boolean | null
+          item_id?: number | null
+          lote_id?: number | null
+          motivo_glosa?: string | null
+          origem?: string
+          paciente_id?: number | null
+          payload_raw?: Json | null
+          plano_id?: number | null
+          procedimento_id?: number | null
+          profissional_id?: number | null
+          synced_at?: string | null
+          tabela_id?: number | null
+          unidade_id?: number | null
+          valor_bruto?: number | null
+          valor_faturado?: number | null
+        }
+        Relationships: []
+      }
+      lab_recebimento: {
+        Row: {
+          bandeira_id: number | null
+          conta_destino_id: number | null
+          data_pagamento: string | null
+          documento_id: number
+          forma_pagamento: number | null
+          id: string
+          origem: string
+          pagamento_id: number | null
+          parcelas: number | null
+          payload_raw: Json | null
+          synced_at: string | null
+          valor_recebido: number | null
+        }
+        Insert: {
+          bandeira_id?: number | null
+          conta_destino_id?: number | null
+          data_pagamento?: string | null
+          documento_id: number
+          forma_pagamento?: number | null
+          id?: string
+          origem: string
+          pagamento_id?: number | null
+          parcelas?: number | null
+          payload_raw?: Json | null
+          synced_at?: string | null
+          valor_recebido?: number | null
+        }
+        Update: {
+          bandeira_id?: number | null
+          conta_destino_id?: number | null
+          data_pagamento?: string | null
+          documento_id?: number
+          forma_pagamento?: number | null
+          id?: string
+          origem?: string
+          pagamento_id?: number | null
+          parcelas?: number | null
+          payload_raw?: Json | null
+          synced_at?: string | null
+          valor_recebido?: number | null
+        }
+        Relationships: []
+      }
+      lab_sync_log: {
+        Row: {
+          amostra_raw: Json | null
+          api_success: boolean | null
+          endpoint: string | null
+          erro: string | null
+          executado_em: string | null
+          http_status: number | null
+          id: string
+          parametros: Json | null
+          registros: number | null
+        }
+        Insert: {
+          amostra_raw?: Json | null
+          api_success?: boolean | null
+          endpoint?: string | null
+          erro?: string | null
+          executado_em?: string | null
+          http_status?: number | null
+          id?: string
+          parametros?: Json | null
+          registros?: number | null
+        }
+        Update: {
+          amostra_raw?: Json | null
+          api_success?: boolean | null
+          endpoint?: string | null
+          erro?: string | null
+          executado_em?: string | null
+          http_status?: number | null
+          id?: string
+          parametros?: Json | null
+          registros?: number | null
+        }
+        Relationships: []
+      }
       pacientes: {
         Row: {
           ano_nascimento: number | null
@@ -550,6 +760,19 @@ export type Database = {
           ticket_medio: number | null
           total_agendamentos: number | null
           unidade_id: number | null
+        }
+        Relationships: []
+      }
+      lab_vw_faturado_x_recebido: {
+        Row: {
+          convenio_id: number | null
+          mes: string | null
+          origem: string | null
+          pct_recebimento: number | null
+          saldo_a_receber: number | null
+          total_faturado: number | null
+          total_glosado: number | null
+          total_recebido: number | null
         }
         Relationships: []
       }
