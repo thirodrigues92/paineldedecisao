@@ -904,9 +904,21 @@ function LabFaturamento() {
                  </Card>
                </div>
              )}
-           </div>
-         )}
-      </div>
+            {tab === "diagnostico" && (
+              <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-xs">
+                  <h4 className="font-bold mb-1 flex items-center"><AlertCircle className="w-3 h-3 mr-1" /> Nota sobre Categoria</h4>
+                  categoria_id e centro_custo_id vêm zerados do Feegow. Categorização baseada em grupo de procedimento via lab_dim_procedimento.
+                </div>
+                <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-lg text-indigo-800 text-xs">
+                  <h4 className="font-bold mb-1 flex items-center"><AlertCircle className="w-3 h-3 mr-1" /> Nota sobre Desconto</h4>
+                  Campo 'desconto' representa diferença do preço de tabela, não desconto comercial. Interpretar com cuidado.
+                </div>
+              </div>
+            )}
+            </div>
+          )}
+       </div>
     </div>
   );
 }
