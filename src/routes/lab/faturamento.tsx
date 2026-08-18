@@ -3,29 +3,28 @@ import { useState, useMemo } from "react";
 import { labDebugFeegow, labSyncParticular, labSyncConvenio, clearLabData } from "@/lib/lab-faturamento.functions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, CheckCircle2, RefreshCw, Trash2, Search, BarChart3, ShieldCheck } from "lucide-react";
+import { AlertCircle, CheckCircle2, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/lab/faturamento")({
   component: LabFaturamento,
 });
 
- function LabFaturamento() {
+function LabFaturamento() {
   const [tab, setTab] = useState("faturamento");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
+  const [sequenceResults, setSequenceResults] = useState<any[]>([]);
   const [dateRange, setDateRange] = useState({ 
     start: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0],
     end: new Date().toISOString().split('T')[0]
   });
 
-  
   const queryClient = useQueryClient();
 
   const { data: stats } = useQuery({
@@ -66,16 +65,82 @@ export const Route = createFileRoute("/lab/faturamento")({
     }
   });
 
-  const testEndpoint = async (endpoint: string, params: Record<string, string> = {}) => {
+  const testEndpoint = async (endpoint: string, params: Record<string, string> = {}, method: "GET" | "POST" = "GET", body?: any) => {
     setLoading(true);
+    setSequenceResults([]);
     try {
-      const res = await labDebugFeegow({ data: { endpoint, params } });
-      setResult({ endpoint, ...res });
+      const res = await labDebugFeegow({ data: { endpoint, params, method, body } });
+      setResult(res);
     } finally {
       setLoading(false);
     }
   };
 
+  const testBillingDateFilter = async () => {
+    setLoading(true);
+    setResult(null);
+    const tests = [
+      { label: "Sem parâmetros", params: {} },
+      { label: "2026 Full", params: { data_start: "01-01-2026", data_end: "31-12-2026" } },
+      { label: "2019 Jan-Fev", params: { data_start: "01-01-2019", data_end: "28-02-2019" } },
+    ];
+    
+    const results = [];
+    for (const t of tests) {
+      const res = await labDebugFeegow({ 
+        data: { 
+          endpoint: "billing/insurances-billing", 
+          params: { ...t.params, billing_type_id: "1", billing: "1" } as Record<string, string>
+        } 
+      });
+      results.push({ ...t, total: res.raw?.content?.total || res.raw?.total || 0, res });
+    }
+    setSequenceResults(results);
+    setLoading(false);
+  };
+
+  const scanListAccounts = async () => {
+    setLoading(true);
+    setResult(null);
+    const steps = [
+      { m: "GET", p: {}, b: null, desc: "Sem parâmetros" },
+      { m: "GET", p: { data_start: "01-07-2026", data_end: "31-07-2026" }, b: null, desc: "data_start/end" },
+      { m: "GET", p: { data_inicio: "01-07-2026", data_fim: "31-07-2026" }, b: null, desc: "data_inicio/fim" },
+      { m: "GET", p: { data_start: "01-07-2026", data_end: "31-07-2026", tipo: "R", unidade_id: "0" }, b: null, desc: "Full GET" },
+      { m: "POST", p: {}, b: { data_start: "01-07-2026", data_end: "31-07-2026", tipo: "R" }, desc: "POST snake_case" },
+      { m: "POST", p: {}, b: { dataInicio: "01-07-2026", dataFim: "31-07-2026", unidadeId: 0 }, desc: "POST camelCase" },
+    ];
+
+    const results = [];
+    let firstSuccess = null;
+
+    for (const [i, s] of steps.entries()) {
+      const res = await labDebugFeegow({ 
+        data: { 
+          endpoint: "financial/list-accounts", 
+          method: s.m as any, 
+          params: s.p as Record<string, string>, 
+          body: s.b 
+        } 
+      });
+      const item = { 
+        id: i + 1, 
+        method: s.m, 
+        urlBody: s.desc, 
+        status: res.http_status, 
+        success: res.api_success, 
+        total: res.total_registros,
+        raw: res
+      };
+      results.push(item);
+      if (!firstSuccess && res.http_status === 200 && res.api_success) {
+        firstSuccess = res;
+      }
+    }
+    setSequenceResults(results);
+    if (firstSuccess) setResult(firstSuccess);
+    setLoading(false);
+  };
 
   const totals = useMemo(() => {
     if (!stats) return { faturado: 0, recebido: 0, diff: 0 };
@@ -131,17 +196,12 @@ export const Route = createFileRoute("/lab/faturamento")({
       </div>
 
       <div className="space-y-4">
-        <div className="flex border-b">
-          <button onClick={() => setTab("faturamento")} className={`px-4 py-2 ${tab === "faturamento" ? "border-b-2 border-primary font-bold" : ""}`}>Faturado x Recebido</button>
-          <button onClick={() => setTab("sincronizacao")} className={`px-4 py-2 ${tab === "sincronizacao" ? "border-b-2 border-primary font-bold" : ""}`}>Sincronização</button>
-          <button onClick={() => setTab("auditoria")} className={`px-4 py-2 ${tab === "auditoria" ? "border-b-2 border-primary font-bold" : ""}`}>Auditoria</button>
-          <button onClick={() => setTab("diagnostico")} className={`px-4 py-2 ${tab === "diagnostico" ? "border-b-2 border-primary font-bold" : ""}`}>Debug API</button>
+        <div className="flex border-b overflow-x-auto">
+          <button onClick={() => setTab("faturamento")} className={`px-4 py-2 whitespace-nowrap ${tab === "faturamento" ? "border-b-2 border-primary font-bold" : ""}`}>Faturado x Recebido</button>
+          <button onClick={() => setTab("sincronizacao")} className={`px-4 py-2 whitespace-nowrap ${tab === "sincronizacao" ? "border-b-2 border-primary font-bold" : ""}`}>Sincronização</button>
+          <button onClick={() => setTab("auditoria")} className={`px-4 py-2 whitespace-nowrap ${tab === "auditoria" ? "border-b-2 border-primary font-bold" : ""}`}>Auditoria</button>
+          <button onClick={() => setTab("diagnostico")} className={`px-4 py-2 whitespace-nowrap ${tab === "diagnostico" ? "border-b-2 border-primary font-bold" : ""}`}>Debug API</button>
         </div>
-
-
-
-
-
 
         {tab === "faturamento" && (
           <Card>
@@ -183,13 +243,19 @@ export const Route = createFileRoute("/lab/faturamento")({
          )}
  
          {tab === "sincronizacao" && (
-
           <Card>
             <CardHeader>
               <CardTitle>Controle de Sincronização</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex gap-4 items-end bg-muted/50 p-4 rounded-lg">
+              <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg flex items-start gap-3 text-amber-800 text-sm mb-4">
+                <AlertCircle className="w-5 h-5 shrink-0" />
+                <p>
+                  <strong>Aviso Importante:</strong> A base de guias TISS contém apenas 15 registros de 2019 — módulo aparentemente não utilizado. 
+                  Os dados de faturamento de convênio devem ser extraídos preferencialmente através do módulo financeiro (Accounts).
+                </p>
+              </div>
+              <div className="flex gap-4 items-end bg-muted/50 p-4 rounded-lg flex-wrap">
                 <div className="space-y-2">
                   <label className="text-xs font-bold uppercase">Início</label>
                   <Input type="date" value={dateRange.start} onChange={e => setDateRange(prev => ({ ...prev, start: e.target.value }))} />
@@ -224,7 +290,7 @@ export const Route = createFileRoute("/lab/faturamento")({
                         <TableCell className="text-xs font-mono">{l.endpoint}</TableCell>
                         <TableCell>{l.registros || 0}</TableCell>
                         <TableCell>
-                          {l.api_success ? <Badge className="bg-emerald-500">Sucesso</Badge> : <Badge variant="destructive">Erro</Badge>}
+                          {l.api_success ? <Badge className="bg-emerald-500 hover:bg-emerald-600">Sucesso</Badge> : <Badge variant="destructive">Erro</Badge>}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -236,7 +302,6 @@ export const Route = createFileRoute("/lab/faturamento")({
          )}
  
          {tab === "auditoria" && (
-
            <Card>
              <CardHeader>
                <CardTitle>Diagnóstico de Integridade</CardTitle>
@@ -266,42 +331,93 @@ export const Route = createFileRoute("/lab/faturamento")({
          )}
  
          {tab === "diagnostico" && (
-
-          <Card>
-             <CardHeader>
-               <CardTitle>Explorador de Endpoints Feegow</CardTitle>
-             </CardHeader>
-             <CardContent className="space-y-4">
-                 <div className="flex gap-2 flex-wrap">
-                  <Button size="sm" variant="outline" onClick={() => testEndpoint('financial/list-accounts')} disabled={loading}>
-                    JSON Bruto: financial/list-accounts
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => testEndpoint('billing/insurances-billing', { billing_type_id: '1', billing: '1' })} disabled={loading}>
-                    JSON Bruto: billing/insurances-billing
-                  </Button>
+           <Card>
+              <CardHeader>
+                <CardTitle>Explorador de Endpoints Feegow</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex gap-2 flex-wrap pb-4 border-b">
                   <Button size="sm" variant="outline" onClick={() => testEndpoint('insurance/list')} disabled={loading}>
-                    JSON Bruto: insurance/list
+                    insurance/list
+                  </Button>
+                  <Button size="sm" variant="secondary" onClick={testBillingDateFilter} disabled={loading}>
+                    Testar filtro de data: insurances-billing
+                  </Button>
+                  <Button size="sm" variant="default" onClick={scanListAccounts} disabled={loading} className="bg-indigo-600 hover:bg-indigo-700">
+                    Descobrir parâmetros: list-accounts
                   </Button>
                 </div>
 
+                {sequenceResults.length > 0 && !result && (
+                  <div className="space-y-4">
+                    <h3 className="font-bold text-sm uppercase">Resultados da Varredura</h3>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>#</TableHead>
+                          <TableHead>Método</TableHead>
+                          <TableHead>Teste</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Success</TableHead>
+                          <TableHead>Total</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {sequenceResults.map((r, i) => (
+                          <TableRow key={i} className={r.success && r.status === 200 ? "bg-emerald-50" : ""}>
+                            <TableCell>{r.id || i+1}</TableCell>
+                            <TableCell className="font-mono">{r.method || 'GET'}</TableCell>
+                            <TableCell>{r.label || r.urlBody}</TableCell>
+                            <TableCell>{r.status}</TableCell>
+                            <TableCell>{r.success ? "✅" : "❌"}</TableCell>
+                            <TableCell className="font-bold">{r.total}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                    {sequenceResults[0]?.label && (
+                      <div className="p-3 bg-muted rounded text-xs">
+                        <strong>Conclusão:</strong> {
+                          new Set(sequenceResults.map(r => r.total)).size === 1 
+                          ? "⚠️ O endpoint PARECE IGNORAR filtros de data (totais idênticos)." 
+                          : "✅ O endpoint RESPONDE a filtros de data."
+                        }
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {result && (
-                  <div className="space-y-2">
+                  <div className="space-y-4">
+                    <div className="bg-slate-900 text-slate-200 p-4 rounded-lg space-y-2 text-xs font-mono border-l-4 border-indigo-500">
+                      <div className="flex gap-4">
+                        <Button variant="ghost" size="sm" className="h-6 px-2 text-indigo-400 hover:bg-slate-800" onClick={() => setResult(null)}>← Voltar</Button>
+                        <span className="text-indigo-400 font-bold">{result.method}</span>
+                        <span className="text-slate-400 truncate">{result.url}</span>
+                      </div>
+                      {result.sent_body && (
+                        <div className="mt-2 pt-2 border-t border-slate-700">
+                          <span className="text-amber-400">Body:</span>
+                          <pre className="mt-1 text-slate-300 overflow-x-auto">{JSON.stringify(result.sent_body, null, 2)}</pre>
+                        </div>
+                      )}
+                    </div>
+                    
                     <div className="flex justify-between items-center text-xs font-mono bg-muted p-2 rounded">
-                      <span>{result.endpoint}</span>
+                      <span>Resultado da API</span>
                       <span className={result.api_success ? "text-emerald-500" : "text-destructive"}>
-                        Status: {result.http_status}
+                        HTTP {result.http_status} | Success: {String(result.api_success)} | Count: {result.total_registros}
                       </span>
                     </div>
-                    <pre className="bg-black text-emerald-400 p-4 rounded-lg overflow-auto text-[10px] max-h-[400px]">
+                    <pre className="bg-black text-emerald-400 p-4 rounded-lg overflow-auto text-[10px] max-h-[500px]">
                       {JSON.stringify(result.raw, null, 2)}
                     </pre>
                   </div>
                 )}
-             </CardContent>
-           </Card>
+              </CardContent>
+            </Card>
          )}
       </div>
     </div>
   );
 }
-
