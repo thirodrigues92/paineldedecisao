@@ -31,6 +31,7 @@ interface Ctx extends DashboardFilters {
   setProfissionais: (ids: number[]) => void;
   setEspecialidades: (ids: number[]) => void;
   setConvenioTipo: (v: DashboardFilters["convenioTipo"]) => void;
+  setRange: (from: Date, to: Date) => void;
 }
 
 const FiltersContext = createContext<Ctx | null>(null);
@@ -50,10 +51,17 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
     if (p !== "custom") { const r = computeRange(p); setFrom(r.from); setTo(r.to); }
   };
 
+  const setRange = (f: Date, t: Date) => {
+    setPresetState("custom");
+    setFrom(f);
+    setTo(t);
+  };
+
   return (
     <FiltersContext.Provider value={{
       preset, from, to, unidadeIds, profissionalIds, especialidadeIds, convenioTipo,
       setPreset, setUnidades, setProfissionais, setEspecialidades, setConvenioTipo,
+      setRange,
     }}>
       {children}
     </FiltersContext.Provider>
