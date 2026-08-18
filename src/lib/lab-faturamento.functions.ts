@@ -104,22 +104,25 @@ export const labDebugFeegow = createServerFn({ method: "POST" })
 
 
 export const labSyncParticular = createServerFn({ method: "POST" })
-  .inputValidator((data: { data_inicio: string; data_fim: string }) => data)
+  .inputValidator((data: { data_inicio: string; data_fim: string; tipo_transacao?: string }) => data)
   .handler(async ({ data }) => {
     const FEEGOW_BASE = "https://api.feegow.com/v1/api";
     const FEEGOW_TOKEN = process.env.FEEGOW_API_TOKEN ?? "";
     
     const ds = toFeegowDate(data.data_inicio);
     const de = toFeegowDate(data.data_fim);
+    const tipoTransacao = data.tipo_transacao || "R"; // Default para Receita (a confirmar na varredura)
 
     let totalRegistros = 0;
     let start = 0;
     const offset = 50;
 
     while (true) {
-      const url = new URL(`${FEEGOW_BASE}/financial/list-accounts`);
-      url.searchParams.set("data_inicio", ds);
-      url.searchParams.set("data_fim", de);
+      const url = new URL(`${FEEGOW_BASE}/financial/list-invoice`);
+      url.searchParams.set("data_start", ds);
+      url.searchParams.set("data_end", de);
+      url.searchParams.set("tipo_transacao", tipoTransacao);
+      url.searchParams.set("unidade_id", "0");
       url.searchParams.set("start", String(start));
       url.searchParams.set("offset", String(offset));
 
@@ -133,37 +136,41 @@ export const labSyncParticular = createServerFn({ method: "POST" })
       const faturamentos: any[] = [];
       const recebimentos: any[] = [];
 
-      for (const conta of list) {
-        const docId = Number(conta.conta_id || conta.id);
+      for (const invoice of list) {
+        const docId = Number(invoice.invoice_id);
         
-        for (const det of (conta.detalhes || [])) {
+        // detalhes[] → faturamento base
+        for (const det of (invoice.detalhes || [])) {
           faturamentos.push({
             origem: 'particular',
             documento_id: docId,
-            item_id: Number(det.detalhe_id || 0),
+            item_id: 0, // Item base da fatura
             valor_faturado: parseValorBR(det.valor),
             data_competencia: parseDataFeegow(det.data),
-            payload_raw: det
+            paciente_id: invoice.paciente_id ? Number(invoice.paciente_id) : null,
+            payload_raw: { ...det, movement_id: invoice.movement_id, conta_id: invoice.conta_id, tipo_conta: invoice.tipo_conta, NFe: invoice.NFe, dataNFe: invoice.dataNFe }
           });
         }
 
-        for (const item of (conta.itens || [])) {
+        // itens[] → detalhamento por procedimento/serviço
+        for (const item of (invoice.itens || [])) {
           const val = parseValorBR(item.valor);
           const desc = parseValorBR(item.desconto);
           const acre = parseValorBR(item.acrescimo);
+          
           faturamentos.push({
             origem: 'particular',
             documento_id: docId,
-            item_id: Number(item.item_id || 0),
+            item_id: Number(item.item_id || Math.random() * 1000000), // Fallback se não houver ID único
             agendamento_id: item.agendamento_id ? Number(item.agendamento_id) : null,
-            paciente_id: item.paciente_id ? Number(item.paciente_id) : null,
-            profissional_id: item.profissional_id ? Number(item.profissional_id) : null,
-            unidade_id: item.unidade_id ? Number(item.unidade_id) : null,
+            paciente_id: invoice.paciente_id ? Number(invoice.paciente_id) : null,
+            profissional_id: item.executante_id ? Number(item.executante_id) : null,
+            unidade_id: invoice.unidade_id ? Number(invoice.unidade_id) : null,
             procedimento_id: item.procedimento_id ? Number(item.procedimento_id) : null,
             categoria_id: item.categoria_id ? Number(item.categoria_id) : null,
             centro_custo_id: item.centro_custo_id ? Number(item.centro_custo_id) : null,
             data_atendimento: parseDataFeegow(item.data_execucao),
-            data_competencia: parseDataFeegow(item.data_execucao),
+            data_competencia: parseDataFeegow(invoice.detalhes?.[0]?.data || item.data_execucao),
             valor_bruto: val,
             desconto: desc,
             acrescimo: acre,
@@ -173,15 +180,16 @@ export const labSyncParticular = createServerFn({ method: "POST" })
           });
         }
 
-        for (const pag of (conta.pagamentos || [])) {
+        // pagamentos[] → recebimento
+        for (const pag of (invoice.pagamentos || [])) {
           recebimentos.push({
             origem: 'particular',
             documento_id: docId,
-            pagamento_id: Number(pag.pagamento_id || 0),
+            pagamento_id: Number(pag.pagamento_id || Math.random() * 1000000),
             data_pagamento: parseDataFeegow(pag.data),
             valor_recebido: parseValorBR(pag.valor),
-            forma_pagamento: Number(pag.forma_pagamento_id || 0),
-            payload_raw: pag
+            forma_pagamento: pag.forma_pagamento,
+            payload_raw: { ...pag, bandeira_id: pag.bandeira_id, parcelas: pag.parcelas, conta_destino_id: pag.conta_destino_id, transacao_numero: pag.transacao_numero, transacao_autorizacao: pag.transacao_autorizacao, transacao_parcelas: pag.transacao_parcelas }
           });
         }
       }
@@ -196,8 +204,8 @@ export const labSyncParticular = createServerFn({ method: "POST" })
       totalRegistros += list.length;
       
       await supabaseAdmin.from("lab_sync_log").insert({
-        endpoint: "/financial/list-accounts",
-        parametros: { ds, de, start, offset },
+        endpoint: "/financial/list-invoice",
+        parametros: { ds, de, tipoTransacao, start, offset },
         api_success: body.success === true,
         http_status: res.status,
         registros: list.length,
