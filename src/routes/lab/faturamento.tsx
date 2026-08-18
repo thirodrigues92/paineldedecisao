@@ -445,10 +445,10 @@ function LabFaturamento() {
                     </div>
                     
                     <div className="flex gap-1">
-                      <Button variant="outline" size="xs" className="h-9 px-2 text-[10px]" onClick={() => setDatePreset(0)}>Hoje</Button>
-                      <Button variant="outline" size="xs" className="h-9 px-2 text-[10px]" onClick={() => setDatePreset(1)}>Ontem</Button>
-                      <Button variant="outline" size="xs" className="h-9 px-2 text-[10px]" onClick={() => setDatePreset(7)}>7d</Button>
-                      <Button variant="outline" size="xs" className="h-9 px-2 text-[10px]" onClick={() => setDatePreset('month')}>Mês</Button>
+                      <Button variant="outline" size="sm" className="h-9 px-2 text-[10px]" onClick={() => setDatePreset(0)}>Hoje</Button>
+                      <Button variant="outline" size="sm" className="h-9 px-2 text-[10px]" onClick={() => setDatePreset(1)}>Ontem</Button>
+                      <Button variant="outline" size="sm" className="h-9 px-2 text-[10px]" onClick={() => setDatePreset(7)}>7d</Button>
+                      <Button variant="outline" size="sm" className="h-9 px-2 text-[10px]" onClick={() => setDatePreset('month')}>Mês</Button>
                     </div>
 
                     <div className="flex gap-2 ml-auto">
@@ -518,7 +518,7 @@ function LabFaturamento() {
               <div className="pt-6 border-t space-y-4">
                 <div className="flex justify-between items-center">
                   <h3 className="text-sm font-bold uppercase text-muted-foreground">Log Geral de Execuções</h3>
-                  <Button variant="ghost" size="xs" onClick={() => queryClient.invalidateQueries({ queryKey: ['lab-logs'] })}>
+                  <Button variant="ghost" size="sm" onClick={() => queryClient.invalidateQueries({ queryKey: ['lab-logs'] })}>
                     <RefreshCw className="w-3 h-3 mr-2" /> Atualizar Histórico
                   </Button>
                 </div>
