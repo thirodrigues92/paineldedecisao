@@ -137,6 +137,13 @@ function LabFaturamento() {
     extra_params: 'start=0&offset=5'
   });
   const [requestHistory, setRequestHistory] = useState<any[]>([]);
+  
+  const toFeegowDate = (iso: string) => {
+    const d = new Date(iso);
+    const dd = String(d.getUTCDate()).padStart(2, "0");
+    const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+    return `${dd}-${mm}-${d.getUTCFullYear()}`;
+  };
 
   const formatFeegowDate = (date: Date) => {
     const dd = String(date.getDate()).padStart(2, "0");
@@ -300,14 +307,14 @@ function LabFaturamento() {
       setSyncStatus(prev => ({ ...prev, currentWindow: i + 1 }));
 
       try {
-        const res = await syncMutation.mutateAsync({
+        const res: any = await syncMutation.mutateAsync({
           type: 'particular',
           tipoTransacao: syncConfig.tipo,
           start: startStr,
           end: endStr
         });
         
-        const windowRes = res.resumo.janelas.find((j: any) => j.ds === toFeegowDate(startStr));
+        const windowRes = res.resumo?.janelas?.find((j: any) => j.ds === toFeegowDate(startStr));
         
         setSyncStatus(prev => ({
           ...prev,
@@ -318,7 +325,7 @@ function LabFaturamento() {
             msg: syncConfig.dryRun ? 'Simulado' : 'Sincronizado',
             data: windowRes
           }, ...prev.logs],
-          summary: i === totalSteps - 1 ? res.resumo : prev.summary
+          summary: (i === totalSteps - 1 && res.resumo) ? res.resumo : prev.summary
         }));
       } catch (err) {
         setSyncStatus(prev => ({
