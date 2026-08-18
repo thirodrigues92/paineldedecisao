@@ -142,9 +142,15 @@ export const labSyncParticular = createServerFn({ method: "POST" })
     
     const resumo = {
       janelas: [] as any[],
-      total_items: 0,
-      total_header: 0,
-      total_valor: 0
+      total_contas: 0,
+      total_itens: 0,
+      total_pagamentos: 0,
+      soma_faturada: 0,
+      soma_recebida: 0,
+      com_agendamento: 0,
+      com_procedimento: 0,
+      cancelados: 0,
+      divergencias: 0
     };
 
     while (currentStart <= endTotal) {
@@ -157,7 +163,12 @@ export const labSyncParticular = createServerFn({ method: "POST" })
 
       let offset = 0;
       const limit = 50;
-      let windowItems = 0;
+      let windowItemsCount = 0;
+      let windowContasCount = 0;
+      let windowPagamentosCount = 0;
+      let windowValorFaturado = 0;
+      let windowValorRecebido = 0;
+      let windowAmostra: any[] = [];
 
       try {
         while (true) {
@@ -172,38 +183,47 @@ export const labSyncParticular = createServerFn({ method: "POST" })
           const res = await fetch(url.toString(), { headers: { "x-access-token": FEEGOW_TOKEN() } });
           const body = await res.json();
 
-          // Retry adaptativo para erro de memória
           if (!body.success && body.cod_erro === 1 && tamanho_janela > 1) {
              throw new Error("RETRY_SPLIT");
           }
 
-          const list = body.content?.list || body.content || [];
-          if (!Array.isArray(list) || list.length === 0) break;
+          const listItems = body.content?.list || body.content || [];
+          if (!Array.isArray(listItems) || listItems.length === 0) break;
+
+          if (windowAmostra.length < 2) {
+            windowAmostra.push(...listItems.slice(0, 2 - windowAmostra.length));
+          }
 
           const faturamentos: any[] = [];
           const headers: any[] = [];
           const recebimentos: any[] = [];
 
-          for (const invoice of list) {
+          for (const invoice of listItems) {
             const invoice_id = Number(invoice.invoice_id);
+            const headerVal = parseValorCentavos(invoice.detalhes?.[0]?.valor);
             
-            // 1. Headers
             headers.push({
               invoice_id,
               data: parseDataFeegow(invoice.detalhes?.[0]?.data),
-              valor_total: parseValorCentavos(invoice.detalhes?.[0]?.valor),
+              valor_total: headerVal,
               paciente_id: invoice.paciente_id ? Number(invoice.paciente_id) : null,
               unidade_id: invoice.unidade_id ? Number(invoice.unidade_id) : null
             });
 
-            // 2. Itens (Grão)
+            let somaItensInvoice = 0;
             for (const item of (invoice.itens || [])) {
               const val = parseValorCentavos(item.valor);
               const desc = parseValorCentavos(item.desconto);
               const acre = parseValorCentavos(item.acrescimo);
+              const finalVal = val - desc + acre;
+              const isCancelado = item.is_cancelado === true || item.is_cancelado === 1;
               
+              if (isCancelado) resumo.cancelados++;
+              if (item.agendamento_id) resumo.com_agendamento++;
+              if (item.procedimento_id) resumo.com_procedimento++;
+
               faturamentos.push({
-                origem: 'particular', // Default, será enriquecido via JOIN no banco ou app
+                origem: 'particular',
                 documento_id: invoice_id,
                 item_id: Number(item.item_id),
                 agendamento_id: item.agendamento_id ? Number(item.agendamento_id) : null,
@@ -216,25 +236,36 @@ export const labSyncParticular = createServerFn({ method: "POST" })
                 valor_bruto: val,
                 desconto: desc,
                 acrescimo: acre,
-                valor_faturado: val - desc + acre,
-                is_cancelado: item.is_cancelado === true || item.is_cancelado === 1,
+                valor_faturado: finalVal,
+                is_cancelado: isCancelado,
                 tipo_transacao: tipo_transacao,
                 payload_raw: item
               });
-              resumo.total_valor += (val - desc + acre);
+              
+              somaItensInvoice += finalVal;
+              resumo.soma_faturada += finalVal;
+              windowValorFaturado += finalVal;
             }
 
-            // 3. Recebimentos
+            if (Math.abs(somaItensInvoice - headerVal) > 0.01) {
+              resumo.divergencias++;
+            }
+
             for (const pag of (invoice.pagamentos || [])) {
+              const valPag = parseValorCentavos(pag.valor);
               recebimentos.push({
                 origem: 'particular',
                 documento_id: invoice_id,
                 pagamento_id: Number(pag.pagamento_id),
                 data_pagamento: parseDataFeegow(pag.data),
-                valor_recebido: parseValorCentavos(pag.valor),
+                valor_recebido: valPag,
                 forma_pagamento: pag.forma_pagamento,
                 payload_raw: pag
               });
+              resumo.soma_recebida += valPag;
+              resumo.total_pagamentos++;
+              windowValorRecebido += valPag;
+              windowPagamentosCount++;
             }
           }
 
@@ -244,23 +275,33 @@ export const labSyncParticular = createServerFn({ method: "POST" })
             if (recebimentos.length) await supabaseAdmin.from("lab_recebimento").upsert(recebimentos, { onConflict: "origem,documento_id,pagamento_id" });
           }
 
-          windowItems += list.length;
-          resumo.total_items += faturamentos.length;
-          resumo.total_header += headers.length;
+          windowItemsCount += faturamentos.length;
+          windowContasCount += listItems.length;
+          resumo.total_contas += listItems.length;
+          resumo.total_itens += faturamentos.length;
 
-          if (list.length < limit) break;
+          if (listItems.length < limit) break;
           offset += limit;
-          await new Promise(r => setTimeout(r, 100)); // Rate limit
+          await new Promise(r => setTimeout(r, 100));
         }
 
-        resumo.janelas.push({ ds, de, status: 'success', items: windowItems });
+        resumo.janelas.push({ 
+          ds, de, 
+          status: 'success', 
+          contas: windowContasCount,
+          itens: windowItemsCount,
+          pagamentos: windowPagamentosCount,
+          valor_faturado: windowValorFaturado,
+          valor_recebido: windowValorRecebido,
+          amostra: windowAmostra
+        });
         
         if (!dry_run) {
            await supabaseAdmin.from("lab_sync_log").insert({
              endpoint: "financial/list-invoice",
-             parametros: { ds, de, tipo_transacao, offset, limit },
+             parametros: { ds, de, tipo_transacao, offset },
              api_success: true,
-             registros: windowItems
+             registros: windowContasCount
            });
         }
 
