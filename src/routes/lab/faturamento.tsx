@@ -16,13 +16,15 @@ export const Route = createFileRoute("/lab/faturamento")({
   component: LabFaturamento,
 });
 
-function LabFaturamento() {
+ function LabFaturamento() {
+  const [tab, setTab] = useState("faturamento");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [dateRange, setDateRange] = useState({ 
     start: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0],
     end: new Date().toISOString().split('T')[0]
   });
+
   
   const queryClient = useQueryClient();
 
