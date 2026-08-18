@@ -299,9 +299,9 @@ export const labSyncParticular = createServerFn({ method: "POST" })
         if (!dry_run) {
            await supabaseAdmin.from("lab_sync_log").insert({
              endpoint: "financial/list-invoice",
-             parametros: { ds, de, tipo_transacao, offset, limit },
+             parametros: { ds, de, tipo_transacao, offset },
              api_success: true,
-             registros: windowItems
+             registros: windowContasCount
            });
         }
 
