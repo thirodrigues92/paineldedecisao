@@ -18,9 +18,12 @@ function parseValorBR(v: any): number {
 function parseDataFeegow(v: any): string | null {
   if (!v) return null;
   const s = String(v).trim();
+  // Formato ISO: YYYY-MM-DD
   if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.substring(0, 10);
+  // Formato Feegow: DD-MM-YYYY
   const m = s.match(/^(\d{2})-(\d{2})-(\d{4})/);
   if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+  // Outros formatos via JS Date
   const d = new Date(s);
   return isNaN(d.getTime()) ? null : d.toISOString().substring(0, 10);
 }
