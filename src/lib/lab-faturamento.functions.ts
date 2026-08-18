@@ -373,8 +373,8 @@ export const labSyncParticular = createServerFn({ method: "POST" })
           });
         }
 
-      } catch (err: any) {
-        const isMemoryError = err.message?.includes("memory size") || (body && !body.success && body.cod_erro === 1);
+        // Tenta detectar erro de memória ou timeout
+        const isMemoryError = err.message?.includes("memory size") || (err.message === "RETRY_SPLIT");
         const isTimeout = err.name === 'AbortError' || err.message === 'timeout';
 
         if ((isMemoryError || isTimeout) && spanDias > 1) {
