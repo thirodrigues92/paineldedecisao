@@ -99,16 +99,16 @@ function LabFaturamento() {
     setLoading(false);
   };
 
-  const scanListAccounts = async () => {
+  const scanListInvoice = async () => {
     setLoading(true);
     setResult(null);
     const steps = [
-      { m: "GET", p: {}, b: null, desc: "Sem parâmetros" },
-      { m: "GET", p: { data_start: "01-07-2026", data_end: "31-07-2026" }, b: null, desc: "data_start/end" },
-      { m: "GET", p: { data_inicio: "01-07-2026", data_fim: "31-07-2026" }, b: null, desc: "data_inicio/fim" },
-      { m: "GET", p: { data_start: "01-07-2026", data_end: "31-07-2026", tipo: "R", unidade_id: "0" }, b: null, desc: "Full GET" },
-      { m: "POST", p: {}, b: { data_start: "01-07-2026", data_end: "31-07-2026", tipo: "R" }, desc: "POST snake_case" },
-      { m: "POST", p: {}, b: { dataInicio: "01-07-2026", dataFim: "31-07-2026", unidadeId: 0 }, desc: "POST camelCase" },
+      { m: "GET", p: { data_start: "01-01-2026", data_end: "31-12-2026", tipo_transacao: "D", unidade_id: "0" }, desc: "D (Débito) 2026" },
+      { m: "GET", p: { data_start: "01-01-2026", data_end: "31-12-2026", tipo_transacao: "C", unidade_id: "0" }, desc: "C (Crédito) 2026" },
+      { m: "GET", p: { data_start: "01-01-2026", data_end: "31-12-2026", tipo_transacao: "R", unidade_id: "0" }, desc: "R (Receita) 2026" },
+      { m: "GET", p: { data_start: "01-01-2026", data_end: "31-12-2026", unidade_id: "0" }, desc: "Sem tipo_transacao 2026" },
+      { m: "GET", p: { data_start: "01-01-2019", data_end: "31-12-2019", tipo_transacao: "D", unidade_id: "0" }, desc: "D (Débito) 2019" },
+      { m: "GET", p: {}, desc: "Sem parâmetros (Erro)" },
     ];
 
     const results = [];
@@ -117,19 +117,22 @@ function LabFaturamento() {
     for (const [i, s] of steps.entries()) {
       const res = await labDebugFeegow({ 
         data: { 
-          endpoint: "financial/list-accounts", 
+          endpoint: "financial/list-invoice", 
           method: s.m as any, 
-          params: s.p as Record<string, string>, 
-          body: s.b 
+          params: s.p as Record<string, string>,
+          body: null
         } 
       });
       const item = { 
         id: i + 1, 
         method: s.m, 
+        label: s.desc,
         urlBody: s.desc, 
         status: res.http_status, 
         success: res.api_success, 
         total: res.total_registros,
+        tipo_transacao: s.p.tipo_transacao || '-',
+        periodo: s.p.data_start ? `${s.p.data_start} a ${s.p.data_end}` : '-',
         raw: res
       };
       results.push(item);
@@ -337,26 +340,38 @@ function LabFaturamento() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex gap-2 flex-wrap pb-4 border-b">
-                  <Button size="sm" variant="outline" onClick={() => testEndpoint('insurance/list')} disabled={loading}>
-                    insurance/list
+                  <Button size="sm" variant="outline" onClick={() => testEndpoint('financial/list-invoice')} disabled={loading}>
+                    financial/list-invoice
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => testEndpoint('financial/dmed')} disabled={loading}>
+                    financial/dmed
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => testEndpoint('financial/financial-category')} disabled={loading}>
+                    financial/financial-category
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => testEndpoint('financial/cost-center')} disabled={loading}>
+                    financial/cost-center
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => testEndpoint('financial/list-transfers')} disabled={loading}>
+                    financial/list-transfers
                   </Button>
                   <Button size="sm" variant="secondary" onClick={testBillingDateFilter} disabled={loading}>
                     Testar filtro de data: insurances-billing
                   </Button>
-                  <Button size="sm" variant="default" onClick={scanListAccounts} disabled={loading} className="bg-indigo-600 hover:bg-indigo-700">
-                    Descobrir parâmetros: list-accounts
+                  <Button size="sm" variant="default" onClick={scanListInvoice} disabled={loading} className="bg-indigo-600 hover:bg-indigo-700">
+                    Descobrir parâmetros: list-invoice
                   </Button>
                 </div>
 
                 {sequenceResults.length > 0 && !result && (
                   <div className="space-y-4">
-                    <h3 className="font-bold text-sm uppercase">Resultados da Varredura</h3>
+                    <h3 className="font-bold text-sm uppercase">Resultados da Varredura (list-invoice)</h3>
                     <Table>
                       <TableHeader>
                         <TableRow>
                           <TableHead>#</TableHead>
-                          <TableHead>Método</TableHead>
-                          <TableHead>Teste</TableHead>
+                          <TableHead>Tipo</TableHead>
+                          <TableHead>Período</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead>Success</TableHead>
                           <TableHead>Total</TableHead>
@@ -364,10 +379,13 @@ function LabFaturamento() {
                       </TableHeader>
                       <TableBody>
                         {sequenceResults.map((r, i) => (
-                          <TableRow key={i} className={r.success && r.status === 200 ? "bg-emerald-50" : ""}>
-                            <TableCell>{r.id || i+1}</TableCell>
-                            <TableCell className="font-mono">{r.method || 'GET'}</TableCell>
-                            <TableCell>{r.label || r.urlBody}</TableCell>
+                          <TableRow key={i} 
+                            className={`cursor-pointer hover:bg-muted/50 ${r.success && r.status === 200 ? "bg-emerald-50/50" : ""}`}
+                            onClick={() => setResult(r.raw)}
+                          >
+                            <TableCell>{r.id}</TableCell>
+                            <TableCell className="font-mono">{r.tipo_transacao}</TableCell>
+                            <TableCell className="text-xs">{r.periodo}</TableCell>
                             <TableCell>{r.status}</TableCell>
                             <TableCell>{r.success ? "✅" : "❌"}</TableCell>
                             <TableCell className="font-bold">{r.total}</TableCell>
@@ -375,15 +393,9 @@ function LabFaturamento() {
                         ))}
                       </TableBody>
                     </Table>
-                    {sequenceResults[0]?.label && (
-                      <div className="p-3 bg-muted rounded text-xs">
-                        <strong>Conclusão:</strong> {
-                          new Set(sequenceResults.map(r => r.total)).size === 1 
-                          ? "⚠️ O endpoint PARECE IGNORAR filtros de data (totais idênticos)." 
-                          : "✅ O endpoint RESPONDE a filtros de data."
-                        }
-                      </div>
-                    )}
+                    <div className="p-3 bg-muted rounded text-xs text-muted-foreground italic">
+                      Dica: Clique em uma linha para ver o JSON completo e descobrir qual tipo_transacao traz as receitas.
+                    </div>
                   </div>
                 )}
 
