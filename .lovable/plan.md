@@ -30,3 +30,7 @@ O travamento vem do laço de paginação em `labSyncParticular`: ele pede 50 por
 - Arquivo: `src/routes/lab/faturamento.tsx` (aba Sincronização, textos e campo de offset).
 - Nenhuma mudança de schema; as chaves de upsert (`origem,documento_id,item_id` e `origem,documento_id,pagamento_id`) continuam garantindo idempotência.
 - Sem necessidade de cron/background: com uma chamada por dia (~1 s, 186 KB), o sync síncrono cabe folgado no limite de tempo.
+
+## Correção adicional confirmada nos logs
+
+A tela consulta `lab_sync_log` ordenando por `criado_em`, coluna que não existe — todas as chamadas voltam HTTP 400 (`42703`). Por isso o "Log Geral de Execuções" fica sempre vazio, mesmo com o log de início gravado. Ajustar a ordenação para `executado_em` (coluna real) em `src/routes/lab/faturamento.tsx` (linhas 80 e 716).
