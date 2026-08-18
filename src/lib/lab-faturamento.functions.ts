@@ -337,7 +337,7 @@ export const labSyncParticular = createServerFn({ method: "POST" })
              parametros: { ds, de, tipo_transacao, offset },
              api_success: true,
              registros: windowContasCount,
-             observacao: "concluido"
+             erro: "concluido"
            });
         }
 

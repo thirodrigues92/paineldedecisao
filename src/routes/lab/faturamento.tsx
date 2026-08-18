@@ -705,7 +705,7 @@ function LabFaturamento() {
                       <TableHead>Data/Hora</TableHead>
                       <TableHead>Endpoint</TableHead>
                       <TableHead>Parâmetros</TableHead>
-                      <TableHead>Observação</TableHead>
+                      <TableHead>Erro/Obs</TableHead>
                       <TableHead className="text-center">Registros</TableHead>
                       <TableHead className="text-center">Status</TableHead>
                     </TableRow>
@@ -713,7 +713,7 @@ function LabFaturamento() {
                   <TableBody>
                     {logs?.map((l: any) => (
                       <TableRow key={l.id} className="text-xs">
-                        <TableCell className="whitespace-nowrap">{new Date(l.criado_em).toLocaleString('pt-BR')}</TableCell>
+                        <TableCell className="whitespace-nowrap">{new Date(l.executado_em || l.criado_em).toLocaleString('pt-BR')}</TableCell>
                         <TableCell className="font-mono opacity-70">{l.endpoint}</TableCell>
                         <TableCell>
                           <div className="flex gap-1 flex-wrap">
@@ -722,8 +722,8 @@ function LabFaturamento() {
                             ))}
                           </div>
                         </TableCell>
-                        <TableCell className="max-w-[150px] truncate" title={l.observacao}>
-                          {l.observacao}
+                        <TableCell className="max-w-[150px] truncate" title={l.erro}>
+                          {l.erro}
                         </TableCell>
                         <TableCell className="text-center font-bold">{l.registros || 0}</TableCell>
                         <TableCell className="text-center">
@@ -731,8 +731,8 @@ function LabFaturamento() {
                             <div className="flex items-center justify-center text-emerald-500 font-bold"><Check className="w-3 h-3 mr-1" /> OK</div>
                           ) : (
                             <div className="flex items-center justify-center text-destructive font-bold">
-                              {l.observacao === 'iniciado' ? <RefreshCw className="w-3 h-3 mr-1 animate-spin" /> : <X className="w-3 h-3 mr-1" />}
-                              {l.observacao === 'iniciado' ? 'Pendente' : 'Falha'}
+                              {l.erro === 'iniciado' ? <RefreshCw className="w-3 h-3 mr-1 animate-spin" /> : <X className="w-3 h-3 mr-1" />}
+                              {l.erro === 'iniciado' ? 'Pendente' : 'Falha'}
                             </div>
                           )}
                         </TableCell>
