@@ -311,14 +311,26 @@ export const labDebugFeegow = createServerFn({ method: "POST" })
 
     const body = await res.json().catch(() => ({}));
     
+    let rows = [];
+    if (body.success) {
+      const content = body.content?.list || body.content?.appointments || body.content || [];
+      rows = Array.isArray(content) ? content : [content].filter(Boolean);
+    }
+
     return {
       ok: true,
       url: url.toString(),
       http_status: res.status,
       api_success: body.success === true,
+      total_registros: rows.length,
       raw: body
     };
   });
+
+// Mock para retrocompatibilidade enquanto unificamos
+export const labSyncConvenio = createServerFn({ method: "POST" }).handler(async () => {
+  return { ok: true, msg: "Use o labSyncParticular com a lógica unificada de agenda." };
+});
 
 export const clearLabData = createServerFn({ method: "POST" }).handler(async () => {
   await supabaseAdmin.from("lab_faturamento").delete().neq("id", "00000000-0000-0000-0000-000000000000");
