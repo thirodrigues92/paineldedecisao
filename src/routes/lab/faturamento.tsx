@@ -128,13 +128,14 @@ function LabFaturamento() {
         </Card>
       </div>
 
-      <Tabs defaultValue="faturamento" className="w-full space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="faturamento">Faturado x Recebido</TabsTrigger>
-          <TabsTrigger value="sincronizacao">Sincronização</TabsTrigger>
-          <TabsTrigger value="auditoria">Auditoria</TabsTrigger>
-          <TabsTrigger value="diagnostico">Debug API</TabsTrigger>
-        </TabsList>
+      <div className="space-y-4">
+        <div className="flex border-b">
+          <button onClick={() => setTab("faturamento")} className={`px-4 py-2 ${tab === "faturamento" ? "border-b-2 border-primary font-bold" : ""}`}>Faturado x Recebido</button>
+          <button onClick={() => setTab("sincronizacao")} className={`px-4 py-2 ${tab === "sincronizacao" ? "border-b-2 border-primary font-bold" : ""}`}>Sincronização</button>
+          <button onClick={() => setTab("auditoria")} className={`px-4 py-2 ${tab === "auditoria" ? "border-b-2 border-primary font-bold" : ""}`}>Auditoria</button>
+          <button onClick={() => setTab("diagnostico")} className={`px-4 py-2 ${tab === "diagnostico" ? "border-b-2 border-primary font-bold" : ""}`}>Debug API</button>
+        </div>
+
 
 
 
