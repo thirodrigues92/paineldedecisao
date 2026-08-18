@@ -248,7 +248,7 @@ export const labSyncConvenio = createServerFn({ method: "POST" })
         const recebimentos: any[] = [];
 
         for (const guia of guias) {
-          const docId = Number(guia.AgendamentoID || guia.id);
+          const docId = Number(guia.AgendamentoID || guia.id || guia.Agendamento_id || 0);
           const valorFaturado = parseValorBR(guia.ValorProcedimento);
           const dataAtend = parseDataFeegow(guia.DataAtendimento);
 
