@@ -219,13 +219,13 @@ export const labSyncConvenio = createServerFn({ method: "POST" })
 
       try {
         const url = new URL(`${FEEGOW_BASE}/billing/insurances-billing`);
-        url.searchParams.set("convenio_id", String(convenioId));
         url.searchParams.set("data_start", ds);
         url.searchParams.set("data_end", de);
 
         const res = await fetch(url.toString(), {
           headers: { "x-access-token": FEEGOW_TOKEN }
         });
+
         const body = await res.json();
 
         if (body.success !== true) {
