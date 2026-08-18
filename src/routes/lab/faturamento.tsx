@@ -654,109 +654,259 @@ function LabFaturamento() {
          )}
  
          {tab === "diagnostico" && (
-           <Card>
-              <CardHeader>
-                <CardTitle>Explorador de Endpoints Feegow</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex gap-2 flex-wrap pb-4 border-b">
-                  <Button size="sm" variant="outline" onClick={() => testEndpoint('financial/list-invoice')} disabled={loading}>
-                    financial/list-invoice
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => {
-                    toast.info("Endpoint dmed exige CPF e datas. Testando manual...");
-                    testEndpoint('financial/dmed', { cpf: '00000000000', dataInicio: '01-01-2026', dataFim: '31-12-2026' });
-                  }} disabled={loading}>
-                    financial/dmed
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => testEndpoint('core/financial/base/financial-category', {}, 'POST')} disabled={loading}>
-                    financial-category
-                  </Button>
-                  <div className="flex flex-col gap-1">
-                    <Button size="sm" variant="outline" onClick={() => {
-                       toast.warning("Sem permissão de acesso. Verificar permissões do usuário do token no Feegow.");
-                       testEndpoint('financial/cost-center');
-                    }} disabled={loading}>
-                      financial/cost-center
-                    </Button>
-                    <span className="text-[10px] text-destructive font-bold">⚠️ 403 Forbidden</span>
-                  </div>
-                  <Button size="sm" variant="outline" onClick={() => testEndpoint('financial/list-transfers', { data_start: '01-08-2026', data_end: '31-08-2026' })} disabled={loading}>
-                    list-transfers
-                  </Button>
-                  <Button size="sm" variant="secondary" onClick={testBillingDateFilter} disabled={loading}>
-                    Testar filtro de data: insurances-billing
-                  </Button>
-                  <Button size="sm" variant="default" onClick={scanListInvoice} disabled={loading} className="bg-indigo-600 hover:bg-indigo-700">
-                    Descobrir parâmetros: list-invoice
-                  </Button>
-                </div>
+           <div className="space-y-6">
+             <Card className="border-indigo-200 bg-indigo-50/30">
+               <CardHeader className="pb-2">
+                 <CardTitle className="text-sm font-bold text-indigo-700 flex items-center gap-2">
+                   🔬 Requisição Manual
+                 </CardTitle>
+               </CardHeader>
+               <CardContent className="space-y-4">
+                 <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+                    <div className="space-y-1 md:col-span-1">
+                      <label className="text-[10px] font-bold uppercase">Método</label>
+                      <select 
+                        className="w-full bg-background border rounded px-2 py-1.5 text-sm"
+                        value={manualRequest.method}
+                        onChange={e => setManualRequest(prev => ({ ...prev, method: e.target.value as any }))}
+                      >
+                        <option value="GET">GET</option>
+                        <option value="POST">POST</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1 md:col-span-5">
+                      <label className="text-[10px] font-bold uppercase">Endpoint</label>
+                      <Input 
+                        value={manualRequest.endpoint}
+                        onChange={e => setManualRequest(prev => ({ ...prev, endpoint: e.target.value }))}
+                        placeholder="financial/list-invoice"
+                        className="h-8"
+                      />
+                    </div>
+                 </div>
 
-                {sequenceResults.length > 0 && !result && (
-                  <div className="space-y-4">
-                    <h3 className="font-bold text-sm uppercase">Resultados da Varredura (list-invoice)</h3>
+                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold uppercase">Data Início</label>
+                      <Input 
+                        type="date"
+                        className="h-8"
+                        value={manualRequest.data_start.toISOString().split('T')[0]}
+                        onChange={e => setManualRequest(prev => ({ ...prev, data_start: new Date(e.target.value + 'T12:00:00') }))}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold uppercase">Data Fim</label>
+                      <Input 
+                        type="date"
+                        className="h-8"
+                        value={manualRequest.data_end.toISOString().split('T')[0]}
+                        onChange={e => setManualRequest(prev => ({ ...prev, data_end: new Date(e.target.value + 'T12:00:00') }))}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold uppercase">Tipo Transação</label>
+                      <select 
+                        className="w-full bg-background border rounded px-2 py-1.5 text-sm"
+                        value={manualRequest.tipo_transacao}
+                        onChange={e => setManualRequest(prev => ({ ...prev, tipo_transacao: e.target.value }))}
+                      >
+                        <option value="C">C (Crédito)</option>
+                        <option value="D">D (Débito)</option>
+                        <option value="T">T (Transferência)</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold uppercase">Unidade ID</label>
+                      <Input 
+                        type="number"
+                        className="h-8"
+                        value={manualRequest.unidade_id}
+                        onChange={e => setManualRequest(prev => ({ ...prev, unidade_id: e.target.value }))}
+                      />
+                    </div>
+                 </div>
+
+                 <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase">Parâmetros Extras</label>
+                    <Input 
+                      className="h-8"
+                      value={manualRequest.extra_params}
+                      onChange={e => setManualRequest(prev => ({ ...prev, extra_params: e.target.value }))}
+                      placeholder="Ex: start=0&offset=5"
+                    />
+                 </div>
+
+                 <div className="p-2 bg-slate-900 rounded text-[10px] font-mono text-indigo-300 break-all border border-slate-800">
+                    <span className="text-slate-500 mr-2 uppercase">{manualRequest.method}</span>
+                    {mountedUrl}
+                 </div>
+
+                 <div className="flex justify-between items-center gap-4">
+                    <div className="flex gap-2">
+                       {requestHistory.length > 0 && (
+                          <div className="flex gap-1 overflow-x-auto max-w-[400px] p-1">
+                             {requestHistory.map((h, i) => (
+                               <Button 
+                                 key={i} 
+                                 variant="ghost" 
+                                 size="sm" 
+                                 className="h-7 text-[9px] px-2 bg-slate-100"
+                                 onClick={() => {
+                                    setManualRequest(prev => ({
+                                      ...prev,
+                                      method: h.method,
+                                      endpoint: h.endpoint,
+                                    }));
+                                    testEndpoint(h.endpoint, h.params, h.method);
+                                 }}
+                               >
+                                 #{requestHistory.length - i} {h.success ? '✅' : '❌'}
+                               </Button>
+                             ))}
+                          </div>
+                       )}
+                    </div>
+                    <Button 
+                      className="bg-indigo-600 hover:bg-indigo-700 h-9 px-8" 
+                      onClick={sendManualRequest}
+                      disabled={loading}
+                    >
+                      {loading ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Play className="w-4 h-4 mr-2" />}
+                      ENVIAR REQUISIÇÃO
+                    </Button>
+                 </div>
+               </CardContent>
+             </Card>
+
+             <Card>
+               <CardHeader>
+                 <CardTitle className="text-sm font-bold flex items-center justify-between">
+                    <span>Ações Fixas de Varredura</span>
+                    <Badge variant="outline">Transparência Total</Badge>
+                 </CardTitle>
+               </CardHeader>
+               <CardContent>
+                 <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" size="sm" onClick={() => testEndpoint("insurance/list")} disabled={loading}>/insurance/list</Button>
+                    <Button variant="outline" size="sm" onClick={() => testEndpoint("core/financial/base/financial-category", {}, "POST")} disabled={loading}>POST financial-category</Button>
+                    <Button variant="outline" size="sm" onClick={() => testEndpoint("financial/list-transfers", { data_start: "01-08-2026", data_end: "31-08-2026" })} disabled={loading}>list-transfers (Ago/26)</Button>
+                    <Button variant="outline" size="sm" onClick={() => testBillingDateFilter()} disabled={loading} className="border-amber-500 text-amber-600">
+                      <TestTube2 className="w-4 h-4 mr-2" /> Testar Filtro Data Billing
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => scanListInvoice()} disabled={loading} className="border-indigo-500 text-indigo-600">
+                      <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} /> Varredura list-invoice
+                    </Button>
+                 </div>
+               </CardContent>
+             </Card>
+
+             {sequenceResults.length > 0 && (
+               <Card>
+                 <CardHeader>
+                   <CardTitle className="text-sm font-bold">Resultados da Varredura</CardTitle>
+                 </CardHeader>
+                 <CardContent>
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>#</TableHead>
-                          <TableHead>Tipo</TableHead>
+                          <TableHead className="w-10">#</TableHead>
+                          <TableHead>Método</TableHead>
+                          <TableHead>Filtro/Tipo</TableHead>
                           <TableHead>Período</TableHead>
                           <TableHead>Status</TableHead>
-                          <TableHead>Success</TableHead>
-                          <TableHead>Total</TableHead>
+                          <TableHead className="text-right">Registros</TableHead>
+                          <TableHead className="w-10"></TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {sequenceResults.map((r, i) => (
-                          <TableRow key={i} 
-                            className={`cursor-pointer hover:bg-muted/50 ${r.success && r.status === 200 ? "bg-emerald-50/50" : ""}`}
-                            onClick={() => setResult(r.raw)}
-                          >
-                            <TableCell>{r.id}</TableCell>
-                            <TableCell className="font-mono">{r.tipo_transacao || "—"}</TableCell>
-                            <TableCell className="text-xs">{r.periodo || "—"}</TableCell>
-                            <TableCell>{r.status || "—"}</TableCell>
-                            <TableCell>{r.status ? (r.success ? "✅" : "❌") : "—"}</TableCell>
-                            <TableCell className="font-bold">{r.total ?? "—"}</TableCell>
+                        {sequenceResults.map((r: any) => (
+                          <TableRow key={r.id} className="cursor-pointer hover:bg-slate-50" onClick={() => setResult(r.raw)}>
+                            <TableCell className="text-xs font-mono">{r.id}</TableCell>
+                            <TableCell><Badge variant="outline">{r.method}</Badge></TableCell>
+                            <TableCell className="text-xs font-medium">{r.label} ({r.tipo_transacao})</TableCell>
+                            <TableCell className="text-[10px] text-muted-foreground">{r.periodo}</TableCell>
+                            <TableCell>
+                               {r.success ? <Check className="w-4 h-4 text-emerald-500" /> : <X className="w-4 h-4 text-destructive" />}
+                               <span className="ml-1 text-[10px]">{r.status}</span>
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-xs">{r.total}</TableCell>
+                            <TableCell><Play className="w-3 h-3 text-muted-foreground" /></TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
                     </Table>
-                    <div className="p-3 bg-muted rounded text-xs text-muted-foreground italic">
-                      Dica: Clique em uma linha para ver o JSON completo. O tipo 'C' (Crédito) é o faturamento de receita.
-                    </div>
-                  </div>
-                )}
+                 </CardContent>
+               </Card>
+             )}
 
-                {result && (
-                  <div className="space-y-4">
-                    <div className="bg-slate-900 text-slate-200 p-4 rounded-lg space-y-2 text-xs font-mono border-l-4 border-indigo-500">
-                      <div className="flex gap-4">
-                        <Button variant="ghost" size="sm" className="h-6 px-2 text-indigo-400 hover:bg-slate-800" onClick={() => setResult(null)}>← Voltar</Button>
-                        <span className="text-indigo-400 font-bold">{result.method}</span>
-                        <span className="text-slate-400 truncate">{result.url}</span>
-                      </div>
-                      {result.sent_body && (
-                        <div className="mt-2 pt-2 border-t border-slate-700">
-                          <span className="text-amber-400">Body:</span>
-                          <pre className="mt-1 text-slate-300 overflow-x-auto">{JSON.stringify(result.sent_body, null, 2)}</pre>
+             {result && (
+               <div className="grid grid-cols-1 gap-6">
+                 {(() => {
+                    const firstItem = result.raw?.content?.list?.[0] || result.raw?.content?.[0];
+                    if (!firstItem) return null;
+                    return (
+                      <Card className="border-emerald-200 bg-emerald-50/20">
+                        <CardHeader className="py-3">
+                          <CardTitle className="text-xs font-bold text-emerald-700 flex items-center gap-2">
+                             💎 PRIMEIRA CONTA DETALHADA (content[0])
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                           <div className="space-y-2">
+                              <h4 className="text-[10px] font-bold uppercase text-emerald-600">Detalhes ({firstItem.detalhes?.length || 0})</h4>
+                              <pre className="text-[9px] bg-white p-2 border rounded max-h-[200px] overflow-auto">
+                                {JSON.stringify(firstItem.detalhes, null, 2)}
+                              </pre>
+                           </div>
+                           <div className="space-y-2">
+                              <h4 className="text-[10px] font-bold uppercase text-emerald-600">Pagamentos ({firstItem.pagamentos?.length || 0})</h4>
+                              <pre className="text-[9px] bg-white p-2 border rounded max-h-[200px] overflow-auto">
+                                {JSON.stringify(firstItem.pagamentos, null, 2)}
+                              </pre>
+                           </div>
+                           <div className="space-y-2">
+                              <h4 className="text-[10px] font-bold uppercase text-emerald-600">Itens ({firstItem.itens?.length || 0})</h4>
+                              <pre className="text-[9px] bg-white p-2 border rounded max-h-[200px] overflow-auto">
+                                {JSON.stringify(firstItem.itens, null, 2)}
+                              </pre>
+                           </div>
+                        </CardContent>
+                      </Card>
+                    );
+                 })()}
+
+                 <Card>
+                   <CardHeader className="flex flex-row items-center justify-between pb-2">
+                     <CardTitle className="text-sm font-bold">Corpo Cru da Resposta</CardTitle>
+                     <div className="flex items-center gap-3">
+                        <div className="flex gap-4 text-[10px] font-mono">
+                           <span className={result.http_status === 200 ? 'text-emerald-600' : 'text-destructive'}>Status: {result.http_status}</span>
+                           <span className={result.api_success ? 'text-emerald-600' : 'text-destructive'}>Success: {result.api_success ? 'TRUE' : 'FALSE'}</span>
+                           <span className="text-slate-500">Total: {result.total_registros}</span>
                         </div>
-                      )}
-                    </div>
-                    
-                    <div className="flex justify-between items-center text-xs font-mono bg-muted p-2 rounded">
-                      <span>Resultado da API</span>
-                      <span className={result.api_success ? "text-emerald-500" : "text-destructive"}>
-                        HTTP {result.http_status} | Success: {String(result.api_success)} | Count: {result.total_registros}
-                      </span>
-                    </div>
-                    <pre className="bg-black text-emerald-400 p-4 rounded-lg overflow-auto text-[10px] max-h-[500px]">
-                      {JSON.stringify(result.raw, null, 2)}
-                    </pre>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-7 text-xs" 
+                          onClick={() => {
+                            navigator.clipboard.writeText(JSON.stringify(result.raw, null, 2));
+                            toast.success("JSON copiado!");
+                          }}
+                        >
+                          Copiar JSON
+                        </Button>
+                     </div>
+                   </CardHeader>
+                   <CardContent>
+                     <pre className="p-4 bg-slate-900 text-slate-100 rounded-md overflow-auto max-h-[600px] text-xs font-mono">
+                       {JSON.stringify(result.raw, null, 2)}
+                     </pre>
+                   </CardContent>
+                 </Card>
+               </div>
+             )}
+           </div>
          )}
       </div>
     </div>
