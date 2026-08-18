@@ -36,6 +36,11 @@ const navFooter = [
   { title: "Configurações", url: "/config", icon: Settings },
 ];
 
+const navLab = [
+  { title: "🧪 Lab — Faturamento", url: "/lab/faturamento", icon: Table2 },
+];
+
+
 
 export function AppSidebar() {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
@@ -89,6 +94,12 @@ export function AppSidebar() {
           <SidebarGroupLabel>Sistema</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>{navFooter.map(renderItem)}</SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-amber-500 font-bold">Experimental</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>{navLab.map(renderItem)}</SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
