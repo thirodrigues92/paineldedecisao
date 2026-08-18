@@ -33,34 +33,46 @@ function toFeegowDate(iso: string): string {
 }
 
 export const labDebugFeegow = createServerFn({ method: "POST" })
-  .inputValidator((data: { endpoint: string; params: Record<string, string> }) => data)
+  .inputValidator((data: { endpoint: string; params?: Record<string, string>; method?: "GET" | "POST"; body?: any }) => data)
   .handler(async ({ data }) => {
     const FEEGOW_BASE = "https://api.feegow.com/v1/api";
     const FEEGOW_TOKEN = process.env.FEEGOW_API_TOKEN ?? "";
     
-    const url = new URL(FEEGOW_BASE + (data.endpoint.startsWith("/") ? data.endpoint : "/" + data.endpoint));
+    const endpoint = data.endpoint.startsWith("/") ? data.endpoint : "/" + data.endpoint;
+    const url = new URL(FEEGOW_BASE + endpoint);
     
-    // Configurações padrão para garantir retorno de dados
-    if (data.endpoint.includes("financial/list-accounts")) {
+    // Configurações padrão apenas se não vierem parâmetros explícitos para evitar sobrescrever testes
+    if (data.endpoint.includes("financial/list-accounts") && (!data.params || Object.keys(data.params).length === 0)) {
       url.searchParams.set("data_inicio", "01-08-2026");
       url.searchParams.set("data_fim", "31-08-2026");
       url.searchParams.set("start", "0");
       url.searchParams.set("offset", "50");
     }
 
-    for (const [k, v] of Object.entries(data.params)) {
-      url.searchParams.set(k, String(v));
+    if (data.params) {
+      for (const [k, v] of Object.entries(data.params)) {
+        url.searchParams.set(k, String(v));
+      }
     }
 
-    console.log(`[LabDebug] Fetching: ${url.toString()}`);
+    const method = data.method || "GET";
+    const fetchOptions: RequestInit = {
+      method,
+      headers: { 
+        "x-access-token": FEEGOW_TOKEN,
+        "Content-Type": "application/json"
+      }
+    };
 
-    const res = await fetch(url.toString(), {
-      headers: { "x-access-token": FEEGOW_TOKEN }
-    });
+    if (method === "POST" && data.body) {
+      fetchOptions.body = JSON.stringify(data.body);
+    }
 
+    console.log(`[LabDebug] ${method} Request: ${url.toString()}`);
+
+    const res = await fetch(url.toString(), fetchOptions);
     const body = await res.json().catch(() => ({}));
     
-    // Tratamento de resposta vazia
     if (!body.success) {
       console.warn(`[LabDebug] API Failure: ${JSON.stringify(body)}`);
     }
@@ -69,8 +81,8 @@ export const labDebugFeegow = createServerFn({ method: "POST" })
     if (!Array.isArray(content) && content && typeof content === "object") {
        for (const k of ["list", "data", "items", "rows", "appointments", "billing"]) {
          if (Array.isArray(content[k])) {
-           content = content[k];
-           break;
+            content = content[k];
+            break;
          }
        }
     }
@@ -79,11 +91,13 @@ export const labDebugFeegow = createServerFn({ method: "POST" })
     return {
       ok: true,
       url: url.toString(),
+      method: method,
+      sent_body: data.body,
       http_status: res.status,
       api_success: body.success === true,
       total_registros: rows.length,
       campos_detectados: rows.length > 0 ? Object.keys(rows[0]) : [],
-      raw: { ...body, content: rows.slice(0, 3) }
+      raw: body
     };
   });
 
