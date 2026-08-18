@@ -6,7 +6,8 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, X } from "lucide-react";
+import { RefreshCw, X, Calendar as CalendarIcon } from "lucide-react";
+import { DatePickerWithRange } from "@/components/ui/date-picker-with-range";
 
 const presets: { value: PresetPeriod; label: string }[] = [
   { value: "today", label: "Hoje" },
@@ -14,6 +15,7 @@ const presets: { value: PresetPeriod; label: string }[] = [
   { value: "30d", label: "30 dias" },
   { value: "month", label: "Mês atual" },
   { value: "year", label: "Ano atual" },
+  { value: "custom", label: "Personalizado" },
 ];
 
 export function GlobalFilters() {
@@ -51,6 +53,14 @@ export function GlobalFilters() {
           {presets.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
         </SelectContent>
       </Select>
+
+      {f.preset === "custom" && (
+        <DatePickerWithRange
+          from={f.from}
+          to={f.to}
+          onRangeChange={f.setRange}
+        />
+      )}
 
       <MultiPicker
         label="Unidade" all={unidades} selected={f.unidadeIds} onChange={f.setUnidades}
