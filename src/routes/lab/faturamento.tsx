@@ -67,14 +67,81 @@ export const Route = createFileRoute("/lab/faturamento")({
     }
   });
 
-  const testEndpoint = async (endpoint: string, params: Record<string, string> = {}) => {
+  const testEndpoint = async (endpoint: string, params: Record<string, string> = {}, method: "GET" | "POST" = "GET", body?: any) => {
     setLoading(true);
+    setSequenceResults([]);
     try {
-      const res = await labDebugFeegow({ data: { endpoint, params } });
-      setResult({ endpoint, ...res });
+      const res = await labDebugFeegow({ data: { endpoint, params, method, body } });
+      setResult(res);
     } finally {
       setLoading(false);
     }
+  };
+
+  const testBillingDateFilter = async () => {
+    setLoading(true);
+    setResult(null);
+    const tests = [
+      { label: "Sem parâmetros", params: {} },
+      { label: "2026 Full", params: { data_start: "01-01-2026", data_end: "31-12-2026" } },
+      { label: "2019 Jan-Fev", params: { data_start: "01-01-2019", data_end: "28-02-2019" } },
+    ];
+    
+    const results = [];
+    for (const t of tests) {
+      const res = await labDebugFeegow({ 
+        data: { 
+          endpoint: "billing/insurances-billing", 
+          params: { ...t.params, billing_type_id: "1", billing: "1" } 
+        } 
+      });
+      results.push({ ...t, total: res.raw?.content?.total || res.raw?.total || 0, res });
+    }
+    setSequenceResults(results);
+    setLoading(false);
+  };
+
+  const scanListAccounts = async () => {
+    setLoading(true);
+    setResult(null);
+    const steps = [
+      { m: "GET", p: {}, b: null, desc: "Sem parâmetros" },
+      { m: "GET", p: { data_start: "01-07-2026", data_end: "31-07-2026" }, b: null, desc: "data_start/end" },
+      { m: "GET", p: { data_inicio: "01-07-2026", data_fim: "31-07-2026" }, b: null, desc: "data_inicio/fim" },
+      { m: "GET", p: { data_start: "01-07-2026", data_end: "31-07-2026", tipo: "R", unidade_id: "0" }, b: null, desc: "Full GET" },
+      { m: "POST", p: {}, b: { data_start: "01-07-2026", data_end: "31-07-2026", tipo: "R" }, desc: "POST snake_case" },
+      { m: "POST", p: {}, b: { dataInicio: "01-07-2026", dataFim: "31-07-2026", unidadeId: 0 }, desc: "POST camelCase" },
+    ];
+
+    const results = [];
+    let firstSuccess = null;
+
+    for (const [i, s] of steps.entries()) {
+      const res = await labDebugFeegow({ 
+        data: { 
+          endpoint: "financial/list-accounts", 
+          method: s.m as any, 
+          params: s.p, 
+          body: s.b 
+        } 
+      });
+      const item = { 
+        id: i + 1, 
+        method: s.m, 
+        urlBody: s.desc, 
+        status: res.http_status, 
+        success: res.api_success, 
+        total: res.total_registros,
+        raw: res
+      };
+      results.push(item);
+      if (!firstSuccess && res.http_status === 200 && res.api_success) {
+        firstSuccess = res;
+      }
+    }
+    setSequenceResults(results);
+    if (firstSuccess) setResult(firstSuccess);
+    setLoading(false);
   };
 
 
@@ -190,6 +257,13 @@ export const Route = createFileRoute("/lab/faturamento")({
               <CardTitle>Controle de Sincronização</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg flex items-start gap-3 text-amber-800 text-sm mb-4">
+                <AlertCircle className="w-5 h-5 shrink-0" />
+                <p>
+                  <strong>Aviso Importante:</strong> A base de guias TISS contém apenas 15 registros de 2019 — módulo aparentemente não utilizado. 
+                  Os dados de faturamento de convênio devem ser extraídos preferencialmente através do módulo financeiro (Accounts).
+                </p>
+              </div>
               <div className="flex gap-4 items-end bg-muted/50 p-4 rounded-lg">
                 <div className="space-y-2">
                   <label className="text-xs font-bold uppercase">Início</label>
