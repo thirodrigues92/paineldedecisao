@@ -38,13 +38,25 @@ function LabFaturamento() {
     successCount: number;
     errorCount: number;
     logs: any[];
+    summary: {
+      total_contas: number;
+      total_itens: number;
+      total_pagamentos: number;
+      soma_faturada: number;
+      soma_recebida: number;
+      com_agendamento: number;
+      com_procedimento: number;
+      cancelados: number;
+      divergencias: number;
+    } | null;
   }>({
     isRunning: false,
     currentWindow: 0,
     totalWindows: 0,
     successCount: 0,
     errorCount: 0,
-    logs: []
+    logs: [],
+    summary: null
   });
 
   const [dateRange, setDateRange] = useState<{ start: Date; end: Date }>({ 
@@ -262,7 +274,8 @@ function LabFaturamento() {
       currentWindow: 0, 
       successCount: 0, 
       errorCount: 0, 
-      logs: [] 
+      logs: [],
+      summary: null
     }));
 
     const start = new Date(dateRange.start);
@@ -287,14 +300,14 @@ function LabFaturamento() {
       setSyncStatus(prev => ({ ...prev, currentWindow: i + 1 }));
 
       try {
-        if (!syncConfig.dryRun) {
-          await syncMutation.mutateAsync({
-            type: 'particular',
-            tipoTransacao: syncConfig.tipo,
-            start: startStr,
-            end: endStr
-          });
-        }
+        const res = await syncMutation.mutateAsync({
+          type: 'particular',
+          tipoTransacao: syncConfig.tipo,
+          start: startStr,
+          end: endStr
+        });
+        
+        const windowRes = res.resumo.janelas.find((j: any) => j.ds === toFeegowDate(startStr));
         
         setSyncStatus(prev => ({
           ...prev,
@@ -302,8 +315,10 @@ function LabFaturamento() {
           logs: [{
             periodo: `${startStr} a ${endStr}`,
             status: 'success',
-            msg: syncConfig.dryRun ? 'Simulado' : 'Sincronizado'
-          }, ...prev.logs]
+            msg: syncConfig.dryRun ? 'Simulado' : 'Sincronizado',
+            data: windowRes
+          }, ...prev.logs],
+          summary: i === totalSteps - 1 ? res.resumo : prev.summary
         }));
       } catch (err) {
         setSyncStatus(prev => ({
@@ -365,26 +380,41 @@ function LabFaturamento() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Faturado</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
+              Total Faturado
+              {syncConfig.dryRun && <Badge className="bg-amber-500 text-[9px] h-4">SIMULADO</Badge>}
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">R$ {totals.faturado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+            <div className="text-2xl font-bold">
+              R$ {(syncConfig.dryRun && syncStatus.summary ? syncStatus.summary.soma_faturada : totals.faturado).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Recebido</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
+              Total Recebido
+              {syncConfig.dryRun && <Badge className="bg-amber-500 text-[9px] h-4">SIMULADO</Badge>}
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-emerald-600">R$ {totals.recebido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+            <div className="text-2xl font-bold text-emerald-600">
+              R$ {(syncConfig.dryRun && syncStatus.summary ? syncStatus.summary.soma_recebida : totals.recebido).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Diferença (Pendente)</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
+              Diferença (Pendente)
+              {syncConfig.dryRun && <Badge className="bg-amber-500 text-[9px] h-4">SIMULADO</Badge>}
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-amber-600">R$ {totals.diff.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+            <div className="text-2xl font-bold text-amber-600">
+              R$ {(syncConfig.dryRun && syncStatus.summary ? (syncStatus.summary.soma_faturada - syncStatus.summary.soma_recebida) : totals.diff).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -529,7 +559,12 @@ function LabFaturamento() {
                         variant={syncStatus.isRunning ? "destructive" : "default"}
                         size="sm"
                         className="h-9 min-w-[140px]"
-                        onClick={runControlledSync}
+                        onClick={() => {
+                          if (!syncConfig.dryRun) {
+                            if (!confirm("Os dados serão gravados em lab_faturamento e lab_recebimento. Continuar?")) return;
+                          }
+                          runControlledSync();
+                        }}
                       >
                         {syncStatus.isRunning ? (
                           <><Square className="w-4 h-4 mr-2" /> Parar</>
@@ -554,19 +589,80 @@ function LabFaturamento() {
                       </div>
                       <Progress value={(syncStatus.currentWindow / syncStatus.totalWindows) * 100} className="h-2" />
                       
-                      <div className="max-h-[200px] overflow-auto border rounded divide-y bg-muted/10">
+                      <div className="max-h-[300px] overflow-auto border rounded divide-y bg-muted/10">
                         {syncStatus.logs.map((log, idx) => (
-                          <div key={idx} className="p-2 flex items-center justify-between text-xs">
-                            <span className="font-mono text-muted-foreground">{log.periodo}</span>
-                            <div className="flex items-center gap-2">
-                              <span className={log.status === 'success' ? 'text-emerald-600' : 'text-destructive'}>
-                                {log.msg}
-                              </span>
-                              {log.status === 'success' ? <Check className="w-3 h-3 text-emerald-500" /> : <X className="w-3 h-3 text-destructive" />}
+                          <div key={idx} className="p-3 flex flex-col gap-2 text-xs">
+                            <div className="flex items-center justify-between">
+                              <span className="font-mono text-muted-foreground font-bold">{log.periodo}</span>
+                              <div className="flex items-center gap-2">
+                                <span className={log.status === 'success' ? 'text-emerald-600' : 'text-destructive font-bold'}>
+                                  {log.msg}
+                                </span>
+                                {log.status === 'success' ? (
+                                  log.data?.contas > 0 ? <Check className="w-3 h-3 text-emerald-500" /> : <div className="w-3 h-3 rounded-full bg-slate-300" />
+                                ) : <X className="w-3 h-3 text-destructive" />}
+                              </div>
                             </div>
+                            
+                            {log.data && (
+                              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-muted-foreground">
+                                {log.data.contas > 0 ? (
+                                  <>
+                                    <span>{log.data.contas} contas</span>
+                                    <span>{log.data.itens} itens</span>
+                                    <span>{log.data.pagamentos} pagtos</span>
+                                    <span className="text-emerald-600">R$ {log.data.valor_faturado.toLocaleString('pt-BR')} fat</span>
+                                    <span className="text-indigo-600">R$ {log.data.valor_recebido.toLocaleString('pt-BR')} rec</span>
+                                    {log.data.amostra?.length > 0 && (
+                                      <Button 
+                                        variant="link" 
+                                        className="h-auto p-0 text-[10px] text-indigo-500 hover:text-indigo-700"
+                                        onClick={() => setResult(log.data.amostra)}
+                                      >
+                                        Ver amostra (2)
+                                      </Button>
+                                    )}
+                                  </>
+                                ) : (
+                                  <span className="text-slate-400">0 registros no período</span>
+                                )}
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
+
+                      {syncStatus.summary && (
+                        <Card className="border-amber-200 bg-amber-50/20">
+                          <CardHeader className="py-2">
+                            <CardTitle className="text-xs font-bold text-amber-800">Resumo da Execução {syncConfig.dryRun ? '(SIMULAÇÃO)' : ''}</CardTitle>
+                          </CardHeader>
+                          <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4 py-3">
+                            <div className="space-y-1">
+                              <div className="text-[10px] uppercase text-muted-foreground">Volume Total</div>
+                              <div className="text-sm font-bold">
+                                {syncStatus.summary.total_contas} contas | {syncStatus.summary.total_itens} itens
+                              </div>
+                              <div className="text-[10px] text-muted-foreground">{syncStatus.summary.total_pagamentos} pagamentos</div>
+                            </div>
+                            <div className="space-y-1">
+                              <div className="text-[10px] uppercase text-muted-foreground">Valores Totais</div>
+                              <div className="text-sm font-bold text-emerald-700">Fat: R$ {syncStatus.summary.soma_faturada.toLocaleString('pt-BR')}</div>
+                              <div className="text-sm font-bold text-indigo-700">Rec: R$ {syncStatus.summary.soma_recebida.toLocaleString('pt-BR')}</div>
+                            </div>
+                            <div className="space-y-1">
+                              <div className="text-[10px] uppercase text-muted-foreground">Cobertura</div>
+                              <div className="text-[10px]">Agendamentos: <span className="font-bold">{syncStatus.summary.com_agendamento}</span></div>
+                              <div className="text-[10px]">Procedimentos: <span className="font-bold">{syncStatus.summary.com_procedimento}</span></div>
+                            </div>
+                            <div className="space-y-1">
+                              <div className="text-[10px] uppercase text-muted-foreground">Divergências/Cancelados</div>
+                              <div className="text-[10px] text-destructive font-bold">Divergências: {syncStatus.summary.divergencias}</div>
+                              <div className="text-[10px] text-amber-600 font-bold">Cancelados: {syncStatus.summary.cancelados}</div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
                     </div>
                   ) : (
                     <div className="h-[120px] flex items-center justify-center border-2 border-dashed rounded text-muted-foreground text-sm italic">
@@ -839,9 +935,37 @@ function LabFaturamento() {
              )}
 
              {result && (
-               <div className="grid grid-cols-1 gap-6">
-                 {(() => {
-                    const firstItem = result.raw?.content?.list?.[0] || result.raw?.content?.[0];
+                <div className="grid grid-cols-1 gap-6">
+                  {(() => {
+                     // Caso seja a amostra (array)
+                     if (Array.isArray(result)) {
+                       return (
+                         <div className="space-y-4">
+                           <h3 className="text-sm font-bold uppercase text-muted-foreground">Amostra da Janela (2 Primeiras Contas)</h3>
+                           {result.map((item, idx) => (
+                             <Card key={idx} className="border-indigo-200 bg-indigo-50/10">
+                               <CardHeader className="py-2">
+                                 <CardTitle className="text-[10px] font-bold">Conta ID: {item.invoice_id}</CardTitle>
+                               </CardHeader>
+                               <CardContent className="grid grid-cols-3 gap-2 py-2">
+                                 <pre className="text-[8px] bg-white p-2 border rounded overflow-auto max-h-[150px]">
+                                   {JSON.stringify(item.detalhes, null, 2)}
+                                 </pre>
+                                 <pre className="text-[8px] bg-white p-2 border rounded overflow-auto max-h-[150px]">
+                                   {JSON.stringify(item.itens, null, 2)}
+                                 </pre>
+                                 <pre className="text-[8px] bg-white p-2 border rounded overflow-auto max-h-[150px]">
+                                   {JSON.stringify(item.pagamentos, null, 2)}
+                                 </pre>
+                               </CardContent>
+                             </Card>
+                           ))}
+                           <Button variant="outline" size="sm" onClick={() => setResult(null)}>Fechar Amostra</Button>
+                         </div>
+                       );
+                     }
+
+                     const firstItem = result.raw?.content?.list?.[0] || result.raw?.content?.[0];
                     if (!firstItem) return null;
                     return (
                       <Card className="border-emerald-200 bg-emerald-50/20">
