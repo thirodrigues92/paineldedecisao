@@ -352,12 +352,15 @@ function LabFaturamento() {
                   <Button size="sm" variant="outline" onClick={() => testEndpoint('core/financial/base/financial-category', {}, 'POST')} disabled={loading}>
                     financial-category
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => {
-                     toast.warning("financial/cost-center retornou 403 (Permissão). Verificar token no Feegow.");
-                     testEndpoint('financial/cost-center');
-                  }} disabled={loading}>
-                    financial/cost-center
-                  </Button>
+                  <div className="flex flex-col gap-1">
+                    <Button size="sm" variant="outline" onClick={() => {
+                       toast.warning("Sem permissão de acesso. Verificar permissões do usuário do token no Feegow.");
+                       testEndpoint('financial/cost-center');
+                    }} disabled={loading}>
+                      financial/cost-center
+                    </Button>
+                    <span className="text-[10px] text-destructive font-bold">⚠️ 403 Forbidden</span>
+                  </div>
                   <Button size="sm" variant="outline" onClick={() => testEndpoint('financial/list-transfers', { data_start: '01-08-2026', data_end: '31-08-2026' })} disabled={loading}>
                     list-transfers
                   </Button>
