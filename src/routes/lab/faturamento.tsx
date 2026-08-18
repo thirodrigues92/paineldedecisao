@@ -340,14 +340,26 @@ function LabFaturamento() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex gap-2 flex-wrap pb-4 border-b">
-                  <Button size="sm" variant="outline" onClick={() => testEndpoint('insurance/list')} disabled={loading}>
-                    insurance/list
+                  <Button size="sm" variant="outline" onClick={() => testEndpoint('financial/list-invoice')} disabled={loading}>
+                    financial/list-invoice
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => testEndpoint('financial/dmed')} disabled={loading}>
+                    financial/dmed
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => testEndpoint('financial/financial-category')} disabled={loading}>
+                    financial/financial-category
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => testEndpoint('financial/cost-center')} disabled={loading}>
+                    financial/cost-center
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => testEndpoint('financial/list-transfers')} disabled={loading}>
+                    financial/list-transfers
                   </Button>
                   <Button size="sm" variant="secondary" onClick={testBillingDateFilter} disabled={loading}>
                     Testar filtro de data: insurances-billing
                   </Button>
-                  <Button size="sm" variant="default" onClick={scanListAccounts} disabled={loading} className="bg-indigo-600 hover:bg-indigo-700">
-                    Descobrir parâmetros: list-accounts
+                  <Button size="sm" variant="default" onClick={scanListInvoice} disabled={loading} className="bg-indigo-600 hover:bg-indigo-700">
+                    Descobrir parâmetros: list-invoice
                   </Button>
                 </div>
 
