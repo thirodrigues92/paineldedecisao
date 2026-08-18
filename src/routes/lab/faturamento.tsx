@@ -321,7 +321,9 @@ function LabFaturamento() {
 
         const res: any = await Promise.race([syncPromise, timeoutPromise]);
         
-        const windowRes = res.resumo?.janelas?.find((j: any) => j.ds === toFeegowDate(startStr));
+        // Procurar qualquer janela de sucesso no resumo, pois ds pode ter mudado em caso de split
+        const windowRes = res.resumo?.janelas?.find((j: any) => j.status === 'success');
+
         
         setSyncStatus(prev => ({
           ...prev,
