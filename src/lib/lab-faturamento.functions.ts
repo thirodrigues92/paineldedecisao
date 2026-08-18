@@ -153,16 +153,24 @@ export const labSyncParticular = createServerFn({ method: "POST" })
       divergencias: 0
     };
 
+    // Fila de janelas (permite split recursivo em caso de cod_erro=1)
+    const fila: Array<{ ini: Date; fim: Date }> = [];
     while (currentStart <= endTotal) {
       const currentEnd = new Date(currentStart);
       currentEnd.setDate(currentStart.getDate() + (tamanho_janela - 1));
       if (currentEnd > endTotal) currentEnd.setTime(endTotal.getTime());
+      fila.push({ ini: new Date(currentStart), fim: new Date(currentEnd) });
+      currentStart.setDate(currentStart.getDate() + tamanho_janela);
+    }
 
-      const ds = toFeegowDate(currentStart.toISOString().split('T')[0]);
-      const de = toFeegowDate(currentEnd.toISOString().split('T')[0]);
+    const iso = (d: Date) => d.toISOString().split('T')[0];
 
-      let offset = 0;
-      const limit = 50;
+    while (fila.length) {
+      const janela = fila.shift()!;
+      const spanDias = Math.round((janela.fim.getTime() - janela.ini.getTime()) / 86400000) + 1;
+      const ds = toFeegowDate(iso(janela.ini));
+      const de = toFeegowDate(iso(janela.fim));
+
       let windowItemsCount = 0;
       let windowContasCount = 0;
       let windowPagamentosCount = 0;
@@ -174,7 +182,7 @@ export const labSyncParticular = createServerFn({ method: "POST" })
       if (!dry_run) {
         await supabaseAdmin.from("lab_sync_log").insert({
           endpoint: "financial/list-invoice",
-          parametros: { ds, de, tipo_transacao, offset, janela: tamanho_janela, dry_run },
+          parametros: { ds, de, tipo_transacao, janela: spanDias, dry_run },
           api_success: false,
           registros: 0,
           erro: "iniciado"
@@ -182,178 +190,199 @@ export const labSyncParticular = createServerFn({ method: "POST" })
       }
 
       try {
-        while (true) {
-          const url = new URL(`${FEEGOW_BASE}/financial/list-invoice`);
-          url.searchParams.set("data_start", ds);
-          url.searchParams.set("data_end", de);
-          url.searchParams.set("tipo_transacao", tipo_transacao);
-          url.searchParams.set("unidade_id", "0");
-          url.searchParams.set("start", String(offset));
-          url.searchParams.set("offset", String(limit));
+        // O endpoint IGNORA start/offset: devolve o período inteiro em uma única resposta.
+        // Por isso fazemos UMA chamada por janela (paginar causava laço infinito).
+        const url = new URL(`${FEEGOW_BASE}/financial/list-invoice`);
+        url.searchParams.set("data_start", ds);
+        url.searchParams.set("data_end", de);
+        url.searchParams.set("tipo_transacao", tipo_transacao);
+        url.searchParams.set("unidade_id", "0");
 
-          // 2. Try/catch + 3. Timeout explícito (20s)
-          let body;
-          try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 20000);
-            
-            const res = await fetch(url.toString(), { 
-              headers: { "x-access-token": FEEGOW_TOKEN() },
-              signal: controller.signal
-            });
-            clearTimeout(timeoutId);
-            
-            body = await res.json();
-          } catch (fetchErr: any) {
-            const errorMsg = fetchErr.name === 'AbortError' ? 'timeout' : fetchErr.message;
-            if (!dry_run) {
-              await supabaseAdmin.from("lab_sync_log").insert({
-                endpoint: "financial/list-invoice",
-                parametros: { ds, de, tipo_transacao, offset },
-                api_success: false,
-                registros: 0,
-                erro: `Erro fetch: ${errorMsg}`,
-                http_status: null
-              });
-            }
-            throw new Error(errorMsg);
-          }
+        // 2. Try/catch + 3. Timeout explícito (20s)
+        let body: any;
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 20000);
 
-          if (!body.success && body.cod_erro === 1 && tamanho_janela > 1) {
-             throw new Error("RETRY_SPLIT");
-          }
+          const res = await fetch(url.toString(), {
+            headers: { "x-access-token": FEEGOW_TOKEN() },
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
 
-          const listItems = body.content?.list || body.content || [];
-          if (!Array.isArray(listItems) || listItems.length === 0) break;
-
-          if (windowAmostra.length < 2) {
-            windowAmostra.push(...listItems.slice(0, 2 - windowAmostra.length));
-          }
-
-          const faturamentos: any[] = [];
-          const headers: any[] = [];
-          const recebimentos: any[] = [];
-
-          for (const invoice of listItems) {
-            const invoice_id = Number(invoice.invoice_id);
-            const headerVal = parseValorCentavos(invoice.detalhes?.[0]?.valor);
-            
-            headers.push({
-              invoice_id,
-              data: parseDataFeegow(invoice.detalhes?.[0]?.data),
-              valor_total: headerVal,
-              paciente_id: invoice.paciente_id ? Number(invoice.paciente_id) : null,
-              unidade_id: invoice.unidade_id ? Number(invoice.unidade_id) : null
-            });
-
-            let somaItensInvoice = 0;
-            for (const item of (invoice.itens || [])) {
-              const val = parseValorCentavos(item.valor);
-              const desc = parseValorCentavos(item.desconto);
-              const acre = parseValorCentavos(item.acrescimo);
-              const finalVal = val - desc + acre;
-              const isCancelado = item.is_cancelado === true || item.is_cancelado === 1;
-              
-              if (isCancelado) resumo.cancelados++;
-              if (item.agendamento_id) resumo.com_agendamento++;
-              if (item.procedimento_id) resumo.com_procedimento++;
-
-              faturamentos.push({
-                origem: 'particular',
-                documento_id: invoice_id,
-                item_id: Number(item.item_id),
-                agendamento_id: item.agendamento_id ? Number(item.agendamento_id) : null,
-                paciente_id: invoice.paciente_id ? Number(invoice.paciente_id) : null,
-                profissional_id: item.executante_id ? Number(item.executante_id) : null,
-                unidade_id: invoice.unidade_id ? Number(invoice.unidade_id) : null,
-                procedimento_id: item.procedimento_id ? Number(item.procedimento_id) : null,
-                data_atendimento: parseDataFeegow(item.data_execucao),
-                data_competencia: parseDataFeegow(invoice.detalhes?.[0]?.data || item.data_execucao),
-                valor_bruto: val,
-                desconto: desc,
-                acrescimo: acre,
-                valor_faturado: finalVal,
-                is_cancelado: isCancelado,
-                tipo_transacao: tipo_transacao,
-                payload_raw: item
-              });
-              
-              somaItensInvoice += finalVal;
-              resumo.soma_faturada += finalVal;
-              windowValorFaturado += finalVal;
-            }
-
-            if (Math.abs(somaItensInvoice - headerVal) > 0.01) {
-              resumo.divergencias++;
-            }
-
-            for (const pag of (invoice.pagamentos || [])) {
-              const valPag = parseValorCentavos(pag.valor);
-              recebimentos.push({
-                origem: 'particular',
-                documento_id: invoice_id,
-                pagamento_id: Number(pag.pagamento_id),
-                data_pagamento: parseDataFeegow(pag.data),
-                valor_recebido: valPag,
-                forma_pagamento: pag.forma_pagamento,
-                payload_raw: pag
-              });
-              resumo.soma_recebida += valPag;
-              resumo.total_pagamentos++;
-              windowValorRecebido += valPag;
-              windowPagamentosCount++;
-            }
-          }
-
+          body = await res.json();
+        } catch (fetchErr: any) {
+          const errorMsg = fetchErr.name === 'AbortError' ? 'timeout' : fetchErr.message;
           if (!dry_run) {
-            if (headers.length) await supabaseAdmin.from("lab_invoice_header").upsert(headers, { onConflict: "invoice_id" });
-            if (faturamentos.length) await supabaseAdmin.from("lab_faturamento").upsert(faturamentos, { onConflict: "origem,documento_id,item_id" });
-            if (recebimentos.length) await supabaseAdmin.from("lab_recebimento").upsert(recebimentos, { onConflict: "origem,documento_id,pagamento_id" });
+            await supabaseAdmin.from("lab_sync_log").insert({
+              endpoint: "financial/list-invoice",
+              parametros: { ds, de, tipo_transacao },
+              api_success: false,
+              registros: 0,
+              erro: `Erro fetch: ${errorMsg}`,
+              http_status: null
+            });
           }
-
-          windowItemsCount += faturamentos.length;
-          windowContasCount += listItems.length;
-          resumo.total_contas += listItems.length;
-          resumo.total_itens += faturamentos.length;
-
-          if (listItems.length < limit) break;
-          offset += limit;
-          await new Promise(r => setTimeout(r, 100));
+          throw new Error(errorMsg);
         }
 
-        resumo.janelas.push({ 
-          ds, de, 
-          status: 'success', 
+        if (!body.success && body.cod_erro === 1 && spanDias > 1) {
+          throw new Error("RETRY_SPLIT");
+        }
+
+        const listItems = body.content?.list || body.content || [];
+        const lista: any[] = Array.isArray(listItems) ? listItems : [];
+
+        if (lista.length) {
+          windowAmostra = lista.slice(0, 2);
+        }
+
+        const faturamentos: any[] = [];
+        const headers: any[] = [];
+        const recebimentos: any[] = [];
+        const vistos = new Set<number>();
+        let duplicados = 0;
+
+        for (const invoice of lista) {
+          const invoice_id = Number(invoice.invoice_id);
+          // Guarda anti-loop / anti-duplicidade dentro da mesma resposta
+          if (vistos.has(invoice_id)) { duplicados++; continue; }
+          vistos.add(invoice_id);
+
+          const headerVal = parseValorCentavos(invoice.detalhes?.[0]?.valor);
+
+          headers.push({
+            invoice_id,
+            data: parseDataFeegow(invoice.detalhes?.[0]?.data),
+            valor_total: headerVal,
+            paciente_id: invoice.paciente_id ? Number(invoice.paciente_id) : null,
+            unidade_id: invoice.unidade_id ? Number(invoice.unidade_id) : null
+          });
+
+          let somaItensInvoice = 0;
+          for (const item of (invoice.itens || [])) {
+            const val = parseValorCentavos(item.valor);
+            const desc = parseValorCentavos(item.desconto);
+            const acre = parseValorCentavos(item.acrescimo);
+            const finalVal = val - desc + acre;
+            const isCancelado = item.is_cancelado === true || item.is_cancelado === 1;
+
+            if (isCancelado) resumo.cancelados++;
+            if (item.agendamento_id) resumo.com_agendamento++;
+            if (item.procedimento_id) resumo.com_procedimento++;
+
+            faturamentos.push({
+              origem: 'particular',
+              documento_id: invoice_id,
+              item_id: Number(item.item_id),
+              agendamento_id: item.agendamento_id ? Number(item.agendamento_id) : null,
+              paciente_id: invoice.paciente_id ? Number(invoice.paciente_id) : null,
+              profissional_id: item.executante_id ? Number(item.executante_id) : null,
+              unidade_id: invoice.unidade_id ? Number(invoice.unidade_id) : null,
+              procedimento_id: item.procedimento_id ? Number(item.procedimento_id) : null,
+              data_atendimento: parseDataFeegow(item.data_execucao),
+              data_competencia: parseDataFeegow(invoice.detalhes?.[0]?.data || item.data_execucao),
+              valor_bruto: val,
+              desconto: desc,
+              acrescimo: acre,
+              valor_faturado: finalVal,
+              is_cancelado: isCancelado,
+              tipo_transacao: tipo_transacao,
+              payload_raw: item
+            });
+
+            somaItensInvoice += finalVal;
+            resumo.soma_faturada += finalVal;
+            windowValorFaturado += finalVal;
+          }
+
+          if (Math.abs(somaItensInvoice - headerVal) > 0.01) {
+            resumo.divergencias++;
+          }
+
+          for (const pag of (invoice.pagamentos || [])) {
+            const valPag = parseValorCentavos(pag.valor);
+            recebimentos.push({
+              origem: 'particular',
+              documento_id: invoice_id,
+              pagamento_id: Number(pag.pagamento_id),
+              data_pagamento: parseDataFeegow(pag.data),
+              valor_recebido: valPag,
+              forma_pagamento: pag.forma_pagamento,
+              payload_raw: pag
+            });
+            resumo.soma_recebida += valPag;
+            resumo.total_pagamentos++;
+            windowValorRecebido += valPag;
+            windowPagamentosCount++;
+          }
+        }
+
+        if (!dry_run) {
+          // Grava em blocos para não estourar o payload
+          const chunk = <T,>(arr: T[], n: number) => arr.reduce<T[][]>((acc, v, i) => {
+            if (i % n === 0) acc.push([]);
+            acc[acc.length - 1].push(v);
+            return acc;
+          }, []);
+
+          for (const bloco of chunk(headers, 200)) {
+            await supabaseAdmin.from("lab_invoice_header").upsert(bloco, { onConflict: "invoice_id" });
+          }
+          for (const bloco of chunk(faturamentos, 200)) {
+            await supabaseAdmin.from("lab_faturamento").upsert(bloco, { onConflict: "origem,documento_id,item_id" });
+          }
+          for (const bloco of chunk(recebimentos, 200)) {
+            await supabaseAdmin.from("lab_recebimento").upsert(bloco, { onConflict: "origem,documento_id,pagamento_id" });
+          }
+        }
+
+        windowItemsCount = faturamentos.length;
+        windowContasCount = vistos.size;
+        resumo.total_contas += windowContasCount;
+        resumo.total_itens += windowItemsCount;
+
+        resumo.janelas.push({
+          ds, de,
+          status: 'success',
           contas: windowContasCount,
           itens: windowItemsCount,
           pagamentos: windowPagamentosCount,
           valor_faturado: windowValorFaturado,
           valor_recebido: windowValorRecebido,
+          duplicados,
           amostra: windowAmostra
         });
-        
+
         if (!dry_run) {
-           await supabaseAdmin.from("lab_sync_log").insert({
-             endpoint: "financial/list-invoice",
-             parametros: { ds, de, tipo_transacao, offset },
-             api_success: true,
-             registros: windowContasCount,
-             erro: "concluido"
-           });
+          await supabaseAdmin.from("lab_sync_log").insert({
+            endpoint: "financial/list-invoice",
+            parametros: { ds, de, tipo_transacao, duplicados },
+            api_success: true,
+            registros: windowContasCount,
+            erro: duplicados > 0 ? "paginacao_ignorada_pelo_endpoint" : "concluido"
+          });
         }
 
       } catch (err: any) {
-        if (err.message === "RETRY_SPLIT") {
-          // Implementação recursiva de split seria ideal, mas para brevidade vamos apenas registrar
-          resumo.janelas.push({ ds, de, status: 'split_needed', error: "Memory pressure" });
+        if (err.message === "RETRY_SPLIT" && spanDias > 1) {
+          // Split recursivo: divide a janela ao meio (até 1 dia)
+          const metade = Math.floor(spanDias / 2);
+          const meioFim = new Date(janela.ini);
+          meioFim.setDate(janela.ini.getDate() + metade - 1);
+          const meioIni = new Date(meioFim);
+          meioIni.setDate(meioFim.getDate() + 1);
+          fila.unshift({ ini: meioIni, fim: janela.fim });
+          fila.unshift({ ini: new Date(janela.ini), fim: meioFim });
+          resumo.janelas.push({ ds, de, status: 'split', error: `Dividida em ${metade}d + ${spanDias - metade}d` });
         } else {
           resumo.janelas.push({ ds, de, status: 'error', error: String(err) });
         }
       }
 
-      currentStart.setDate(currentStart.getDate() + tamanho_janela);
       await new Promise(r => setTimeout(r, 300));
     }
+
 
     // Pós-processamento: Enriquecer lab_faturamento com grupos e dados de agenda (via SQL)
     if (!dry_run) {
