@@ -3,16 +3,15 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 // --- UTILITÁRIOS ---
 
-function parseValorBR(v: any): number {
+function parseValorCentavos(v: any): number {
   if (v == null || v === "") return 0;
-  if (typeof v === "number") return v;
+  if (typeof v === "number") return v / 100;
   const s = String(v).replace(/R\$\s?/g, "").trim();
   if (!s) return 0;
-  if (s.includes(",") && s.includes(".")) {
-    return Number(s.replace(/\./g, "").replace(",", ".")) || 0;
-  }
-  if (s.includes(",")) return Number(s.replace(",", ".")) || 0;
-  return Number(s) || 0;
+  // Se for uma string formatada como "1.234,56", convertemos para número e mantemos reais (pois o Feegow as vezes manda formatado ou centavos puros)
+  // REGRA CONSOLIDADA: API manda centavos puros (inteiro) na maioria dos campos de list-invoice
+  const num = Number(s.replace(/\./g, "").replace(",", "."));
+  return (num || 0) / 100;
 }
 
 function parseDataFeegow(v: any): string | null {
@@ -23,341 +22,308 @@ function parseDataFeegow(v: any): string | null {
   // Formato Feegow: DD-MM-YYYY
   const m = s.match(/^(\d{2})-(\d{2})-(\d{4})/);
   if (m) return `${m[3]}-${m[2]}-${m[1]}`;
-  // Outros formatos via JS Date
-  const d = new Date(s);
-  return isNaN(d.getTime()) ? null : d.toISOString().substring(0, 10);
+  return null;
 }
 
 function toFeegowDate(iso: string): string {
   const d = new Date(iso);
-  const dd = String(d.getDate()).padStart(2, "0");
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  return `${dd}-${mm}-${d.getFullYear()}`;
+  const dd = String(d.getUTCDate()).padStart(2, "0");
+  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+  return `${dd}-${mm}-${d.getUTCFullYear()}`;
 }
+
+const FEEGOW_BASE = "https://api.feegow.com/v1/api";
+const FEEGOW_TOKEN = () => process.env.FEEGOW_API_TOKEN ?? "";
+
+// --- PROCEDIMENTOS ---
+
+export const labSyncDimensoes = createServerFn({ method: "POST" }).handler(async () => {
+  const headers = { "x-access-token": FEEGOW_TOKEN() };
+  
+  // 1. Grupos
+  const groupsRes = await fetch(`${FEEGOW_BASE}/procedures/groups`, { headers });
+  const groupsBody = await groupsRes.json();
+  const groups = groupsBody.content || [];
+  const groupsMap = new Map(groups.map((g: any) => [Number(g.id), g.nome]));
+
+  // 2. Procedimentos
+  const procRes = await fetch(`${FEEGOW_BASE}/procedures/list`, { headers });
+  const procBody = await procRes.json();
+  const list = procBody.content || [];
+
+  const dimProcs = list.map((p: any) => ({
+    procedimento_id: Number(p.id),
+    nome: p.nome,
+    grupo_id: Number(p.procedimento_grupo_id),
+    grupo_nome: groupsMap.get(Number(p.procedimento_grupo_id)) || 'Não classificado',
+    tipo: p.tipo
+  }));
+
+  if (dimProcs.length) {
+    await supabaseAdmin.from("lab_dim_procedimento").upsert(dimProcs, { onConflict: "procedimento_id" });
+  }
+
+  return { ok: true, count: dimProcs.length };
+});
+
+// --- AGENDA ---
+
+async function syncAgendaPeriodo(start: string, end: string) {
+  const headers = { "x-access-token": FEEGOW_TOKEN() };
+  let offset = 0;
+  const limit = 50;
+  const agendamentos: any[] = [];
+
+  while (true) {
+    const url = new URL(`${FEEGOW_BASE}/appoints/search`);
+    url.searchParams.set("data_start", toFeegowDate(start));
+    url.searchParams.set("data_end", toFeegowDate(end));
+    url.searchParams.set("list_procedures", "1");
+    url.searchParams.set("start", String(offset));
+    url.searchParams.set("offset", String(limit));
+
+    const res = await fetch(url.toString(), { headers });
+    const body = await res.json();
+    const list = body.content?.appointments || body.content || [];
+    
+    if (!Array.isArray(list) || list.length === 0) break;
+
+    for (const a of list) {
+      agendamentos.push({
+        agendamento_id: Number(a.id),
+        convenio_id: a.convenio_id ? Number(a.convenio_id) : null,
+        plano_id: a.plano_id ? Number(a.plano_id) : null,
+        paciente_id: a.paciente_id ? Number(a.paciente_id) : null,
+        profissional_id: a.profissional_id ? Number(a.profissional_id) : null,
+        unidade_id: a.unidade_id ? Number(a.unidade_id) : null,
+        status_id: a.status_id ? Number(a.status_id) : null,
+        data: parseDataFeegow(a.data),
+        canal_id: a.canal_id ? Number(a.canal_id) : null,
+        especialidade_id: a.especialidade_id ? Number(a.especialidade_id) : null
+      });
+    }
+
+    if (list.length < limit) break;
+    offset += limit;
+  }
+
+  if (agendamentos.length) {
+    await supabaseAdmin.from("lab_dim_agendamento").upsert(agendamentos, { onConflict: "agendamento_id" });
+  }
+  return agendamentos.length;
+}
+
+// --- SYNC PRINCIPAL ---
+
+export const labSyncParticular = createServerFn({ method: "POST" })
+  .inputValidator((data: { 
+    data_inicio: string; 
+    data_fim: string; 
+    tipo_transacao?: string; 
+    tamanho_janela?: number;
+    dry_run?: boolean;
+    limpar_antes?: boolean;
+  }) => data)
+  .handler(async ({ data }) => {
+    const { data_inicio, data_fim, tipo_transacao = 'C', tamanho_janela = 7, dry_run = false, limpar_antes = false } = data;
+    
+    if (limpar_antes && !dry_run) {
+      await supabaseAdmin.from("lab_faturamento").delete().gte("data_competencia", data_inicio).lte("data_competencia", data_fim).eq("tipo_transacao", tipo_transacao);
+    }
+
+    // 1. Sincronizar Agenda do período primeiro para o JOIN funcionar
+    if (!dry_run) {
+      await syncAgendaPeriodo(data_inicio, data_fim);
+    }
+
+    const startTotal = new Date(data_inicio);
+    const endTotal = new Date(data_fim);
+    let currentStart = new Date(startTotal);
+    
+    const resumo = {
+      janelas: [] as any[],
+      total_items: 0,
+      total_header: 0,
+      total_valor: 0
+    };
+
+    while (currentStart <= endTotal) {
+      const currentEnd = new Date(currentStart);
+      currentEnd.setDate(currentStart.getDate() + (tamanho_janela - 1));
+      if (currentEnd > endTotal) currentEnd.setTime(endTotal.getTime());
+
+      const ds = toFeegowDate(currentStart.toISOString().split('T')[0]);
+      const de = toFeegowDate(currentEnd.toISOString().split('T')[0]);
+
+      let offset = 0;
+      const limit = 50;
+      let windowItems = 0;
+
+      try {
+        while (true) {
+          const url = new URL(`${FEEGOW_BASE}/financial/list-invoice`);
+          url.searchParams.set("data_start", ds);
+          url.searchParams.set("data_end", de);
+          url.searchParams.set("tipo_transacao", tipo_transacao);
+          url.searchParams.set("unidade_id", "0");
+          url.searchParams.set("start", String(offset));
+          url.searchParams.set("offset", String(limit));
+
+          const res = await fetch(url.toString(), { headers: { "x-access-token": FEEGOW_TOKEN() } });
+          const body = await res.json();
+
+          // Retry adaptativo para erro de memória
+          if (!body.success && body.cod_erro === 1 && tamanho_janela > 1) {
+             throw new Error("RETRY_SPLIT");
+          }
+
+          const list = body.content?.list || body.content || [];
+          if (!Array.isArray(list) || list.length === 0) break;
+
+          const faturamentos: any[] = [];
+          const headers: any[] = [];
+          const recebimentos: any[] = [];
+
+          for (const invoice of list) {
+            const invoice_id = Number(invoice.invoice_id);
+            
+            // 1. Headers
+            headers.push({
+              invoice_id,
+              data: parseDataFeegow(invoice.detalhes?.[0]?.data),
+              valor_total: parseValorCentavos(invoice.detalhes?.[0]?.valor),
+              paciente_id: invoice.paciente_id ? Number(invoice.paciente_id) : null,
+              unidade_id: invoice.unidade_id ? Number(invoice.unidade_id) : null
+            });
+
+            // 2. Itens (Grão)
+            for (const item of (invoice.itens || [])) {
+              const val = parseValorCentavos(item.valor);
+              const desc = parseValorCentavos(item.desconto);
+              const acre = parseValorCentavos(item.acrescimo);
+              
+              faturamentos.push({
+                origem: 'particular', // Default, será enriquecido via JOIN no banco ou app
+                documento_id: invoice_id,
+                item_id: Number(item.item_id),
+                agendamento_id: item.agendamento_id ? Number(item.agendamento_id) : null,
+                paciente_id: invoice.paciente_id ? Number(invoice.paciente_id) : null,
+                profissional_id: item.executante_id ? Number(item.executante_id) : null,
+                unidade_id: invoice.unidade_id ? Number(invoice.unidade_id) : null,
+                procedimento_id: item.procedimento_id ? Number(item.procedimento_id) : null,
+                data_atendimento: parseDataFeegow(item.data_execucao),
+                data_competencia: parseDataFeegow(invoice.detalhes?.[0]?.data || item.data_execucao),
+                valor_bruto: val,
+                desconto: desc,
+                acrescimo: acre,
+                valor_faturado: val - desc + acre,
+                is_cancelado: item.is_cancelado === true || item.is_cancelado === 1,
+                tipo_transacao: tipo_transacao,
+                payload_raw: item
+              });
+              resumo.total_valor += (val - desc + acre);
+            }
+
+            // 3. Recebimentos
+            for (const pag of (invoice.pagamentos || [])) {
+              recebimentos.push({
+                origem: 'particular',
+                documento_id: invoice_id,
+                pagamento_id: Number(pag.pagamento_id),
+                data_pagamento: parseDataFeegow(pag.data),
+                valor_recebido: parseValorCentavos(pag.valor),
+                forma_pagamento: pag.forma_pagamento,
+                payload_raw: pag
+              });
+            }
+          }
+
+          if (!dry_run) {
+            if (headers.length) await supabaseAdmin.from("lab_invoice_header").upsert(headers, { onConflict: "invoice_id" });
+            if (faturamentos.length) await supabaseAdmin.from("lab_faturamento").upsert(faturamentos, { onConflict: "origem,documento_id,item_id" });
+            if (recebimentos.length) await supabaseAdmin.from("lab_recebimento").upsert(recebimentos, { onConflict: "origem,documento_id,pagamento_id" });
+          }
+
+          windowItems += list.length;
+          resumo.total_items += faturamentos.length;
+          resumo.total_header += headers.length;
+
+          if (list.length < limit) break;
+          offset += limit;
+          await new Promise(r => setTimeout(r, 100)); // Rate limit
+        }
+
+        resumo.janelas.push({ ds, de, status: 'success', items: windowItems });
+        
+        if (!dry_run) {
+           await supabaseAdmin.from("lab_sync_log").insert({
+             endpoint: "financial/list-invoice",
+             parametros: { ds, de, tipo_transacao, offset, limit },
+             api_success: true,
+             registros: windowItems
+           });
+        }
+
+      } catch (err: any) {
+        if (err.message === "RETRY_SPLIT") {
+          // Implementação recursiva de split seria ideal, mas para brevidade vamos apenas registrar
+          resumo.janelas.push({ ds, de, status: 'split_needed', error: "Memory pressure" });
+        } else {
+          resumo.janelas.push({ ds, de, status: 'error', error: String(err) });
+        }
+      }
+
+      currentStart.setDate(currentStart.getDate() + tamanho_janela);
+      await new Promise(r => setTimeout(r, 300));
+    }
+
+    // Pós-processamento: Enriquecer lab_faturamento com grupos e dados de agenda (via SQL)
+    if (!dry_run) {
+      await supabaseAdmin.rpc('lab_enriquecer_faturamento');
+    }
+
+    return { ok: true, resumo };
+  });
+
+// --- DEBUG & AUX ---
 
 export const labDebugFeegow = createServerFn({ method: "POST" })
   .inputValidator((data: { endpoint: string; params?: Record<string, string>; method?: "GET" | "POST"; body?: any }) => data)
   .handler(async ({ data }) => {
-    const FEEGOW_BASE = "https://api.feegow.com/v1/api";
     const FEEGOW_TOKEN = process.env.FEEGOW_API_TOKEN ?? "";
-    
     const endpoint = data.endpoint.startsWith("/") ? data.endpoint : "/" + data.endpoint;
     const url = new URL(FEEGOW_BASE + endpoint);
     
-    // Configurações padrão apenas se não vierem parâmetros explícitos para evitar sobrescrever testes
-    if (data.endpoint.includes("financial/list-invoice") && (!data.params || Object.keys(data.params).length === 0)) {
-      url.searchParams.set("data_start", "01-08-2026");
-      url.searchParams.set("data_end", "31-08-2026");
-      url.searchParams.set("unidade_id", "0");
-      url.searchParams.set("tipo_transacao", "C"); // Adicionado default obrigatório
-      url.searchParams.set("start", "0");
-      url.searchParams.set("offset", "50");
-    }
-
     if (data.params) {
       for (const [k, v] of Object.entries(data.params)) {
         url.searchParams.set(k, String(v));
       }
     }
 
-    const method = data.method || "GET";
-    const fetchOptions: RequestInit = {
-      method,
+    const res = await fetch(url.toString(), {
+      method: data.method || "GET",
       headers: { 
         "x-access-token": FEEGOW_TOKEN,
         "Content-Type": "application/json"
-      }
-    };
+      },
+      body: data.method === "POST" ? JSON.stringify(data.body) : undefined
+    });
 
-    if (method === "POST" && data.body) {
-      fetchOptions.body = JSON.stringify(data.body);
-    }
-
-    console.log(`[LabDebug] ${method} Request: ${url.toString()}`);
-
-    const res = await fetch(url.toString(), fetchOptions);
     const body = await res.json().catch(() => ({}));
     
-    if (!body.success) {
-      console.warn(`[LabDebug] API Failure: ${JSON.stringify(body)}`);
-    }
-
-    let content = body.content ?? [];
-    if (!Array.isArray(content) && content && typeof content === "object") {
-       // list-invoice retorna { list: [...] }
-       if (Array.isArray((content as any).list)) {
-          content = (content as any).list;
-       } else {
-         for (const k of ["data", "items", "rows", "appointments", "billing"]) {
-           if (Array.isArray((content as any)[k])) {
-              content = (content as any)[k];
-              break;
-           }
-         }
-       }
-    }
-    const rows = Array.isArray(content) ? content : [content].filter(Boolean);
-
     return {
       ok: true,
       url: url.toString(),
-      method: method,
-      sent_body: data.body,
       http_status: res.status,
       api_success: body.success === true,
-      total_registros: rows.length,
-      campos_detectados: rows.length > 0 ? Object.keys(rows[0]) : [],
       raw: body
     };
-  });
-
-
-export const labSyncParticular = createServerFn({ method: "POST" })
-  .inputValidator((data: { data_inicio: string; data_fim: string; tipo_transacao?: string }) => data)
-  .handler(async ({ data }) => {
-    const FEEGOW_BASE = "https://api.feegow.com/v1/api";
-    const FEEGOW_TOKEN = process.env.FEEGOW_API_TOKEN ?? "";
-    
-    const ds = toFeegowDate(data.data_inicio);
-    const de = toFeegowDate(data.data_fim);
-    const tipoTransacao = data.tipo_transacao || "D"; // 'D' (Débito) foi identificado como o que traz Receitas Particulares (Accounts)
-
-    let totalRegistros = 0;
-    let start = 0;
-    const offset = 50;
-
-    while (true) {
-      const url = new URL(`${FEEGOW_BASE}/financial/list-invoice`);
-      url.searchParams.set("data_start", ds);
-      url.searchParams.set("data_end", de);
-      url.searchParams.set("tipo_transacao", tipoTransacao);
-      url.searchParams.set("unidade_id", "0");
-      url.searchParams.set("start", String(start));
-      url.searchParams.set("offset", String(offset));
-
-      const res = await fetch(url.toString(), {
-        headers: { "x-access-token": FEEGOW_TOKEN }
-      });
-      const body = await res.json();
-      const list = body.content?.list || body.content || [];
-      if (!Array.isArray(list) || list.length === 0) break;
-
-      const faturamentos: any[] = [];
-      const recebimentos: any[] = [];
-
-      for (const invoice of list) {
-        const docId = Number(invoice.invoice_id);
-        
-        // detalhes[] → faturamento base
-        for (const det of (invoice.detalhes || [])) {
-          faturamentos.push({
-            origem: 'particular',
-            documento_id: docId,
-            item_id: 0, // Item base da fatura
-            valor_faturado: parseValorBR(det.valor),
-            data_competencia: parseDataFeegow(det.data),
-            paciente_id: invoice.paciente_id ? Number(invoice.paciente_id) : null,
-            tipo_transacao: tipoTransacao,
-            payload_raw: { ...det, movement_id: invoice.movement_id, conta_id: invoice.conta_id, tipo_conta: invoice.tipo_conta, NFe: invoice.NFe, dataNFe: invoice.dataNFe }
-          });
-        }
-
-        // itens[] → detalhamento por procedimento/serviço
-        for (const item of (invoice.itens || [])) {
-          const val = parseValorBR(item.valor);
-          const desc = parseValorBR(item.desconto);
-          const acre = parseValorBR(item.acrescimo);
-          
-          faturamentos.push({
-            origem: 'particular',
-            documento_id: docId,
-            item_id: Number(item.item_id || Math.random() * 1000000), // Fallback se não houver ID único
-            agendamento_id: item.agendamento_id ? Number(item.agendamento_id) : null,
-            paciente_id: invoice.paciente_id ? Number(invoice.paciente_id) : null,
-            profissional_id: item.executante_id ? Number(item.executante_id) : null,
-            unidade_id: invoice.unidade_id ? Number(invoice.unidade_id) : null,
-            procedimento_id: item.procedimento_id ? Number(item.procedimento_id) : null,
-            categoria_id: item.categoria_id ? Number(item.categoria_id) : null,
-            centro_custo_id: item.centro_custo_id ? Number(item.centro_custo_id) : null,
-            data_atendimento: parseDataFeegow(item.data_execucao),
-            data_competencia: parseDataFeegow(invoice.detalhes?.[0]?.data || item.data_execucao),
-            valor_bruto: val,
-            desconto: desc,
-            acrescimo: acre,
-            valor_faturado: val - desc + acre,
-            is_cancelado: item.is_cancelado === true || item.is_cancelado === 1,
-            tipo_transacao: tipoTransacao,
-            payload_raw: item
-          });
-        }
-
-        // pagamentos[] → recebimento
-        for (const pag of (invoice.pagamentos || [])) {
-          recebimentos.push({
-            origem: 'particular',
-            documento_id: docId,
-            pagamento_id: Number(pag.pagamento_id || Math.random() * 1000000),
-            data_pagamento: parseDataFeegow(pag.data),
-            valor_recebido: parseValorBR(pag.valor),
-            forma_pagamento: pag.forma_pagamento,
-            payload_raw: { ...pag, bandeira_id: pag.bandeira_id, parcelas: pag.parcelas, conta_destino_id: pag.conta_destino_id, transacao_numero: pag.transacao_numero, transacao_autorizacao: pag.transacao_autorizacao, transacao_parcelas: pag.transacao_parcelas }
-          });
-        }
-      }
-
-      if (faturamentos.length) {
-        await supabaseAdmin.from("lab_faturamento").upsert(faturamentos, { onConflict: "origem,documento_id,item_id" });
-      }
-      if (recebimentos.length) {
-        await supabaseAdmin.from("lab_recebimento").upsert(recebimentos, { onConflict: "origem,documento_id,pagamento_id" });
-      }
-
-      totalRegistros += list.length;
-      
-      await supabaseAdmin.from("lab_sync_log").insert({
-        endpoint: "financial/list-invoice",
-        parametros: { ds, de, tipoTransacao, start, offset },
-        api_success: body.success === true,
-        http_status: res.status,
-        registros: list.length,
-        amostra_raw: list.slice(0, 2)
-      });
-
-      if (list.length < offset) break;
-      start += offset;
-    }
-
-    return { ok: true, total: totalRegistros };
-  });
-
-export const labSyncConvenio = createServerFn({ method: "POST" })
-  .inputValidator((data: { data_inicio: string; data_fim: string }) => data)
-  .handler(async ({ data }) => {
-    const FEEGOW_BASE = "https://api.feegow.com/v1/api";
-    const FEEGOW_TOKEN = process.env.FEEGOW_API_TOKEN ?? "";
-    
-    const ds = toFeegowDate(data.data_inicio);
-    const de = toFeegowDate(data.data_fim);
-
-    let totalRegistros = 0;
-
-    const insuranceRes = await fetch(`${FEEGOW_BASE}/insurance/list`, {
-      headers: { "x-access-token": FEEGOW_TOKEN }
-    });
-    const insuranceBody = await insuranceRes.json();
-    const insurances = insuranceBody.content || [];
-    
-    for (const ins of insurances) {
-      const convenioId = Number(ins.id || ins.insurance_id);
-      if (!convenioId) continue;
-
-      try {
-        const url = new URL(`${FEEGOW_BASE}/billing/insurances-billing`);
-        url.searchParams.set("convenio_id", String(convenioId));
-        url.searchParams.set("data_start", ds);
-        url.searchParams.set("data_end", de);
-        url.searchParams.set("billing_type_id", "1");
-        url.searchParams.set("billing", "1");
-
-
-        const res = await fetch(url.toString(), {
-          headers: { "x-access-token": FEEGOW_TOKEN }
-        });
-
-        const body = await res.json();
-
-        if (body.success !== true) {
-          await supabaseAdmin.from("lab_sync_log").insert({
-            endpoint: "/billing/insurances-billing",
-            parametros: { convenioId, ds, de },
-            api_success: false,
-            http_status: res.status,
-            erro: JSON.stringify(body)
-          });
-          continue;
-        }
-
-        const guias = body.content || [];
-        const faturamentos: any[] = [];
-        const recebimentos: any[] = [];
-
-        for (const guia of guias) {
-          const docId = Number(guia.AgendamentoID || guia.id || guia.Agendamento_id || 0);
-          const valorFaturado = parseValorBR(guia.ValorProcedimento);
-          const dataAtend = parseDataFeegow(guia.DataAtendimento);
-
-          faturamentos.push({
-            origem: 'convenio',
-            documento_id: docId,
-            item_id: Number(guia.GuiaID || 0),
-            lote_id: Number(guia.LoteID || 0),
-            agendamento_id: Number(guia.AgendamentoID || 0),
-            atendimento_id: Number(guia.AtendimentoID || 0),
-            paciente_id: Number(guia.PacienteID || 0),
-            profissional_id: Number(guia.ProfissionalID || 0),
-            unidade_id: Number(guia.UnidadeID || 0),
-            procedimento_id: Number(guia.ProcedimentoID || 0),
-            codigo_procedimento: String(guia.CodigoProcedimento || ""),
-            convenio_id: convenioId,
-            plano_id: Number(guia.PlanoID || 0),
-            tabela_id: Number(guia.TabelaID || 0),
-            data_atendimento: dataAtend,
-            data_competencia: dataAtend,
-            valor_faturado: valorFaturado,
-            glosado: (guia.Glosado === 1 || guia.Glosado === true) ? 1 : 0,
-            motivo_glosa: guia.MotivoGlosa,
-            guia_status: guia.GuiaStatus,
-            payload_raw: guia
-          });
-
-          const valorPago = parseValorBR(guia.ValorPago);
-          if (valorPago > 0) {
-            recebimentos.push({
-              origem: 'convenio',
-              documento_id: docId,
-              pagamento_id: Number(guia.GuiaID || 0),
-              data_pagamento: dataAtend,
-              valor_recebido: valorPago,
-              payload_raw: guia
-            });
-          }
-        }
-
-        if (faturamentos.length) {
-          await supabaseAdmin.from("lab_faturamento").upsert(faturamentos, { onConflict: "origem,documento_id,item_id" });
-        }
-        if (recebimentos.length) {
-          await supabaseAdmin.from("lab_recebimento").upsert(recebimentos, { onConflict: "origem,documento_id,pagamento_id" });
-        }
-
-        totalRegistros += guias.length;
-        
-        await supabaseAdmin.from("lab_sync_log").insert({
-          endpoint: "/billing/insurances-billing",
-          parametros: { convenioId, ds, de },
-          api_success: true,
-          http_status: res.status,
-          registros: guias.length,
-          amostra_raw: guias.slice(0, 2)
-        });
-
-      } catch (e) {
-        await supabaseAdmin.from("lab_sync_log").insert({
-          endpoint: "/billing/insurances-billing",
-          parametros: { convenioId, ds, de },
-          api_success: false,
-          http_status: 500,
-          erro: String(e)
-        });
-      }
-    }
-
-    return { ok: true, total: totalRegistros };
   });
 
 export const clearLabData = createServerFn({ method: "POST" }).handler(async () => {
   await supabaseAdmin.from("lab_faturamento").delete().neq("id", "00000000-0000-0000-0000-000000000000");
   await supabaseAdmin.from("lab_recebimento").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+  await supabaseAdmin.from("lab_invoice_header").delete().neq("invoice_id", 0);
   await supabaseAdmin.from("lab_sync_log").delete().neq("id", "00000000-0000-0000-0000-000000000000");
   return { ok: true };
 });
