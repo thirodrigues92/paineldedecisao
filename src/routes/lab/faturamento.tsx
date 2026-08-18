@@ -232,10 +232,11 @@ export const Route = createFileRoute("/lab/faturamento")({
                 </Table>
               </div>
             </CardContent>
-          </Card>
-        </TabsContent>
+           </Card>
+         )}
+ 
+         {tab === "auditoria" && (
 
-        <TabsContent value="auditoria" className="space-y-4">
            <Card>
              <CardHeader>
                <CardTitle>Diagnóstico de Integridade</CardTitle>
