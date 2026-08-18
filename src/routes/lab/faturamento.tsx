@@ -77,9 +77,9 @@ function LabFaturamento() {
   const totals = useMemo(() => {
     if (!stats) return { faturado: 0, recebido: 0, diff: 0 };
     return stats.reduce((acc, curr) => ({
-      faturado: acc.faturado + (curr.total_faturado || 0),
-      recebido: acc.recebido + (curr.total_recebido || 0),
-      diff: acc.diff + (curr.diferenca || 0)
+      faturado: acc.faturado + (Number(curr.total_faturado) || 0),
+      recebido: acc.recebido + (Number(curr.total_recebido) || 0),
+      diff: acc.diff + (Number(curr.saldo_a_receber) || 0)
     }), { faturado: 0, recebido: 0, diff: 0 });
   }, [stats]);
 
@@ -153,13 +153,13 @@ function LabFaturamento() {
                 </TableHeader>
                 <TableBody>
                   {stats?.map((s: any) => (
-                    <TableRow key={s.origem}>
-                      <TableCell className="font-medium capitalize">{s.origem}</TableCell>
+                    <TableRow key={s.origem + (s.mes || '')}>
+                      <TableCell className="font-medium capitalize">{s.origem} {s.mes ? `(${s.mes})` : ''}</TableCell>
                       <TableCell className="text-right">R$ {s.total_faturado?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</TableCell>
                       <TableCell className="text-right text-emerald-600">R$ {s.total_recebido?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</TableCell>
-                      <TableCell className="text-right text-amber-600 font-bold">R$ {s.diferenca?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</TableCell>
+                      <TableCell className="text-right text-amber-600 font-bold">R$ {s.saldo_a_receber?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</TableCell>
                       <TableCell className="text-center">
-                        {s.diferenca === 0 ? <Badge variant="outline" className="text-emerald-500"><CheckCircle2 className="w-3 h-3 mr-1" /> OK</Badge> : <Badge variant="outline" className="text-amber-500">Pendente</Badge>}
+                        {s.saldo_a_receber === 0 ? <Badge variant="outline" className="text-emerald-500"><CheckCircle2 className="w-3 h-3 mr-1" /> OK</Badge> : <Badge variant="outline" className="text-amber-500">Pendente</Badge>}
                       </TableCell>
                     </TableRow>
                   ))}
