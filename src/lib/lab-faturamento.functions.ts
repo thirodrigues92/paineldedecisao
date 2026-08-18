@@ -371,6 +371,8 @@ export const labSyncParticular = createServerFn({ method: "POST" })
             registros: windowContasCount,
             erro: duplicados > 0 ? "paginacao_ignorada_pelo_endpoint" : "concluido"
           });
+        }
+
       } catch (err: any) {
         // Tenta detectar erro de memória ou timeout
         const isMemoryError = err.message?.includes("memory size") || (err.message === "RETRY_SPLIT");
