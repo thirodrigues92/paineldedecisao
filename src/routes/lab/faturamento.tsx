@@ -64,15 +64,16 @@ function LabFaturamento() {
     }
   });
 
-  const testEndpoint = async (endpoint: string) => {
+  const testEndpoint = async (endpoint: string, params: Record<string, string> = {}) => {
     setLoading(true);
     try {
-      const res = await labDebugFeegow({ data: { endpoint, params: {} } });
+      const res = await labDebugFeegow({ data: { endpoint, params } });
       setResult({ endpoint, ...res });
     } finally {
       setLoading(false);
     }
   };
+
 
   const totals = useMemo(() => {
     if (!stats) return { faturado: 0, recebido: 0, diff: 0 };
