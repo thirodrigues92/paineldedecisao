@@ -42,9 +42,10 @@ export const labDebugFeegow = createServerFn({ method: "POST" })
     const url = new URL(FEEGOW_BASE + endpoint);
     
     // Configurações padrão apenas se não vierem parâmetros explícitos para evitar sobrescrever testes
-    if (data.endpoint.includes("financial/list-accounts") && (!data.params || Object.keys(data.params).length === 0)) {
-      url.searchParams.set("data_inicio", "01-08-2026");
-      url.searchParams.set("data_fim", "31-08-2026");
+    if (data.endpoint.includes("financial/list-invoice") && (!data.params || Object.keys(data.params).length === 0)) {
+      url.searchParams.set("data_start", "01-08-2026");
+      url.searchParams.set("data_end", "31-08-2026");
+      url.searchParams.set("unidade_id", "0");
       url.searchParams.set("start", "0");
       url.searchParams.set("offset", "50");
     }
