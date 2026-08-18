@@ -128,13 +128,14 @@ function LabFaturamento() {
         </Card>
       </div>
 
-      <Tabs defaultValue="faturamento" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="faturamento"><BarChart3 className="w-4 h-4 mr-2" /> Faturado x Recebido</TabsTrigger>
-          <TabsTrigger value="sincronizacao"><RefreshCw className="w-4 h-4 mr-2" /> Sincronização</TabsTrigger>
-          <TabsTrigger value="auditoria"><ShieldCheck className="w-4 h-4 mr-2" /> Auditoria</TabsTrigger>
-          <TabsTrigger value="diagnostico"><Search className="w-4 h-4 mr-2" /> Debug API</TabsTrigger>
+      <Tabs defaultValue="faturamento" className="w-full space-y-4">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="faturamento">Faturado x Recebido</TabsTrigger>
+          <TabsTrigger value="sincronizacao">Sincronização</TabsTrigger>
+          <TabsTrigger value="auditoria">Auditoria</TabsTrigger>
+          <TabsTrigger value="diagnostico">Debug API</TabsTrigger>
         </TabsList>
+
 
 
 
