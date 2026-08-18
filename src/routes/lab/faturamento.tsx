@@ -105,14 +105,15 @@ function LabFaturamento() {
     setSequenceResults([]); // Limpa ANTES de iniciar a varredura
     
     const steps = [
-      { m: "GET", p: { data_start: "01-01-2026", data_end: "31-12-2026", tipo_transacao: "C", unidade_id: "0", start: "0", offset: "50" }, desc: "C (Crédito) 2026" },
-      { m: "GET", p: { data_start: "01-01-2026", data_end: "31-12-2026", tipo_transacao: "D", unidade_id: "0", start: "0", offset: "50" }, desc: "D (Débito) 2026" },
-      { m: "GET", p: { data_start: "01-01-2026", data_end: "31-12-2026", tipo_transacao: "T", unidade_id: "0", start: "0", offset: "50" }, desc: "T (Transferência) 2026" },
+      { m: "GET", p: { data_start: "01-01-2026", data_end: "31-12-2026", tipo_transacao: "D", unidade_id: "0", start: "0", offset: "50" }, desc: "D (Débito)" },
+      { m: "GET", p: { data_start: "01-01-2026", data_end: "31-12-2026", tipo_transacao: "C", unidade_id: "0", start: "0", offset: "50" }, desc: "C (Crédito)" },
+      { m: "GET", p: { data_start: "01-01-2026", data_end: "31-12-2026", tipo_transacao: "R", unidade_id: "0", start: "0", offset: "50" }, desc: "R (Receita)" },
+      { m: "GET", p: { data_start: "01-01-2026", data_end: "31-12-2026", unidade_id: "0", start: "0", offset: "50" }, desc: "Sem tipo" },
+      { m: "GET", p: { data_start: "01-01-2019", data_end: "31-12-2019", tipo_transacao: "D", unidade_id: "0", start: "0", offset: "50" }, desc: "2019 D" },
+      { m: "GET", p: { start: "0", offset: "50" }, desc: "Sem params" },
     ];
 
     const results = [];
-    let firstSuccess = null;
-
     for (const [i, s] of steps.entries()) {
       const res = await labDebugFeegow({ 
         data: { 
@@ -122,7 +123,7 @@ function LabFaturamento() {
           body: null
         } 
       });
-      const item = { 
+      results.push({ 
         id: i + 1, 
         method: s.m, 
         label: s.desc,
@@ -133,14 +134,9 @@ function LabFaturamento() {
         tipo_transacao: s.p.tipo_transacao || '-',
         periodo: s.p.data_start ? `${s.p.data_start} a ${s.p.data_end}` : '-',
         raw: res
-      };
-      results.push(item);
-      if (!firstSuccess && res.http_status === 200 && res.api_success && s.p.tipo_transacao === "C") {
-        firstSuccess = res;
-      }
+      });
     }
     setSequenceResults(results);
-    if (firstSuccess) setResult(firstSuccess);
     setLoading(false);
   };
 
@@ -356,12 +352,15 @@ function LabFaturamento() {
                   <Button size="sm" variant="outline" onClick={() => testEndpoint('core/financial/base/financial-category', {}, 'POST')} disabled={loading}>
                     financial-category
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => {
-                     toast.warning("financial/cost-center retornou 403 (Permissão). Verificar token no Feegow.");
-                     testEndpoint('financial/cost-center');
-                  }} disabled={loading}>
-                    financial/cost-center
-                  </Button>
+                  <div className="flex flex-col gap-1">
+                    <Button size="sm" variant="outline" onClick={() => {
+                       toast.warning("Sem permissão de acesso. Verificar permissões do usuário do token no Feegow.");
+                       testEndpoint('financial/cost-center');
+                    }} disabled={loading}>
+                      financial/cost-center
+                    </Button>
+                    <span className="text-[10px] text-destructive font-bold">⚠️ 403 Forbidden</span>
+                  </div>
                   <Button size="sm" variant="outline" onClick={() => testEndpoint('financial/list-transfers', { data_start: '01-08-2026', data_end: '31-08-2026' })} disabled={loading}>
                     list-transfers
                   </Button>
