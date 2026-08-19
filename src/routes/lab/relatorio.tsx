@@ -56,11 +56,11 @@ function LabRelatorio() {
         } 
       });
     },
-    onSuccess: (res) => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ['lab-relatorio-comparativo'] });
       queryClient.invalidateQueries({ queryKey: ['lab-producao'] });
       
-      const msg = (res as any).inseridos !== undefined 
+      const msg = res?.inseridos !== undefined 
         ? `Sincronizados ${res.inseridos} registros!`
         : "Sincronização concluída!";
       toast.success(msg);
