@@ -9,13 +9,14 @@ import { useState, useMemo } from "react";
 import { 
   FileText, Search, Filter, ArrowUpDown, Download, 
   ChevronRight, Database, AlertCircle, CheckCircle2, 
-  ArrowRight, Info
+  ArrowRight, Info, RefreshCw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DatePickerWithRange } from "@/components/ui/date-picker-with-range";
-import { getLabConciliacao, getLabFaturamentoItems } from "@/lib/lab-faturamento.functions";
+import { getLabConciliacao, getLabFaturamentoItems, labSyncParticular } from "@/lib/lab-faturamento.functions";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { brl } from "@/lib/format";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/lab/conciliacao")({
   component: LabConciliacao,
@@ -33,10 +34,36 @@ function LabConciliacao() {
   const startStr = dateRange.start.toISOString().split('T')[0];
   const endStr = dateRange.end.toISOString().split('T')[0];
 
-  const { data: conciliacaoData, isLoading } = useQuery({
+  const { data: conciliacaoData, isLoading, refetch } = useQuery({
     queryKey: ['lab-conciliacao', startStr, endStr],
     queryFn: () => getLabConciliacao({ data: { data_inicio: startStr, data_fim: endStr } })
   });
+
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleSync = async () => {
+    setIsSyncing(true);
+    toast.info("Iniciando sincronização do período...");
+    try {
+      // Sincroniza Convênios (Transação C)
+      await labSyncParticular({ 
+        data: { 
+          data_inicio: startStr, 
+          data_fim: endStr, 
+          tipo_transacao: 'C',
+          tamanho_janela: 1 // Sincroniza dia a dia para maior precisão
+        } 
+      });
+      
+      toast.success("Sincronização concluída com sucesso!");
+      refetch();
+    } catch (error) {
+      console.error("Erro no sync:", error);
+      toast.error("Falha ao sincronizar dados do Feegow.");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const { data: detailsData, isLoading: isLoadingDetails } = useQuery({
     queryKey: ['lab-conciliacao-details', selectedAgendamento],
@@ -96,6 +123,15 @@ function LabConciliacao() {
           <p className="text-muted-foreground">Comparativo entre valores previstos na agenda e faturados no financeiro.</p>
         </div>
         <div className="flex gap-2">
+          <Button 
+            variant="default" 
+            className="bg-indigo-600 hover:bg-indigo-700" 
+            onClick={handleSync}
+            disabled={isSyncing || isLoading}
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
+            {isSyncing ? "Sincronizando..." : "Sincronizar Período"}
+          </Button>
           <Button variant="outline" onClick={exportCSV} disabled={filteredData.length === 0}>
             <Download className="w-4 h-4 mr-2" /> Exportar CSV
           </Button>
@@ -317,23 +353,3 @@ function LabConciliacao() {
   );
 }
 
-function RefreshCw({ className }: { className?: string }) {
-  return (
-    <svg 
-      className={className} 
-      xmlns="http://www.w3.org/2000/svg" 
-      width="24" height="24" 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
-      strokeLinejoin="round"
-    >
-      <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
-      <path d="M21 3v5h-5" />
-      <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
-      <path d="M3 21v-5h5" />
-    </svg>
-  );
-}

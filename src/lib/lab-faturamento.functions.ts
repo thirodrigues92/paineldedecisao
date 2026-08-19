@@ -22,10 +22,21 @@ function parseDataFeegow(v: any): string | null {
 }
 
 function toFeegowDate(iso: string, separator: string = "-"): string {
-  const d = new Date(iso);
-  const dd = String(d.getUTCDate()).padStart(2, "0");
-  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
-  return `${dd}${separator}${mm}${separator}${d.getUTCFullYear()}`;
+  // Garantir que estamos usando a data local/nominal da string ISO (YYYY-MM-DD)
+  // sem interferência de fuso horário na conversão para Date.
+  const parts = iso.split("-");
+  if (parts.length === 3) {
+    const y = parts[0];
+    const m = parts[1];
+    const d = parts[2];
+    return `${d}${separator}${m}${separator}${y}`;
+  }
+  
+  // Fallback para o comportamento anterior se não for ISO YYYY-MM-DD
+  const dObj = new Date(iso);
+  const dd = String(dObj.getUTCDate()).padStart(2, "0");
+  const mm = String(dObj.getUTCMonth() + 1).padStart(2, "0");
+  return `${dd}${separator}${mm}${separator}${dObj.getUTCFullYear()}`;
 }
 
 const FEEGOW_BASE = "https://api.feegow.com/v1/api";
