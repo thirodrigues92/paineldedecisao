@@ -288,43 +288,6 @@ export const labSyncParticular = createServerFn({ method: "POST" })
               documento_id: invoice_id,
               item_id: Number(item.item_id),
               agendamento_id: item.agendamento_id ? Number(item.agendamento_id) : null,
-              paciente_id: invoice.paciente_id ? Number(invoice.paciente_id) : null,
-              profissional_id: item.executante_id ? Number(item.executante_id) : null,
-              unidade_id: invoice.unidade_id ? Number(invoice.unidade_id) : null,
-              procedimento_id: item.procedimento_id ? Number(item.procedimento_id) : null,
-              data_atendimento: parseDataFeegow(item.data_execucao),
-              data_competencia: parseDataFeegow(invoice.detalhes?.[0]?.data || item.data_execucao),
-              valor_bruto: val,
-              desconto: desc,
-              acrescimo: acre,
-              valor_faturado: finalVal,
-              is_cancelado: isCancelado,
-              tipo_transacao: tipo_transacao,
-              payload_raw: item
-            });
-
-            somaItensInvoice += finalVal;
-            resumo.soma_faturada += finalVal;
-            windowValorFaturado += finalVal;
-          }
-
-          let somaItensInvoice = 0;
-          for (const item of (invoice.itens || [])) {
-            const val = parseValorCentavos(item.valor);
-            const desc = parseValorCentavos(item.desconto);
-            const acre = parseValorCentavos(item.acrescimo);
-            const finalVal = val - desc + acre;
-            const isCancelado = item.is_cancelado === true || item.is_cancelado === 1;
-
-            if (isCancelado) resumo.cancelados++;
-            if (item.agendamento_id) resumo.com_agendamento++;
-            if (item.procedimento_id) resumo.com_procedimento++;
-
-            faturamentos.push({
-              origem: 'particular',
-              documento_id: invoice_id,
-              item_id: Number(item.item_id),
-              agendamento_id: item.agendamento_id ? Number(item.agendamento_id) : null,
               // Fallback importante: a API no list-invoice as vezes não manda o paciente_id no topo, 
               // mas a agenda (syncAgendaPeriodo) tem esse dado. O lab_enriquecer_faturamento vai completar via agendamento_id.
               paciente_id: invoice.paciente_id ? Number(invoice.paciente_id) : null,
