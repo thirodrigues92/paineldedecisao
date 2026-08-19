@@ -316,6 +316,8 @@ export const labSyncParticular = createServerFn({ method: "POST" })
               valor_faturado: finalVal,
               is_cancelado: isCancelado,
                tipo_transacao: tipo_transacao,
+               documento_id: BigInt(invoice_id), // Garantindo redundância se necessário
+
                payload_raw: {
                  ...item,
                  _debug_invoice_header: invoice.detalhes?.[0],
@@ -342,6 +344,8 @@ export const labSyncParticular = createServerFn({ method: "POST" })
               valor_recebido: valPag,
               forma_pagamento: pag.forma_pagamento,
               conta_destino_id: pag.conta_id ? Number(pag.conta_id) : null,
+              documento_id: BigInt(invoice_id), // Garantindo redundância
+
               payload_raw: {
                 ...pag,
                 _debug_source: 'financial/list-invoice',
