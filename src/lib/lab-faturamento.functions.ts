@@ -343,9 +343,8 @@ export const labSyncParticular = createServerFn({ method: "POST" })
         }
 
         if (!dry_run) {
-          console.log(`[SYNC] Gravando dados: headers=${headers.length}, faturamentos=${faturamentos.length}, recebimentos=${recebimentos.length}`);
+          console.log(`[SYNC] Tentando gravar ${lista.length} invoices da janela ${ds} a ${de}`);
           
-          // Grava em blocos para não estourar o payload ou limite de tempo da rede
           const chunk = <T,>(arr: T[], n: number) => arr.reduce<T[][]>((acc, v, i) => {
             if (i % n === 0) acc.push([]);
             acc[acc.length - 1].push(v);
@@ -353,28 +352,27 @@ export const labSyncParticular = createServerFn({ method: "POST" })
           }, []);
 
           if (headers.length > 0) {
-            for (const bloco of chunk(headers, 100)) {
-              const { error } = await supabaseAdmin.from("lab_invoice_header").upsert(bloco, { onConflict: "invoice_id" });
-              if (error) console.error("[SYNC] Erro ao gravar headers:", error);
-            }
+            const { error: hErr } = await supabaseAdmin.from("lab_invoice_header").upsert(headers, { onConflict: "invoice_id" });
+            if (hErr) console.error("[SYNC] Erro headers:", hErr);
           }
           
           if (faturamentos.length > 0) {
-            for (const bloco of chunk(faturamentos, 100)) {
-              const { error } = await supabaseAdmin.from("lab_faturamento").upsert(bloco, { onConflict: "origem,documento_id,item_id" });
-              if (error) {
-                console.error("[SYNC] Erro ao gravar faturamentos:", error);
-                throw new Error(`Erro DB Faturamento: ${error.message}`);
+            for (const bloco of chunk(faturamentos, 50)) {
+              const { error: fErr } = await supabaseAdmin.from("lab_faturamento").upsert(bloco, { onConflict: "origem,documento_id,item_id" });
+              if (fErr) {
+                console.error("[SYNC] Erro faturamento:", fErr);
+                throw new Error(`Erro DB Faturamento: ${fErr.message}`);
               }
             }
           }
           
           if (recebimentos.length > 0) {
-            for (const bloco of chunk(recebimentos, 100)) {
-              const { error } = await supabaseAdmin.from("lab_recebimento").upsert(bloco, { onConflict: "origem,documento_id,pagamento_id" });
-              if (error) console.error("[SYNC] Erro ao gravar recebimentos:", error);
+            for (const bloco of chunk(recebimentos, 50)) {
+              const { error: rErr } = await supabaseAdmin.from("lab_recebimento").upsert(bloco, { onConflict: "origem,documento_id,pagamento_id" });
+              if (rErr) console.error("[SYNC] Erro recebimento:", rErr);
             }
           }
+          console.log(`[SYNC] Gravação concluída para a janela.`);
         }
 
         windowItemsCount = faturamentos.length;
