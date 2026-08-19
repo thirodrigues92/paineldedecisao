@@ -332,6 +332,8 @@ export const labSyncParticular = createServerFn({ method: "POST" })
               valor_faturado: finalVal,
               is_cancelado: isCancelado,
               tipo_transacao: tipo_transacao,
+              paciente_nome: invoice.paciente_nome || invoice.paciente || null,
+              procedimento_nome: item.procedimento_nome || item.procedimento || null,
               payload_raw: {
                 ...item,
                 _debug_invoice_header: invoice.detalhes?.[0],
