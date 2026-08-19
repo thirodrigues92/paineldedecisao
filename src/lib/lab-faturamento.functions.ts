@@ -288,6 +288,8 @@ export const labSyncParticular = createServerFn({ method: "POST" })
               documento_id: invoice_id,
               item_id: Number(item.item_id),
               agendamento_id: item.agendamento_id ? Number(item.agendamento_id) : null,
+              // Fallback importante: a API no list-invoice as vezes não manda o paciente_id no topo, 
+              // mas a agenda (syncAgendaPeriodo) tem esse dado. O lab_enriquecer_faturamento vai completar via agendamento_id.
               paciente_id: invoice.paciente_id ? Number(invoice.paciente_id) : null,
               profissional_id: item.executante_id ? Number(item.executante_id) : null,
               unidade_id: invoice.unidade_id ? Number(invoice.unidade_id) : null,
