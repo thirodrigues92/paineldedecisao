@@ -152,10 +152,66 @@ function LabRelatorio() {
           </h1>
           <p className="text-muted-foreground">Comparativo detalhado de consultas e atendimentos sincronizados.</p>
         </div>
-        <Button variant="outline" onClick={exportCSV} disabled={filteredData.length === 0}>
-          <Download className="w-4 h-4 mr-2" /> Exportar CSV
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant={showSyncPanel ? "secondary" : "outline"} 
+            onClick={() => setShowSyncPanel(!showSyncPanel)}
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
+            {isSyncing ? 'Sincronizando...' : 'Sincronizar Dados'}
+          </Button>
+          <Button variant="outline" onClick={exportCSV} disabled={filteredData.length === 0 || isSyncing}>
+            <Download className="w-4 h-4 mr-2" /> Exportar CSV
+          </Button>
+          <Button variant="ghost" onClick={() => window.location.href = '/lab/faturamento'}>
+            Voltar ao Lab
+          </Button>
+        </div>
       </div>
+
+      {showSyncPanel && (
+        <Card className="border-indigo-200 bg-indigo-50/10">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-bold flex items-center gap-2">
+              <Settings className="w-4 h-4" /> Configurar Sincronização Rápida
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-wrap items-end gap-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold uppercase text-muted-foreground">Período</label>
+                <DatePickerWithRange 
+                  from={dateRange.start} 
+                  to={dateRange.end} 
+                  onRangeChange={(from, to) => setDateRange({ start: from, end: to })} 
+                />
+              </div>
+              <Button 
+                className="bg-indigo-600 hover:bg-indigo-700" 
+                onClick={runSync}
+                disabled={isSyncing}
+              >
+                {isSyncing ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Play className="w-4 h-4 mr-2" />}
+                Iniciar Sincronização
+              </Button>
+              <div className="text-[10px] text-muted-foreground max-w-xs">
+                A sincronização trará lançamentos do tipo <b>Receita (C)</b> para o período selecionado. 
+                Para configurações avançadas (dry-run, despesas), use a aba principal do Lab.
+              </div>
+            </div>
+            {isSyncing && (
+              <div className="space-y-2">
+                <div className="flex justify-between text-[10px] font-bold uppercase">
+                  <span>Processando dados do Feegow...</span>
+                  <span>{syncProgress}%</span>
+                </div>
+                <Progress value={syncProgress} className="h-1" />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
 
       <Card>
         <CardHeader className="pb-3">
