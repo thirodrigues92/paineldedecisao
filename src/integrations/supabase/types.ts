@@ -421,9 +421,11 @@ export type Database = {
           motivo_glosa: string | null
           origem: string
           paciente_id: number | null
+          paciente_nome: string | null
           payload_raw: Json | null
           plano_id: number | null
           procedimento_id: number | null
+          procedimento_nome: string | null
           profissional_id: number | null
           synced_at: string | null
           tabela_id: number | null
@@ -457,9 +459,11 @@ export type Database = {
           motivo_glosa?: string | null
           origem: string
           paciente_id?: number | null
+          paciente_nome?: string | null
           payload_raw?: Json | null
           plano_id?: number | null
           procedimento_id?: number | null
+          procedimento_nome?: string | null
           profissional_id?: number | null
           synced_at?: string | null
           tabela_id?: number | null
@@ -493,9 +497,11 @@ export type Database = {
           motivo_glosa?: string | null
           origem?: string
           paciente_id?: number | null
+          paciente_nome?: string | null
           payload_raw?: Json | null
           plano_id?: number | null
           procedimento_id?: number | null
+          procedimento_nome?: string | null
           profissional_id?: number | null
           synced_at?: string | null
           tabela_id?: number | null
