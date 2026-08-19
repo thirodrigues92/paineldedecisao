@@ -45,15 +45,24 @@ function LabConciliacao() {
     setIsSyncing(true);
     toast.info("Iniciando sincronização do período...");
     try {
-      // Sincroniza Convênios (Transação C)
+      // 1. Sincroniza Produção (Atendimentos executados)
+      await labSyncProducao({ 
+        data: { 
+          start_date: startStr, 
+          end_date: endStr
+        } 
+      });
+
+      // 2. Sincroniza Convênios (Transação C - Financeiro)
       await labSyncParticular({ 
         data: { 
           data_inicio: startStr, 
           data_fim: endStr, 
           tipo_transacao: 'C',
-          tamanho_janela: 1 // Sincroniza dia a dia para maior precisão
+          tamanho_janela: 1
         } 
       });
+
       
       toast.success("Sincronização concluída com sucesso!");
       refetch();
