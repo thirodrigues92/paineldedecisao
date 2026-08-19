@@ -96,8 +96,7 @@ function LabRelatorio() {
   const { data: reportData, isLoading } = useQuery({
     queryKey: ['lab-relatorio-comparativo'],
     queryFn: async () => {
-      // Buscamos dados do lab_faturamento enriquecidos com nomes de pacientes e procedimentos
-      // Nota: Como lab_faturamento armazena apenas IDs, fazemos joins com as dimensões do Lab
+      // Buscamos dados do lab_faturamento enriquecidos
       const { data, error } = await supabase
         .from('lab_faturamento')
         .select(`
@@ -107,9 +106,13 @@ function LabRelatorio() {
           profissional:profissionais!profissional_id(nome),
           convenio:convenios!convenio_id(nome)
         `)
-        .order('data_competencia', { ascending: false });
+        .order('data_competencia', { ascending: false })
+        .limit(1000);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro ao buscar relatório:", error);
+        throw error;
+      }
       return data || [];
     }
   });
