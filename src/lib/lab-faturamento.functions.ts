@@ -153,7 +153,8 @@ async function syncAgendaPeriodo(start: string, end: string) {
         status_id: a.status_id ? Number(a.status_id) : null,
         data: parseDataFeegow(a.data),
         canal_id: a.canal_id ? Number(a.canal_id) : null,
-        especialidade_id: a.especialidade_id ? Number(a.especialidade_id) : null
+        especialidade_id: a.especialidade_id ? Number(a.especialidade_id) : null,
+        prontuario: a.prontuario || null
       });
     }
 
@@ -345,6 +346,7 @@ export const labSyncParticular = createServerFn({ method: "POST" })
               is_cancelado: isCancelado,
               tipo_transacao: tipo_transacao,
               paciente_nome: invoice.paciente_nome || invoice.paciente || null,
+              prontuario: invoice.prontuario || null,
               procedimento_nome: item.procedimento_nome || item.procedimento || null,
               payload_raw: {
                 ...item,
@@ -585,6 +587,7 @@ export const labSyncProducao = createServerFn({ method: "POST" })
           feegow_id: toBigInt(r.id) || BigInt(Math.floor(Math.random() * 1000000000)),
           paciente_id: toBigInt(r.PacienteID),
           paciente_nome: r.NomePaciente || null,
+          prontuario: r.Prontuario || r.ProntuarioPaciente || null,
           agendamento_id: toBigInt(r.AgendamentoID),
           data_execucao: parseDataFeegow(r.Data),
           hora_inicio: r.HoraInicio || r.Hora || null,
@@ -657,11 +660,11 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
     if (aErr) throw aErr;
 
     // 1.1 Buscar nomes em tabelas separadas para evitar problemas de join no TS/RPC
-    const { data: pacientes } = await supabaseAdmin.from("pacientes").select("paciente_id, nome");
+    const { data: pacientes } = await supabaseAdmin.from("pacientes").select("paciente_id, nome, prontuario");
     const { data: profissionais } = await supabaseAdmin.from("profissionais").select("profissional_id, nome");
     const { data: procedimentos } = await supabaseAdmin.from("procedimentos").select("procedimento_id, nome");
 
-    const pacMap = new Map((pacientes || []).map(p => [p.paciente_id, p.nome]));
+    const pacMap = new Map((pacientes || []).map(p => [p.paciente_id, { nome: p.nome, prontuario: p.prontuario }]));
     const profMap = new Map((profissionais || []).map(p => [p.profissional_id, p.nome]));
     const procMap = new Map((procedimentos || []).map(p => [p.procedimento_id, p.nome]));
 
@@ -708,7 +711,8 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
       return {
         agendamento_id: agId,
         data: a.data,
-        paciente: (a.paciente_id ? pacMap.get(a.paciente_id) : null) || "N/A",
+        paciente: (a.paciente_id ? pacMap.get(a.paciente_id)?.nome : null) || "N/A",
+        prontuario: (a.paciente_id ? pacMap.get(a.paciente_id)?.prontuario : null) || "—",
         profissional: (a.profissional_id ? profMap.get(a.profissional_id) : null) || "N/A",
         procedimento: (a.procedimento_id ? procMap.get(a.procedimento_id) : null) || "N/A",
         valor_tabela: valorTabela,
