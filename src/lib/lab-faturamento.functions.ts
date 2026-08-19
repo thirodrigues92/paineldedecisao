@@ -719,7 +719,7 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
     // 3. Cruzar dados
     const conciliado = (agenda || []).map(a => {
       const agId = Number(a.agendamento_id);
-      const valorTabela = Number(a.valor_estimado || 0);
+      const valorTabela = Number(a.valor || 0);
       const valorFaturado = faturamentoMap.get(agId) || 0;
       const temFatura = faturamentoMap.has(agId);
       const diferenca = valorFaturado - valorTabela;
@@ -733,18 +733,18 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
 
       return {
         agendamento_id: agId,
-        data: a.data,
-        paciente: (a.paciente_id ? pacMap.get(a.paciente_id)?.nome : null) || "N/A",
-        prontuario: (a.paciente_id ? pacMap.get(a.paciente_id)?.prontuario : null) || "—",
+        data: a.data_execucao,
+        paciente: a.paciente_nome || (a.paciente_id ? pacMap.get(a.paciente_id)?.nome : null) || "N/A",
+        prontuario: a.prontuario || (a.paciente_id ? pacMap.get(a.paciente_id)?.prontuario : null) || "—",
         profissional: (a.profissional_id ? profMap.get(a.profissional_id) : null) || "N/A",
         procedimento: (a.procedimento_id ? procMap.get(a.procedimento_id) : null) || "N/A",
         valor_tabela: valorTabela,
-
         valor_faturado: valorFaturado,
         diferenca,
         status
       };
     });
+
 
     return conciliado;
   });
