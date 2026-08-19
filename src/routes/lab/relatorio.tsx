@@ -108,7 +108,7 @@ function LabRelatorio() {
   };
 
   const { data: producaoData, isLoading: isLoadingProd } = useQuery({
-    queryKey: ['lab-producao', dateRange.start.toISOString(), dateRange.end.toISOString()],
+    queryKey: ['lab-producao', dateRange.start.toISOString().split('T')[0], dateRange.end.toISOString().split('T')[0]],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('lab_producao_feegow')
