@@ -599,6 +599,8 @@ export const labSyncProducao = createServerFn({ method: "POST" })
           }
         }
       }
+    }
+    
     if (resumo.inseridos > 0 && !dry_run) {
       await supabaseAdmin.from("lab_sync_log").insert({
         endpoint: `reports/generate:success`,
