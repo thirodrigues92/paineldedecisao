@@ -527,6 +527,16 @@ export const labSyncProducao = createServerFn({ method: "POST" })
 
     const fetchReport = async (reportSlug: string) => {
       resumo.logs.push(`Tentando relatório: ${reportSlug} (${ds} a ${de})`);
+      
+      if (!dry_run) {
+        await supabaseAdmin.from("lab_sync_log").insert({
+          endpoint: `reports/generate:${reportSlug}`,
+          parametros: { ds, de, dry_run },
+          api_success: false,
+          registros: 0,
+          erro: "iniciado"
+        });
+      }
       const res = await fetch(`${FEEGOW_BASE}/reports/generate`, {
         method: "POST",
         headers: {
