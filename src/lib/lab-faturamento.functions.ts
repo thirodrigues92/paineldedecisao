@@ -59,6 +59,51 @@ export const labSyncDimensoes = createServerFn({ method: "POST" }).handler(async
   return { ok: true, count: dimProcs.length };
 });
 
+export const labSyncConvenio = createServerFn({ method: "POST" }).handler(async () => {
+  return { ok: true, message: "Use labSyncParticular com tipo_transacao='C' para convênios" };
+});
+
+export const clearLabData = createServerFn({ method: "POST" }).handler(async () => {
+  await supabaseAdmin.from("lab_faturamento").delete().neq("documento_id", 0);
+  await supabaseAdmin.from("lab_invoice_header").delete().neq("invoice_id", 0);
+  await supabaseAdmin.from("lab_recebimento").delete().neq("documento_id", 0);
+  await supabaseAdmin.from("lab_sync_log").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+  return { ok: true };
+});
+
+export const labDebugFeegow = createServerFn({ method: "POST" })
+  .inputValidator((data: { 
+    endpoint: string; 
+    params?: Record<string, string>; 
+    method?: "GET" | "POST"; 
+    body?: any 
+  }) => data)
+  .handler(async ({ data }) => {
+    const { endpoint, params, method = "GET", body } = data;
+    const url = new URL(`${FEEGOW_BASE}/${endpoint.replace(/^\//, '')}`);
+    if (params) {
+      Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+    }
+
+    const res = await fetch(url.toString(), {
+      method,
+      headers: { 
+        "x-access-token": FEEGOW_TOKEN(),
+        "Content-Type": "application/json"
+      },
+      body: body ? JSON.stringify(body) : undefined
+    });
+
+    const resBody = await res.json();
+    return {
+      http_status: res.status,
+      api_success: res.ok,
+      total_registros: resBody.content?.total || resBody.total || 0,
+      raw: resBody
+    };
+  });
+
+
 // --- AGENDA ---
 
 async function syncAgendaPeriodo(start: string, end: string) {
