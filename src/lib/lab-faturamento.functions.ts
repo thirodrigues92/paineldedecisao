@@ -21,11 +21,11 @@ function parseDataFeegow(v: any): string | null {
   return null;
 }
 
-function toFeegowDate(iso: string): string {
+function toFeegowDate(iso: string, separator: string = "-"): string {
   const d = new Date(iso);
   const dd = String(d.getUTCDate()).padStart(2, "0");
   const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
-  return `${dd}-${mm}-${d.getUTCFullYear()}`;
+  return `${dd}${separator}${mm}${separator}${d.getUTCFullYear()}`;
 }
 
 const FEEGOW_BASE = "https://api.feegow.com/v1/api";
@@ -502,3 +502,89 @@ export const getLabRelatorio = createServerFn({ method: "GET" })
     if (error) throw error;
     return rows || [];
   });
+
+export const labSyncProducao = createServerFn({ method: "POST" })
+  .inputValidator((data: { start_date: string; end_date: string; dry_run?: boolean }) => data)
+  .handler(async ({ data }) => {
+    const { start_date, end_date, dry_run = false } = data;
+    const resumo = {
+      total: 0,
+      inseridos: 0,
+      erros: 0,
+      logs: [] as string[]
+    };
+
+    const ds = toFeegowDate(start_date, "/");
+    const de = toFeegowDate(end_date, "/");
+
+    const fetchReport = async (reportSlug: string) => {
+      resumo.logs.push(`Tentando relatório: ${reportSlug} (${ds} a ${de})`);
+      const res = await fetch(`${FEEGOW_BASE}/reports/generate`, {
+        method: "POST",
+        headers: {
+          "x-access-token": FEEGOW_TOKEN(),
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          report: reportSlug,
+          DATA_INICIO: ds,
+          DATA_FIM: de
+        })
+      });
+      return await res.json();
+    };
+
+    let reportRes = await fetchReport("production");
+    
+    // Fallback para duration-of-service se production vier vazio/false
+    if (!reportRes.success || !reportRes.data || (Array.isArray(reportRes.data) && reportRes.data.length === 0)) {
+      resumo.logs.push(`Relatório 'production' sem dados ou erro. Iniciando fallback para 'duration-of-service'.`);
+      reportRes = await fetchReport("duration-of-service");
+    }
+
+    if (reportRes.success && Array.isArray(reportRes.data)) {
+      const rows = reportRes.data;
+      resumo.total = rows.length;
+      resumo.logs.push(`Processando ${rows.length} registros da API.`);
+
+      const records = rows.map((r: any) => ({
+        feegow_id: r.id ? BigInt(r.id) : BigInt(Math.floor(Math.random() * 1000000000)),
+        paciente_id: r.PacienteID ? BigInt(r.PacienteID) : null,
+        paciente_nome: r.NomePaciente || null,
+        agendamento_id: r.AgendamentoID ? BigInt(r.AgendamentoID) : null,
+        data_execucao: parseDataFeegow(r.Data),
+        hora_inicio: r.HoraInicio || r.Hora || null,
+        profissional_id: r.ProfissionalID ? BigInt(r.ProfissionalID) : null,
+        profissional_nome: r.NomeProfissional || null,
+        procedimento_id: r.ProcedimentoID ? BigInt(r.ProcedimentoID) : null,
+        procedimento_nome: r.NomeProcedimento || null,
+        valor: typeof r.Valor === 'number' ? r.Valor : Number(String(r.Valor || 0).replace(',', '.')),
+        convenio_nome: r.Origem || null,
+        unidade_id: r.UnidadeID ? BigInt(r.UnidadeID) : null,
+        payload_raw: r
+      }));
+
+      if (!dry_run && records.length > 0) {
+        const chunk = <T,>(arr: T[], n: number) => arr.reduce<T[][]>((acc, v, i) => {
+          if (i % n === 0) acc.push([]);
+          acc[acc.length - 1].push(v);
+          return acc;
+        }, []);
+
+        for (const bloco of chunk(records, 50)) {
+          const { error: fErr } = await supabaseAdmin.from("lab_producao_feegow").upsert(bloco, { onConflict: "feegow_id" });
+          if (fErr) {
+            resumo.erros += bloco.length;
+            resumo.logs.push(`Erro DB: ${fErr.message}`);
+          } else {
+            resumo.inseridos += bloco.length;
+          }
+        }
+      }
+    } else {
+      resumo.logs.push(`API respondeu sem dados (data: ${reportRes.data}).`);
+    }
+
+    return resumo;
+  });
+

@@ -539,6 +539,63 @@ export type Database = {
         }
         Relationships: []
       }
+      lab_producao_feegow: {
+        Row: {
+          agendamento_id: number | null
+          convenio_nome: string | null
+          created_at: string | null
+          data_execucao: string | null
+          feegow_id: number | null
+          hora_inicio: string | null
+          id: string
+          paciente_id: number | null
+          paciente_nome: string | null
+          payload_raw: Json | null
+          procedimento_id: number | null
+          procedimento_nome: string | null
+          profissional_id: number | null
+          profissional_nome: string | null
+          unidade_id: number | null
+          valor: number | null
+        }
+        Insert: {
+          agendamento_id?: number | null
+          convenio_nome?: string | null
+          created_at?: string | null
+          data_execucao?: string | null
+          feegow_id?: number | null
+          hora_inicio?: string | null
+          id?: string
+          paciente_id?: number | null
+          paciente_nome?: string | null
+          payload_raw?: Json | null
+          procedimento_id?: number | null
+          procedimento_nome?: string | null
+          profissional_id?: number | null
+          profissional_nome?: string | null
+          unidade_id?: number | null
+          valor?: number | null
+        }
+        Update: {
+          agendamento_id?: number | null
+          convenio_nome?: string | null
+          created_at?: string | null
+          data_execucao?: string | null
+          feegow_id?: number | null
+          hora_inicio?: string | null
+          id?: string
+          paciente_id?: number | null
+          paciente_nome?: string | null
+          payload_raw?: Json | null
+          procedimento_id?: number | null
+          procedimento_nome?: string | null
+          profissional_id?: number | null
+          profissional_nome?: string | null
+          unidade_id?: number | null
+          valor?: number | null
+        }
+        Relationships: []
+      }
       lab_recebimento: {
         Row: {
           bandeira_id: number | null
