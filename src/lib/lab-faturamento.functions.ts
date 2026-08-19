@@ -345,7 +345,7 @@ export const labSyncParticular = createServerFn({ method: "POST" })
         if (!dry_run) {
           console.log(`[SYNC] Gravando dados: headers=${headers.length}, faturamentos=${faturamentos.length}, recebimentos=${recebimentos.length}`);
           
-          // Grava em blocos para não estourar o payload
+          // Grava em blocos para não estourar o payload ou limite de tempo da rede
           const chunk = <T,>(arr: T[], n: number) => arr.reduce<T[][]>((acc, v, i) => {
             if (i % n === 0) acc.push([]);
             acc[acc.length - 1].push(v);
@@ -353,21 +353,24 @@ export const labSyncParticular = createServerFn({ method: "POST" })
           }, []);
 
           if (headers.length > 0) {
-            for (const bloco of chunk(headers, 200)) {
+            for (const bloco of chunk(headers, 100)) {
               const { error } = await supabaseAdmin.from("lab_invoice_header").upsert(bloco, { onConflict: "invoice_id" });
               if (error) console.error("[SYNC] Erro ao gravar headers:", error);
             }
           }
           
           if (faturamentos.length > 0) {
-            for (const bloco of chunk(faturamentos, 200)) {
+            for (const bloco of chunk(faturamentos, 100)) {
               const { error } = await supabaseAdmin.from("lab_faturamento").upsert(bloco, { onConflict: "origem,documento_id,item_id" });
-              if (error) console.error("[SYNC] Erro ao gravar faturamentos:", error);
+              if (error) {
+                console.error("[SYNC] Erro ao gravar faturamentos:", error);
+                throw new Error(`Erro DB Faturamento: ${error.message}`);
+              }
             }
           }
           
           if (recebimentos.length > 0) {
-            for (const bloco of chunk(recebimentos, 200)) {
+            for (const bloco of chunk(recebimentos, 100)) {
               const { error } = await supabaseAdmin.from("lab_recebimento").upsert(bloco, { onConflict: "origem,documento_id,pagamento_id" });
               if (error) console.error("[SYNC] Erro ao gravar recebimentos:", error);
             }
