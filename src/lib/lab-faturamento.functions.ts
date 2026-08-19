@@ -365,11 +365,16 @@ export const labSyncParticular = createServerFn({ method: "POST" })
           }, []);
 
           if (headers.length > 0) {
+            console.log(`[SYNC] Upserting ${headers.length} headers`);
             const { error: hErr } = await supabaseAdmin.from("lab_invoice_header").upsert(headers, { onConflict: "invoice_id" });
-            if (hErr) console.error("[SYNC] Erro headers:", hErr);
+            if (hErr) {
+               console.error("[SYNC] Erro headers:", hErr);
+               throw new Error(`Erro DB Headers: ${hErr.message}`);
+            }
           }
           
           if (faturamentos.length > 0) {
+            console.log(`[SYNC] Upserting ${faturamentos.length} faturamentos`);
             for (const bloco of chunk(faturamentos, 50)) {
               const { error: fErr } = await supabaseAdmin.from("lab_faturamento").upsert(bloco, { onConflict: "origem,documento_id,item_id" });
               if (fErr) {
@@ -380,9 +385,13 @@ export const labSyncParticular = createServerFn({ method: "POST" })
           }
           
           if (recebimentos.length > 0) {
+            console.log(`[SYNC] Upserting ${recebimentos.length} recebimentos`);
             for (const bloco of chunk(recebimentos, 50)) {
               const { error: rErr } = await supabaseAdmin.from("lab_recebimento").upsert(bloco, { onConflict: "origem,documento_id,pagamento_id" });
-              if (rErr) console.error("[SYNC] Erro recebimento:", rErr);
+              if (rErr) {
+                 console.error("[SYNC] Erro recebimento:", rErr);
+                 throw new Error(`Erro DB Recebimento: ${rErr.message}`);
+              }
             }
           }
           console.log(`[SYNC] Gravação concluída para a janela.`);
