@@ -565,22 +565,35 @@ export const labSyncProducao = createServerFn({ method: "POST" })
       resumo.total = rows.length;
       resumo.logs.push(`Processando ${rows.length} registros da API.`);
 
-      const records = rows.map((r: any) => ({
-        feegow_id: r.id ? BigInt(r.id) : BigInt(Math.floor(Math.random() * 1000000000)),
-        paciente_id: r.PacienteID ? BigInt(r.PacienteID) : null,
-        paciente_nome: r.NomePaciente || null,
-        agendamento_id: r.AgendamentoID ? BigInt(r.AgendamentoID) : null,
-        data_execucao: parseDataFeegow(r.Data),
-        hora_inicio: r.HoraInicio || r.Hora || null,
-        profissional_id: r.ProfissionalID ? BigInt(r.ProfissionalID) : null,
-        profissional_nome: r.NomeProfissional || null,
-        procedimento_id: r.ProcedimentoID ? BigInt(r.ProcedimentoID) : null,
-        procedimento_nome: r.NomeProcedimento || null,
-        valor: typeof r.Valor === 'number' ? r.Valor : Number(String(r.Valor || 0).replace(',', '.')),
-        convenio_nome: r.Origem || null,
-        unidade_id: r.UnidadeID ? BigInt(r.UnidadeID) : null,
-        payload_raw: r
-      }));
+      const records = rows.map((r: any) => {
+        // Safe conversion to BigInt or null
+        const toBigInt = (val: any) => {
+          if (val === undefined || val === null || val === "") return null;
+          try {
+            return BigInt(val);
+          } catch (e) {
+            console.error(`[SYNC-PRODUCAO] Erro ao converter BigInt: ${val}`, e);
+            return null;
+          }
+        };
+
+        return {
+          feegow_id: toBigInt(r.id) || BigInt(Math.floor(Math.random() * 1000000000)),
+          paciente_id: toBigInt(r.PacienteID),
+          paciente_nome: r.NomePaciente || null,
+          agendamento_id: toBigInt(r.AgendamentoID),
+          data_execucao: parseDataFeegow(r.Data),
+          hora_inicio: r.HoraInicio || r.Hora || null,
+          profissional_id: toBigInt(r.ProfissionalID),
+          profissional_nome: r.NomeProfissional || null,
+          procedimento_id: toBigInt(r.ProcedimentoID),
+          procedimento_nome: r.NomeProcedimento || null,
+          valor: typeof r.Valor === 'number' ? r.Valor : Number(String(r.Valor || 0).replace(',', '.')),
+          convenio_nome: r.Origem || null,
+          unidade_id: toBigInt(r.UnidadeID),
+          payload_raw: r
+        };
+      });
 
       if (!dry_run && records.length > 0) {
         const chunk = <T,>(arr: T[], n: number) => arr.reduce<T[][]>((acc, v, i) => {
