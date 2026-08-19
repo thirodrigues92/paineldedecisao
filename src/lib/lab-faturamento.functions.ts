@@ -662,20 +662,23 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const { data_inicio, data_fim } = data;
     
-    // 1. Buscar agendamentos do período (tabela de produção)
+    // 1. Buscar atendimentos realizados na produção
     const { data: agenda, error: aErr } = await supabaseAdmin
-      .from("agendamentos")
+      .from("lab_producao_feegow")
       .select(`
         agendamento_id,
-        data,
-        valor_estimado,
+        data_execucao,
+        valor,
         paciente_id,
         profissional_id,
-        procedimento_id
+        procedimento_id,
+        paciente_nome,
+        prontuario
       `)
-      .gte("data", data_inicio)
-      .lte("data", data_fim)
-      .order("data", { ascending: false });
+      .gte("data_execucao", data_inicio)
+      .lte("data_execucao", data_fim)
+      .order("data_execucao", { ascending: false });
+
 
     if (aErr) throw aErr;
 
