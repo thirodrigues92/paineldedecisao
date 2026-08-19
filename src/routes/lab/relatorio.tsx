@@ -102,10 +102,10 @@ function LabRelatorio() {
         .from('lab_faturamento')
         .select(`
           *,
-          paciente:pacientes(nome),
+          paciente:pacientes!paciente_id(nome),
           procedimento:lab_dim_procedimento(nome),
-          profissional:profissionais(nome),
-          convenio:convenios(nome)
+          profissional:profissionais!profissional_id(nome),
+          convenio:convenios!convenio_id(nome)
         `)
         .order('data_competencia', { ascending: false });
 
