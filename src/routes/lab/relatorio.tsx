@@ -313,7 +313,20 @@ function LabRelatorio() {
                   </TableRow>
                 ) : filteredData.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="h-32 text-center text-muted-foreground">Nenhum registro encontrado para comparação.</TableCell>
+                    <TableCell colSpan={9} className="h-32 text-center text-muted-foreground flex flex-col items-center justify-center gap-4">
+                      <span>Nenhum registro encontrado para comparação no período selecionado.</span>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={() => setShowSyncPanel(true)}>
+                          <RefreshCw className="w-3 h-3 mr-2" />
+                          Tentar Sincronizar Agora
+                        </Button>
+                        <Link to="/lab/faturamento">
+                          <Button variant="ghost" size="sm">
+                            Ver Logs de Sync
+                          </Button>
+                        </Link>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ) : (
                   filteredData.map((item: any) => (

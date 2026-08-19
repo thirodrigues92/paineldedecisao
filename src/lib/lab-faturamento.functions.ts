@@ -190,14 +190,15 @@ export const labSyncParticular = createServerFn({ method: "POST" })
       }
 
       try {
-        // O endpoint IGNORA start/offset: devolve o período inteiro em uma única resposta.
-        // Por isso fazemos UMA chamada por janela de data (paginar causava laço infinito).
+        // O endpoint financial/list-invoice precisa de parâmetros específicos para trazer itens e pagamentos
         const url = new URL(`${FEEGOW_BASE}/financial/list-invoice`);
         url.searchParams.set("data_start", ds);
         url.searchParams.set("data_end", de);
         url.searchParams.set("tipo_transacao", tipo_transacao);
         url.searchParams.set("unidade_id", "0");
-        // Removidos billing=1 e show_items=1 pois podem estar filtrando ou falhando
+        url.searchParams.set("billing", "1");
+        url.searchParams.set("show_items", "1");
+        url.searchParams.set("show_payments", "1");
 
 
 
@@ -342,6 +343,8 @@ export const labSyncParticular = createServerFn({ method: "POST" })
         }
 
         if (!dry_run) {
+          console.log(`[SYNC] Gravando dados: headers=${headers.length}, faturamentos=${faturamentos.length}, recebimentos=${recebimentos.length}`);
+          
           // Grava em blocos para não estourar o payload
           const chunk = <T,>(arr: T[], n: number) => arr.reduce<T[][]>((acc, v, i) => {
             if (i % n === 0) acc.push([]);
@@ -349,14 +352,25 @@ export const labSyncParticular = createServerFn({ method: "POST" })
             return acc;
           }, []);
 
-          for (const bloco of chunk(headers, 200)) {
-            await supabaseAdmin.from("lab_invoice_header").upsert(bloco, { onConflict: "invoice_id" });
+          if (headers.length > 0) {
+            for (const bloco of chunk(headers, 200)) {
+              const { error } = await supabaseAdmin.from("lab_invoice_header").upsert(bloco, { onConflict: "invoice_id" });
+              if (error) console.error("[SYNC] Erro ao gravar headers:", error);
+            }
           }
-          for (const bloco of chunk(faturamentos, 200)) {
-            await supabaseAdmin.from("lab_faturamento").upsert(bloco, { onConflict: "origem,documento_id,item_id" });
+          
+          if (faturamentos.length > 0) {
+            for (const bloco of chunk(faturamentos, 200)) {
+              const { error } = await supabaseAdmin.from("lab_faturamento").upsert(bloco, { onConflict: "origem,documento_id,item_id" });
+              if (error) console.error("[SYNC] Erro ao gravar faturamentos:", error);
+            }
           }
-          for (const bloco of chunk(recebimentos, 200)) {
-            await supabaseAdmin.from("lab_recebimento").upsert(bloco, { onConflict: "origem,documento_id,pagamento_id" });
+          
+          if (recebimentos.length > 0) {
+            for (const bloco of chunk(recebimentos, 200)) {
+              const { error } = await supabaseAdmin.from("lab_recebimento").upsert(bloco, { onConflict: "origem,documento_id,pagamento_id" });
+              if (error) console.error("[SYNC] Erro ao gravar recebimentos:", error);
+            }
           }
         }
 
@@ -383,7 +397,8 @@ export const labSyncParticular = createServerFn({ method: "POST" })
             parametros: { ds, de, tipo_transacao, duplicados },
             api_success: true,
             registros: windowContasCount,
-            erro: duplicados > 0 ? "paginacao_ignorada_pelo_endpoint" : "concluido"
+            erro: duplicados > 0 ? "paginacao_ignorada_pelo_endpoint" : "concluido",
+            amostra_raw: windowAmostra.length > 0 ? windowAmostra[0] : null
           });
         }
 
