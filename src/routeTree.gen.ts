@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LabRelatorioRouteImport } from './routes/lab/relatorio'
 import { Route as LabFaturamentoRouteImport } from './routes/lab/faturamento'
 import { Route as AuthenticatedUnidadesRouteImport } from './routes/_authenticated/unidades'
 import { Route as AuthenticatedRelatorioAtendimentosRouteImport } from './routes/_authenticated/relatorio-atendimentos'
@@ -41,6 +42,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LabRelatorioRoute = LabRelatorioRouteImport.update({
+  id: '/lab/relatorio',
+  path: '/lab/relatorio',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LabFaturamentoRoute = LabFaturamentoRouteImport.update({
@@ -145,6 +151,7 @@ export interface FileRoutesByFullPath {
   '/relatorio-atendimentos': typeof AuthenticatedRelatorioAtendimentosRoute
   '/unidades': typeof AuthenticatedUnidadesRoute
   '/lab/faturamento': typeof LabFaturamentoRoute
+  '/lab/relatorio': typeof LabRelatorioRoute
   '/analytics/aplicacoes': typeof AuthenticatedAnalyticsAplicacoesRoute
   '/analytics/capacidade': typeof AuthenticatedAnalyticsCapacidadeRoute
   '/analytics/comercial': typeof AuthenticatedAnalyticsComercialRoute
@@ -165,6 +172,7 @@ export interface FileRoutesByTo {
   '/relatorio-atendimentos': typeof AuthenticatedRelatorioAtendimentosRoute
   '/unidades': typeof AuthenticatedUnidadesRoute
   '/lab/faturamento': typeof LabFaturamentoRoute
+  '/lab/relatorio': typeof LabRelatorioRoute
   '/analytics/aplicacoes': typeof AuthenticatedAnalyticsAplicacoesRoute
   '/analytics/capacidade': typeof AuthenticatedAnalyticsCapacidadeRoute
   '/analytics/comercial': typeof AuthenticatedAnalyticsComercialRoute
@@ -187,6 +195,7 @@ export interface FileRoutesById {
   '/_authenticated/relatorio-atendimentos': typeof AuthenticatedRelatorioAtendimentosRoute
   '/_authenticated/unidades': typeof AuthenticatedUnidadesRoute
   '/lab/faturamento': typeof LabFaturamentoRoute
+  '/lab/relatorio': typeof LabRelatorioRoute
   '/_authenticated/analytics/aplicacoes': typeof AuthenticatedAnalyticsAplicacoesRoute
   '/_authenticated/analytics/capacidade': typeof AuthenticatedAnalyticsCapacidadeRoute
   '/_authenticated/analytics/comercial': typeof AuthenticatedAnalyticsComercialRoute
@@ -209,6 +218,7 @@ export interface FileRouteTypes {
     | '/relatorio-atendimentos'
     | '/unidades'
     | '/lab/faturamento'
+    | '/lab/relatorio'
     | '/analytics/aplicacoes'
     | '/analytics/capacidade'
     | '/analytics/comercial'
@@ -229,6 +239,7 @@ export interface FileRouteTypes {
     | '/relatorio-atendimentos'
     | '/unidades'
     | '/lab/faturamento'
+    | '/lab/relatorio'
     | '/analytics/aplicacoes'
     | '/analytics/capacidade'
     | '/analytics/comercial'
@@ -250,6 +261,7 @@ export interface FileRouteTypes {
     | '/_authenticated/relatorio-atendimentos'
     | '/_authenticated/unidades'
     | '/lab/faturamento'
+    | '/lab/relatorio'
     | '/_authenticated/analytics/aplicacoes'
     | '/_authenticated/analytics/capacidade'
     | '/_authenticated/analytics/comercial'
@@ -262,6 +274,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   LabFaturamentoRoute: typeof LabFaturamentoRoute
+  LabRelatorioRoute: typeof LabRelatorioRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -285,6 +298,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lab/relatorio': {
+      id: '/lab/relatorio'
+      path: '/lab/relatorio'
+      fullPath: '/lab/relatorio'
+      preLoaderRoute: typeof LabRelatorioRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/lab/faturamento': {
@@ -448,6 +468,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   LabFaturamentoRoute: LabFaturamentoRoute,
+  LabRelatorioRoute: LabRelatorioRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
