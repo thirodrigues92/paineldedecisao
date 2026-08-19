@@ -124,15 +124,23 @@ async function syncAgendaPeriodo(start: string, end: string) {
     url.searchParams.set("start", String(offset));
     url.searchParams.set("offset", String(limit));
 
+    console.log(`[SYNC-AGENDA] Requesting: ${url.toString()}`);
     const res = await fetch(url.toString(), { headers });
     const body = await res.json();
+    
+    // Feegow API can return content.appointments or just content
     const list = body.content?.appointments || body.content || [];
     
-    if (!Array.isArray(list) || list.length === 0) break;
+    if (!Array.isArray(list) || list.length === 0) {
+      console.log(`[SYNC-AGENDA] Nenhuma agenda encontrada ou fim da lista.`);
+      break;
+    }
+
+    console.log(`[SYNC-AGENDA] Recebidos ${list.length} registros (offset ${offset})`);
 
     for (const a of list) {
       agendamentos.push({
-        agendamento_id: Number(a.id),
+        agendamento_id: BigInt(a.id),
         convenio_id: a.convenio_id ? Number(a.convenio_id) : null,
         plano_id: a.plano_id ? Number(a.plano_id) : null,
         paciente_id: a.paciente_id ? Number(a.paciente_id) : null,
