@@ -122,6 +122,13 @@ function LabRelatorio() {
     }
   });
 
+  const filteredProducaoData = useMemo(() => {
+    if (!producaoData) return [];
+    return producaoData.filter((item: any) => {
+      const searchStr = `${item.paciente_nome || ''} ${item.procedimento_nome || ''} ${item.profissional_nome || ''} ${item.convenio_nome || ''}`.toLowerCase();
+      return searchStr.includes(searchTerm.toLowerCase());
+    });
+  }, [producaoData, searchTerm]);
 
   const { data: reportData, isLoading } = useQuery({
     queryKey: ['lab-relatorio-comparativo', dateRange.start.toISOString().split('T')[0], dateRange.end.toISOString().split('T')[0]],
