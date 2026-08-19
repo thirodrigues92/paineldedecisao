@@ -35,7 +35,16 @@ function LabRelatorio() {
   const queryClient = useQueryClient();
 
   const syncMutation = useMutation({
-    mutationFn: async ({ start, end }: { start: string, end: string }) => {
+    mutationFn: async ({ start, end, type }: { start: string, end: string, type: 'faturamento' | 'producao' }) => {
+      if (type === 'producao') {
+        return labSyncProducao({ 
+          data: { 
+            start_date: start, 
+            end_date: end,
+            dry_run: false
+          } 
+        });
+      }
       return labSyncParticular({ 
         data: { 
           data_inicio: start, 
@@ -47,14 +56,19 @@ function LabRelatorio() {
         } 
       });
     },
-    onSuccess: () => {
+    onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ['lab-relatorio-comparativo'] });
-      toast.success("Sincronização concluída!");
+      queryClient.invalidateQueries({ queryKey: ['lab-producao'] });
+      
+      const msg = (res as any).inseridos !== undefined 
+        ? `Sincronizados ${res.inseridos} registros!`
+        : "Sincronização concluída!";
+      toast.success(msg);
     },
     onError: (e) => toast.error("Erro na sincronização: " + String(e))
   });
 
-  const runSync = async () => {
+  const runSync = async (type: 'faturamento' | 'producao' = 'faturamento') => {
     setIsSyncing(true);
     setSyncProgress(10);
     
@@ -62,7 +76,7 @@ function LabRelatorio() {
     const endStr = dateRange.end.toISOString().split('T')[0];
 
     try {
-      await syncMutation.mutateAsync({ start: startStr, end: endStr });
+      await syncMutation.mutateAsync({ start: startStr, end: endStr, type });
       setSyncProgress(100);
     } finally {
       setTimeout(() => {
@@ -72,7 +86,7 @@ function LabRelatorio() {
     }
   };
   
-  const syncYesterday = async () => {
+  const syncYesterday = async (type: 'faturamento' | 'producao' = 'faturamento') => {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     setDateRange({ start: yesterday, end: yesterday });
@@ -83,7 +97,7 @@ function LabRelatorio() {
     const dateStr = yesterday.toISOString().split('T')[0];
 
     try {
-      await syncMutation.mutateAsync({ start: dateStr, end: dateStr });
+      await syncMutation.mutateAsync({ start: dateStr, end: dateStr, type });
       setSyncProgress(100);
     } finally {
       setTimeout(() => {
@@ -92,6 +106,21 @@ function LabRelatorio() {
       }, 1000);
     }
   };
+
+  const { data: producaoData, isLoading: isLoadingProd } = useQuery({
+    queryKey: ['lab-producao', dateRange.start.toISOString(), dateRange.end.toISOString()],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('lab_producao_feegow')
+        .select('*')
+        .gte("data_execucao", dateRange.start.toISOString().split('T')[0])
+        .lte("data_execucao", dateRange.end.toISOString().split('T')[0])
+        .order('data_execucao', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    }
+  });
 
 
   const { data: reportData, isLoading } = useQuery({
