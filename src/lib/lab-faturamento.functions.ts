@@ -337,7 +337,7 @@ export const labSyncParticular = createServerFn({ method: "POST" })
             recebimentos.push({
               origem: 'particular',
               documento_id: invoice_id,
-              pagamento_id: Number(pag.pagamento_id),
+              pagamento_id: pag.pagamento_id ? Number(pag.pagamento_id) : Math.floor(Math.random() * 1000000),
               data_pagamento: parseDataFeegow(pag.data),
               valor_recebido: valPag,
               forma_pagamento: pag.forma_pagamento,
