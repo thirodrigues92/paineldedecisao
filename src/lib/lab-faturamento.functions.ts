@@ -390,7 +390,10 @@ export const labSyncParticular = createServerFn({ method: "POST" })
           if (faturamentos.length > 0) {
             for (const bloco of chunk(faturamentos, 50)) {
               const { error: fErr } = await supabaseAdmin.from("lab_faturamento").upsert(bloco, { onConflict: "origem,documento_id,item_id" });
-              if (fErr) throw new Error(`Erro DB Faturamento: ${fErr.message}`);
+              if (fErr) {
+                console.error("[SYNC] Erro detalhado faturamento:", JSON.stringify(fErr), "Amostra bloco:", JSON.stringify(bloco[0]));
+                throw new Error(`Erro DB Faturamento: ${fErr.message}`);
+              }
             }
           }
           
