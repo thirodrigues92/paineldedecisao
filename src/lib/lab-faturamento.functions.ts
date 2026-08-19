@@ -342,6 +342,8 @@ export const labSyncParticular = createServerFn({ method: "POST" })
         }
 
         if (!dry_run) {
+          console.log(`[SYNC] Gravando dados: headers=${headers.length}, faturamentos=${faturamentos.length}, recebimentos=${recebimentos.length}`);
+          
           // Grava em blocos para não estourar o payload
           const chunk = <T,>(arr: T[], n: number) => arr.reduce<T[][]>((acc, v, i) => {
             if (i % n === 0) acc.push([]);
@@ -349,14 +351,25 @@ export const labSyncParticular = createServerFn({ method: "POST" })
             return acc;
           }, []);
 
-          for (const bloco of chunk(headers, 200)) {
-            await supabaseAdmin.from("lab_invoice_header").upsert(bloco, { onConflict: "invoice_id" });
+          if (headers.length > 0) {
+            for (const bloco of chunk(headers, 200)) {
+              const { error } = await supabaseAdmin.from("lab_invoice_header").upsert(bloco, { onConflict: "invoice_id" });
+              if (error) console.error("[SYNC] Erro ao gravar headers:", error);
+            }
           }
-          for (const bloco of chunk(faturamentos, 200)) {
-            await supabaseAdmin.from("lab_faturamento").upsert(bloco, { onConflict: "origem,documento_id,item_id" });
+          
+          if (faturamentos.length > 0) {
+            for (const bloco of chunk(faturamentos, 200)) {
+              const { error } = await supabaseAdmin.from("lab_faturamento").upsert(bloco, { onConflict: "origem,documento_id,item_id" });
+              if (error) console.error("[SYNC] Erro ao gravar faturamentos:", error);
+            }
           }
-          for (const bloco of chunk(recebimentos, 200)) {
-            await supabaseAdmin.from("lab_recebimento").upsert(bloco, { onConflict: "origem,documento_id,pagamento_id" });
+          
+          if (recebimentos.length > 0) {
+            for (const bloco of chunk(recebimentos, 200)) {
+              const { error } = await supabaseAdmin.from("lab_recebimento").upsert(bloco, { onConflict: "origem,documento_id,pagamento_id" });
+              if (error) console.error("[SYNC] Erro ao gravar recebimentos:", error);
+            }
           }
         }
 
