@@ -396,7 +396,8 @@ export const labSyncParticular = createServerFn({ method: "POST" })
             parametros: { ds, de, tipo_transacao, duplicados },
             api_success: true,
             registros: windowContasCount,
-            erro: duplicados > 0 ? "paginacao_ignorada_pelo_endpoint" : "concluido"
+            erro: duplicados > 0 ? "paginacao_ignorada_pelo_endpoint" : "concluido",
+            amostra_raw: windowAmostra.length > 0 ? windowAmostra[0] : null
           });
         }
 
