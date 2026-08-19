@@ -94,7 +94,7 @@ function LabRelatorio() {
 
 
   const { data: reportData, isLoading } = useQuery({
-    queryKey: ['lab-relatorio-comparativo'],
+    queryKey: ['lab-relatorio-comparativo', dateRange.start.toISOString(), dateRange.end.toISOString()],
     queryFn: async () => {
       // Buscamos dados do lab_faturamento enriquecidos
       const { data, error } = await supabase
@@ -106,6 +106,8 @@ function LabRelatorio() {
           profissional:profissionais!profissional_id(nome),
           convenio:convenios!convenio_id(nome)
         `)
+        .gte("data_competencia", dateRange.start.toISOString().split('T')[0])
+        .lte("data_competencia", dateRange.end.toISOString().split('T')[0])
         .order('data_competencia', { ascending: false })
         .limit(1000);
 

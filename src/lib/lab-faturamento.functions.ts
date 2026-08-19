@@ -8,8 +8,6 @@ function parseValorCentavos(v: any): number {
   if (typeof v === "number") return v / 100;
   const s = String(v).replace(/R\$\s?/g, "").trim();
   if (!s) return 0;
-  // Se for uma string formatada como "1.234,56", convertemos para número e mantemos reais (pois o Feegow as vezes manda formatado ou centavos puros)
-  // REGRA CONSOLIDADA: API manda centavos puros (inteiro) na maioria dos campos de list-invoice
   const num = Number(s.replace(/\./g, "").replace(",", "."));
   return (num || 0) / 100;
 }
@@ -17,9 +15,7 @@ function parseValorCentavos(v: any): number {
 function parseDataFeegow(v: any): string | null {
   if (!v) return null;
   const s = String(v).trim();
-  // Formato ISO: YYYY-MM-DD
   if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.substring(0, 10);
-  // Formato Feegow: DD-MM-YYYY
   const m = s.match(/^(\d{2})-(\d{2})-(\d{4})/);
   if (m) return `${m[3]}-${m[2]}-${m[1]}`;
   return null;
@@ -39,14 +35,11 @@ const FEEGOW_TOKEN = () => process.env.FEEGOW_API_TOKEN ?? "";
 
 export const labSyncDimensoes = createServerFn({ method: "POST" }).handler(async () => {
   const headers = { "x-access-token": FEEGOW_TOKEN() };
-  
-  // 1. Grupos
   const groupsRes = await fetch(`${FEEGOW_BASE}/procedures/groups`, { headers });
   const groupsBody = await groupsRes.json();
   const groups = groupsBody.content || [];
   const groupsMap = new Map(groups.map((g: any) => [Number(g.id), g.nome]));
 
-  // 2. Procedimentos
   const procRes = await fetch(`${FEEGOW_BASE}/procedures/list`, { headers });
   const procBody = await procRes.json();
   const list = procBody.content || [];
@@ -66,6 +59,51 @@ export const labSyncDimensoes = createServerFn({ method: "POST" }).handler(async
   return { ok: true, count: dimProcs.length };
 });
 
+export const labSyncConvenio = createServerFn({ method: "POST" }).handler(async () => {
+  return { ok: true, message: "Use labSyncParticular com tipo_transacao='C' para convênios" };
+});
+
+export const clearLabData = createServerFn({ method: "POST" }).handler(async () => {
+  await supabaseAdmin.from("lab_faturamento").delete().neq("documento_id", 0);
+  await supabaseAdmin.from("lab_invoice_header").delete().neq("invoice_id", 0);
+  await supabaseAdmin.from("lab_recebimento").delete().neq("documento_id", 0);
+  await supabaseAdmin.from("lab_sync_log").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+  return { ok: true };
+});
+
+export const labDebugFeegow = createServerFn({ method: "POST" })
+  .inputValidator((data: { 
+    endpoint: string; 
+    params?: Record<string, string>; 
+    method?: "GET" | "POST"; 
+    body?: any 
+  }) => data)
+  .handler(async ({ data }) => {
+    const { endpoint, params, method = "GET", body } = data;
+    const url = new URL(`${FEEGOW_BASE}/${endpoint.replace(/^\//, '')}`);
+    if (params) {
+      Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+    }
+
+    const res = await fetch(url.toString(), {
+      method,
+      headers: { 
+        "x-access-token": FEEGOW_TOKEN(),
+        "Content-Type": "application/json"
+      },
+      body: body ? JSON.stringify(body) : undefined
+    });
+
+    const resBody = await res.json();
+    return {
+      http_status: res.status,
+      api_success: res.ok,
+      total_registros: resBody.content?.total || resBody.total || 0,
+      raw: resBody
+    };
+  });
+
+
 // --- AGENDA ---
 
 async function syncAgendaPeriodo(start: string, end: string) {
@@ -73,11 +111,15 @@ async function syncAgendaPeriodo(start: string, end: string) {
   let offset = 0;
   const limit = 50;
   const agendamentos: any[] = [];
+  const ds = toFeegowDate(start);
+  const de = toFeegowDate(end);
+
+  console.log(`[SYNC-AGENDA] Buscando agenda de ${ds} a ${de}`);
 
   while (true) {
     const url = new URL(`${FEEGOW_BASE}/appoints/search`);
-    url.searchParams.set("data_start", toFeegowDate(start));
-    url.searchParams.set("data_end", toFeegowDate(end));
+    url.searchParams.set("data_start", ds);
+    url.searchParams.set("data_end", de);
     url.searchParams.set("list_procedures", "1");
     url.searchParams.set("start", String(offset));
     url.searchParams.set("offset", String(limit));
@@ -108,7 +150,9 @@ async function syncAgendaPeriodo(start: string, end: string) {
   }
 
   if (agendamentos.length) {
-    await supabaseAdmin.from("lab_dim_agendamento").upsert(agendamentos, { onConflict: "agendamento_id" });
+    console.log(`[SYNC-AGENDA] Gravando ${agendamentos.length} agendamentos.`);
+    const { error } = await supabaseAdmin.from("lab_dim_agendamento").upsert(agendamentos, { onConflict: "agendamento_id" });
+    if (error) console.error("[SYNC-AGENDA] Erro DB:", error);
   }
   return agendamentos.length;
 }
@@ -128,10 +172,11 @@ export const labSyncParticular = createServerFn({ method: "POST" })
     const { data_inicio, data_fim, tipo_transacao = 'C', tamanho_janela = 7, dry_run = false, limpar_antes = false } = data;
     
     if (limpar_antes && !dry_run) {
+      console.log(`[SYNC] Limpando dados de ${data_inicio} a ${data_fim}`);
+      await supabaseAdmin.from("lab_invoice_header").delete().gte("data", data_inicio).lte("data", data_fim);
       await supabaseAdmin.from("lab_faturamento").delete().gte("data_competencia", data_inicio).lte("data_competencia", data_fim).eq("tipo_transacao", tipo_transacao);
     }
 
-    // 1. Sincronizar Agenda do período primeiro para o JOIN funcionar
     if (!dry_run) {
       await syncAgendaPeriodo(data_inicio, data_fim);
     }
@@ -153,7 +198,6 @@ export const labSyncParticular = createServerFn({ method: "POST" })
       divergencias: 0
     };
 
-    // Fila de janelas (permite split recursivo em caso de cod_erro=1)
     const fila: Array<{ ini: Date; fim: Date }> = [];
     while (currentStart <= endTotal) {
       const currentEnd = new Date(currentStart);
@@ -178,7 +222,6 @@ export const labSyncParticular = createServerFn({ method: "POST" })
       let windowValorRecebido = 0;
       let windowAmostra: any[] = [];
 
-      // 1. Log de INÍCIO obrigatório
       if (!dry_run) {
         await supabaseAdmin.from("lab_sync_log").insert({
           endpoint: "financial/list-invoice",
@@ -190,7 +233,6 @@ export const labSyncParticular = createServerFn({ method: "POST" })
       }
 
       try {
-        // O endpoint financial/list-invoice precisa de parâmetros específicos para trazer itens e pagamentos
         const url = new URL(`${FEEGOW_BASE}/financial/list-invoice`);
         url.searchParams.set("data_start", ds);
         url.searchParams.set("data_end", de);
@@ -200,42 +242,23 @@ export const labSyncParticular = createServerFn({ method: "POST" })
         url.searchParams.set("show_items", "1");
         url.searchParams.set("show_payments", "1");
 
-
-
-        // 2. Try/catch + 3. Timeout explícito (20s)
         let body: any;
-        try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 20000);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 20000);
 
-          const res = await fetch(url.toString(), {
-            headers: { "x-access-token": FEEGOW_TOKEN() },
-            signal: controller.signal
-          });
-          clearTimeout(timeoutId);
+        const res = await fetch(url.toString(), {
+          headers: { "x-access-token": FEEGOW_TOKEN() },
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
 
-          if (!res.ok) {
-            const errText = await res.text();
-            throw new Error(`HTTP ${res.status}: ${errText}`);
-          }
-
-          body = await res.json();
-        } catch (fetchErr: any) {
-          const errorMsg = fetchErr.name === 'AbortError' ? 'timeout' : fetchErr.message;
-          if (!dry_run) {
-            await supabaseAdmin.from("lab_sync_log").insert({
-              endpoint: "financial/list-invoice",
-              parametros: { ds, de, tipo_transacao },
-              api_success: false,
-              registros: 0,
-              erro: `Erro fetch: ${errorMsg}`,
-              http_status: null
-            });
-          }
-          throw fetchErr; // Propaga para o catch externo lidar com split
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(`HTTP ${res.status}: ${errText}`);
         }
 
-        // Caso a API retorne erro de memória ou limite, forçar split
+        body = await res.json();
+
         if (!body.success && body.cod_erro === 1 && spanDias > 1) {
           throw new Error("RETRY_SPLIT");
         }
@@ -254,14 +277,17 @@ export const labSyncParticular = createServerFn({ method: "POST" })
         let duplicados = 0;
 
         for (const invoice of lista) {
-          const invoice_id = Number(invoice.invoice_id);
-          // Guarda anti-duplicidade dentro da mesma resposta (mesmo sem laço while, mantemos por segurança)
-          if (vistos.has(invoice_id)) { 
+          // Garante que invoice_id é BigInt
+          const invoice_id_raw = invoice.invoice_id ? Number(invoice.invoice_id) : null;
+          if (!invoice_id_raw) continue;
+
+          if (vistos.has(invoice_id_raw)) { 
             duplicados++; 
             continue; 
           }
-          vistos.add(invoice_id);
+          vistos.add(invoice_id_raw);
 
+          const invoice_id = BigInt(invoice_id_raw);
           const headerVal = parseValorCentavos(invoice.detalhes?.[0]?.valor);
 
           headers.push({
@@ -284,13 +310,13 @@ export const labSyncParticular = createServerFn({ method: "POST" })
             if (item.agendamento_id) resumo.com_agendamento++;
             if (item.procedimento_id) resumo.com_procedimento++;
 
+            const item_id = item.item_id ? BigInt(item.item_id) : BigInt(Math.floor(Math.random() * 1000000000));
+
             faturamentos.push({
               origem: 'particular',
               documento_id: invoice_id,
-              item_id: Number(item.item_id),
+              item_id: item_id,
               agendamento_id: item.agendamento_id ? Number(item.agendamento_id) : null,
-              // Fallback importante: a API no list-invoice as vezes não manda o paciente_id no topo, 
-              // mas a agenda (syncAgendaPeriodo) tem esse dado. O lab_enriquecer_faturamento vai completar via agendamento_id.
               paciente_id: invoice.paciente_id ? Number(invoice.paciente_id) : null,
               profissional_id: item.executante_id ? Number(item.executante_id) : null,
               unidade_id: invoice.unidade_id ? Number(invoice.unidade_id) : null,
@@ -302,13 +328,13 @@ export const labSyncParticular = createServerFn({ method: "POST" })
               acrescimo: acre,
               valor_faturado: finalVal,
               is_cancelado: isCancelado,
-               tipo_transacao: tipo_transacao,
-               payload_raw: {
-                 ...item,
-                 _debug_invoice_header: invoice.detalhes?.[0],
-                 _debug_sync_at: new Date().toISOString()
-               }
-             });
+              tipo_transacao: tipo_transacao,
+              payload_raw: {
+                ...item,
+                _debug_invoice_header: invoice.detalhes?.[0],
+                _debug_sync_at: new Date().toISOString()
+              }
+            });
 
             somaItensInvoice += finalVal;
             resumo.soma_faturada += finalVal;
@@ -321,10 +347,12 @@ export const labSyncParticular = createServerFn({ method: "POST" })
 
           for (const pag of (invoice.pagamentos || [])) {
             const valPag = parseValorCentavos(pag.valor);
+            const pagamento_id = pag.pagamento_id ? BigInt(pag.pagamento_id) : BigInt(Math.floor(Math.random() * 1000000000));
+            
             recebimentos.push({
               origem: 'particular',
               documento_id: invoice_id,
-              pagamento_id: Number(pag.pagamento_id),
+              pagamento_id: pagamento_id,
               data_pagamento: parseDataFeegow(pag.data),
               valor_recebido: valPag,
               forma_pagamento: pag.forma_pagamento,
@@ -343,9 +371,8 @@ export const labSyncParticular = createServerFn({ method: "POST" })
         }
 
         if (!dry_run) {
-          console.log(`[SYNC] Gravando dados: headers=${headers.length}, faturamentos=${faturamentos.length}, recebimentos=${recebimentos.length}`);
+          console.log(`[SYNC] Gravando ${lista.length} invoices da janela ${ds} a ${de}`);
           
-          // Grava em blocos para não estourar o payload ou limite de tempo da rede
           const chunk = <T,>(arr: T[], n: number) => arr.reduce<T[][]>((acc, v, i) => {
             if (i % n === 0) acc.push([]);
             acc[acc.length - 1].push(v);
@@ -353,28 +380,24 @@ export const labSyncParticular = createServerFn({ method: "POST" })
           }, []);
 
           if (headers.length > 0) {
-            for (const bloco of chunk(headers, 100)) {
-              const { error } = await supabaseAdmin.from("lab_invoice_header").upsert(bloco, { onConflict: "invoice_id" });
-              if (error) console.error("[SYNC] Erro ao gravar headers:", error);
-            }
+            const { error: hErr } = await supabaseAdmin.from("lab_invoice_header").upsert(headers, { onConflict: "invoice_id" });
+            if (hErr) throw new Error(`Erro DB Headers: ${hErr.message}`);
           }
           
           if (faturamentos.length > 0) {
-            for (const bloco of chunk(faturamentos, 100)) {
-              const { error } = await supabaseAdmin.from("lab_faturamento").upsert(bloco, { onConflict: "origem,documento_id,item_id" });
-              if (error) {
-                console.error("[SYNC] Erro ao gravar faturamentos:", error);
-                throw new Error(`Erro DB Faturamento: ${error.message}`);
-              }
+            for (const bloco of chunk(faturamentos, 50)) {
+              const { error: fErr } = await supabaseAdmin.from("lab_faturamento").upsert(bloco, { onConflict: "origem,documento_id,item_id" });
+              if (fErr) throw new Error(`Erro DB Faturamento: ${fErr.message}`);
             }
           }
           
           if (recebimentos.length > 0) {
-            for (const bloco of chunk(recebimentos, 100)) {
-              const { error } = await supabaseAdmin.from("lab_recebimento").upsert(bloco, { onConflict: "origem,documento_id,pagamento_id" });
-              if (error) console.error("[SYNC] Erro ao gravar recebimentos:", error);
+            for (const bloco of chunk(recebimentos, 50)) {
+              const { error: rErr } = await supabaseAdmin.from("lab_recebimento").upsert(bloco, { onConflict: "origem,documento_id,pagamento_id" });
+              if (rErr) throw new Error(`Erro DB Recebimento: ${rErr.message}`);
             }
           }
+          console.log(`[SYNC] Sucesso na janela.`);
         }
 
         windowItemsCount = faturamentos.length;
@@ -400,36 +423,27 @@ export const labSyncParticular = createServerFn({ method: "POST" })
             parametros: { ds, de, tipo_transacao, duplicados },
             api_success: true,
             registros: windowContasCount,
-            erro: duplicados > 0 ? "paginacao_ignorada_pelo_endpoint" : "concluido",
+            erro: "concluido",
             amostra_raw: windowAmostra.length > 0 ? windowAmostra[0] : null
           });
         }
 
       } catch (err: any) {
-        // Tenta detectar erro de memória ou timeout
         const isMemoryError = err.message?.includes("memory size") || (err.message === "RETRY_SPLIT");
         const isTimeout = err.name === 'AbortError' || err.message === 'timeout';
 
         if ((isMemoryError || isTimeout) && spanDias > 1) {
-          // Split recursivo real: divide a janela ao meio
           const metade = Math.floor(spanDias / 2);
           const meioFim = new Date(janela.ini);
           meioFim.setDate(janela.ini.getDate() + metade - 1);
-          
           const meioIni = new Date(meioFim);
           meioIni.setDate(meioFim.getDate() + 1);
 
-          // Coloca as duas novas metades no início da fila
           fila.unshift({ ini: meioIni, fim: janela.fim });
           fila.unshift({ ini: new Date(janela.ini), fim: meioFim });
           
-          resumo.janelas.push({ 
-            ds, de, 
-            status: 'split', 
-            error: `${isTimeout ? 'Timeout' : 'Memória'}: dividida em ${metade}d + ${spanDias - metade}d` 
-          });
+          resumo.janelas.push({ ds, de, status: 'split', error: `${isTimeout ? 'Timeout' : 'Memória'}: dividida` });
         } else {
-          // Erro definitivo para esta janela
           resumo.janelas.push({ ds, de, status: 'error', error: String(err.message || err) });
           if (!dry_run) {
             await supabaseAdmin.from("lab_sync_log").insert({
@@ -442,70 +456,38 @@ export const labSyncParticular = createServerFn({ method: "POST" })
           }
         }
       }
-
-      await new Promise(r => setTimeout(r, 300));
     }
 
-
-    // Pós-processamento: Enriquecer lab_faturamento com grupos e dados de agenda (via SQL)
     if (!dry_run) {
-      await supabaseAdmin.rpc('lab_enriquecer_faturamento');
+      console.log(`[SYNC] Fim do processamento. Enriquecendo dados via RPC.`);
+      await supabaseAdmin.rpc("lab_enriquecer_faturamento");
     }
 
-    return { ok: true, resumo };
+    return resumo;
   });
 
-// --- DEBUG & AUX ---
-
-export const labDebugFeegow = createServerFn({ method: "POST" })
-  .inputValidator((data: { endpoint: string; params?: Record<string, string>; method?: "GET" | "POST"; body?: any }) => data)
+export const getLabRelatorio = createServerFn({ method: "GET" })
+  .inputValidator((data: { 
+    data_inicio: string; 
+    data_fim: string; 
+  }) => data)
   .handler(async ({ data }) => {
-    const FEEGOW_TOKEN = process.env.FEEGOW_API_TOKEN ?? "";
-    const endpoint = data.endpoint.startsWith("/") ? data.endpoint : "/" + data.endpoint;
-    const url = new URL(FEEGOW_BASE + endpoint);
+    const { data_inicio, data_fim } = data;
     
-    if (data.params) {
-      for (const [k, v] of Object.entries(data.params)) {
-        url.searchParams.set(k, String(v));
-      }
-    }
+    const { data: rows, error } = await supabaseAdmin
+      .from("lab_faturamento")
+      .select(`
+        *,
+        pacientes(nome),
+        procedimentos(nome),
+        profissionais(nome),
+        convenios(nome)
+      `)
+      .gte("data_competencia", data_inicio)
+      .lte("data_competencia", data_fim)
+      .order("data_competencia", { ascending: false })
+      .limit(1000);
 
-    const res = await fetch(url.toString(), {
-      method: data.method || "GET",
-      headers: { 
-        "x-access-token": FEEGOW_TOKEN,
-        "Content-Type": "application/json"
-      },
-      body: data.method === "POST" ? JSON.stringify(data.body) : undefined
-    });
-
-    const body = await res.json().catch(() => ({}));
-    
-    let rows = [];
-    if (body.success) {
-      const content = body.content?.list || body.content?.appointments || body.content || [];
-      rows = Array.isArray(content) ? content : [content].filter(Boolean);
-    }
-
-    return {
-      ok: true,
-      url: url.toString(),
-      http_status: res.status,
-      api_success: body.success === true,
-      total_registros: rows.length,
-      raw: body
-    };
+    if (error) throw error;
+    return rows || [];
   });
-
-// Mock para retrocompatibilidade enquanto unificamos
-export const labSyncConvenio = createServerFn({ method: "POST" }).handler(async () => {
-  return { ok: true, msg: "Use o labSyncParticular com a lógica unificada de agenda." };
-});
-
-export const clearLabData = createServerFn({ method: "POST" }).handler(async () => {
-  await supabaseAdmin.from("lab_faturamento").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-  await supabaseAdmin.from("lab_recebimento").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-  await supabaseAdmin.from("lab_invoice_header").delete().neq("invoice_id", 0);
-  await supabaseAdmin.from("lab_sync_log").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-  return { ok: true };
-});
