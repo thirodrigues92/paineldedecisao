@@ -504,7 +504,7 @@ function LabRelatorio() {
                 </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <BarChart3 className="w-4 h-4" />
-                  <span>{producaoData?.length || 0} execuções encontradas</span>
+                  <span>{filteredProducaoData.length} execuções encontradas</span>
                 </div>
               </div>
             </CardHeader>
