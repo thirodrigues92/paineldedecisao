@@ -278,7 +278,7 @@ export const labSyncParticular = createServerFn({ method: "POST" })
           const headerVal = parseValorCentavos(invoice.detalhes?.[0]?.valor);
 
           headers.push({
-            invoice_id,
+            invoice_id: BigInt(invoice_id),
             data: parseDataFeegow(invoice.detalhes?.[0]?.data),
             valor_total: headerVal,
             paciente_id: invoice.paciente_id ? Number(invoice.paciente_id) : null,
