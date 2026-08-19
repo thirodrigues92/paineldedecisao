@@ -113,9 +113,9 @@ function LabRelatorio() {
       const { data, error } = await supabase
         .from('lab_producao_feegow')
         .select('*')
-        .gte("data_execucao", dateRange.start.toISOString().split('T')[0])
+        .or(`data_execucao.gte.${dateRange.start.toISOString().split('T')[0]},data_execucao.is.null`)
         .lte("data_execucao", dateRange.end.toISOString().split('T')[0])
-        .order('data_execucao', { ascending: false });
+        .order('data_execucao', { ascending: false, nullsFirst: false });
 
       if (error) throw error;
       return data || [];

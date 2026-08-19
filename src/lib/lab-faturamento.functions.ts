@@ -16,7 +16,7 @@ function parseDataFeegow(v: any): string | null {
   if (!v) return null;
   const s = String(v).trim();
   if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.substring(0, 10);
-  const m = s.match(/^(\d{2})-(\d{2})-(\d{4})/);
+  const m = s.match(/^(\d{2})[-/](\d{2})[-/](\d{4})/);
   if (m) return `${m[3]}-${m[2]}-${m[1]}`;
   return null;
 }
@@ -124,15 +124,23 @@ async function syncAgendaPeriodo(start: string, end: string) {
     url.searchParams.set("start", String(offset));
     url.searchParams.set("offset", String(limit));
 
+    console.log(`[SYNC-AGENDA] Requesting: ${url.toString()}`);
     const res = await fetch(url.toString(), { headers });
     const body = await res.json();
+    
+    // Feegow API can return content.appointments or just content
     const list = body.content?.appointments || body.content || [];
     
-    if (!Array.isArray(list) || list.length === 0) break;
+    if (!Array.isArray(list) || list.length === 0) {
+      console.log(`[SYNC-AGENDA] Nenhuma agenda encontrada ou fim da lista.`);
+      break;
+    }
+
+    console.log(`[SYNC-AGENDA] Recebidos ${list.length} registros (offset ${offset})`);
 
     for (const a of list) {
       agendamentos.push({
-        agendamento_id: Number(a.id),
+        agendamento_id: BigInt(a.id),
         convenio_id: a.convenio_id ? Number(a.convenio_id) : null,
         plano_id: a.plano_id ? Number(a.plano_id) : null,
         paciente_id: a.paciente_id ? Number(a.paciente_id) : null,
@@ -519,6 +527,16 @@ export const labSyncProducao = createServerFn({ method: "POST" })
 
     const fetchReport = async (reportSlug: string) => {
       resumo.logs.push(`Tentando relatório: ${reportSlug} (${ds} a ${de})`);
+      
+      if (!dry_run) {
+        await supabaseAdmin.from("lab_sync_log").insert({
+          endpoint: `reports/generate:${reportSlug}`,
+          parametros: { ds, de, dry_run },
+          api_success: false,
+          registros: 0,
+          erro: "iniciado"
+        });
+      }
       const res = await fetch(`${FEEGOW_BASE}/reports/generate`, {
         method: "POST",
         headers: {
@@ -581,8 +599,16 @@ export const labSyncProducao = createServerFn({ method: "POST" })
           }
         }
       }
-    } else {
-      resumo.logs.push(`API respondeu sem dados (data: ${reportRes.data}).`);
+    }
+    
+    if (resumo.inseridos > 0 && !dry_run) {
+      await supabaseAdmin.from("lab_sync_log").insert({
+        endpoint: `reports/generate:success`,
+        parametros: { ds, de, report: reportRes.success ? 'found' : 'fallback' },
+        api_success: true,
+        registros: resumo.inseridos,
+        erro: "concluido"
+      });
     }
 
     return resumo;
