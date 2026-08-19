@@ -278,8 +278,11 @@ export const labSyncParticular = createServerFn({ method: "POST" })
 
         for (const invoice of lista) {
           // Garante que invoice_id é BigInt
-          const invoice_id_raw = invoice.invoice_id ? Number(invoice.invoice_id) : null;
-          if (!invoice_id_raw) continue;
+          const invoice_id_raw = invoice.invoice_id ? Number(invoice.invoice_id) : (invoice.detalhes?.[0]?.invoice_id ? Number(invoice.detalhes[0].invoice_id) : null);
+          if (!invoice_id_raw) {
+            console.log("[SYNC] Pulando invoice sem ID:", JSON.stringify(invoice.detalhes?.[0]));
+            continue;
+          }
 
           if (vistos.has(invoice_id_raw)) { 
             duplicados++; 
