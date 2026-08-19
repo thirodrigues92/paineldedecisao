@@ -599,8 +599,14 @@ export const labSyncProducao = createServerFn({ method: "POST" })
           }
         }
       }
-    } else {
-      resumo.logs.push(`API respondeu sem dados (data: ${reportRes.data}).`);
+    if (resumo.inseridos > 0 && !dry_run) {
+      await supabaseAdmin.from("lab_sync_log").insert({
+        endpoint: `reports/generate:success`,
+        parametros: { ds, de, report: reportRes.success ? 'found' : 'fallback' },
+        api_success: true,
+        registros: resumo.inseridos,
+        erro: "concluido"
+      });
     }
 
     return resumo;
