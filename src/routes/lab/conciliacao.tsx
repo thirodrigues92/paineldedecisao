@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DatePickerWithRange } from "@/components/ui/date-picker-with-range";
-import { getLabConciliacao, getLabFaturamentoItems, labSyncParticular } from "@/lib/lab-faturamento.functions";
+import { getLabConciliacao, getLabFaturamentoItems, labSyncParticular, labSyncProducao } from "@/lib/lab-faturamento.functions";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { brl } from "@/lib/format";
 import { toast } from "sonner";
@@ -45,15 +45,24 @@ function LabConciliacao() {
     setIsSyncing(true);
     toast.info("Iniciando sincronização do período...");
     try {
-      // Sincroniza Convênios (Transação C)
+      // 1. Sincroniza Produção (Atendimentos executados)
+      await labSyncProducao({ 
+        data: { 
+          start_date: startStr, 
+          end_date: endStr
+        } 
+      });
+
+      // 2. Sincroniza Convênios (Transação C - Financeiro)
       await labSyncParticular({ 
         data: { 
           data_inicio: startStr, 
           data_fim: endStr, 
           tipo_transacao: 'C',
-          tamanho_janela: 1 // Sincroniza dia a dia para maior precisão
+          tamanho_janela: 1
         } 
       });
+
       
       toast.success("Sincronização concluída com sucesso!");
       refetch();

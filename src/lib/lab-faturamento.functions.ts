@@ -135,7 +135,6 @@ async function syncAgendaPeriodo(start: string, end: string) {
     url.searchParams.set("start", String(offset));
     url.searchParams.set("offset", String(limit));
 
-    console.log(`[SYNC-AGENDA] Requesting: ${url.toString()}`);
     const res = await fetch(url.toString(), { headers });
     const body = await res.json();
     
@@ -143,19 +142,23 @@ async function syncAgendaPeriodo(start: string, end: string) {
     const list = body.content?.appointments || body.content || [];
     
     if (!Array.isArray(list) || list.length === 0) {
-      console.log(`[SYNC-AGENDA] Nenhuma agenda encontrada ou fim da lista.`);
       break;
     }
 
-    console.log(`[SYNC-AGENDA] Recebidos ${list.length} registros (offset ${offset})`);
-
     for (const a of list) {
-      if (!a.id) {
-        console.warn(`[SYNC-AGENDA] Agendamento sem ID ignorado.`, a);
-        continue;
-      }
+      if (!a.id) continue;
+      
+      const toBigInt = (val: any) => {
+        if (val === undefined || val === null || val === "") return null;
+        try {
+          return BigInt(val);
+        } catch (e) {
+          return null;
+        }
+      };
+
       agendamentos.push({
-        agendamento_id: BigInt(a.id),
+        agendamento_id: toBigInt(a.id),
         convenio_id: a.convenio_id ? Number(a.convenio_id) : null,
         plano_id: a.plano_id ? Number(a.plano_id) : null,
         paciente_id: a.paciente_id ? Number(a.paciente_id) : null,
@@ -174,12 +177,18 @@ async function syncAgendaPeriodo(start: string, end: string) {
   }
 
   if (agendamentos.length) {
-    console.log(`[SYNC-AGENDA] Gravando ${agendamentos.length} agendamentos.`);
     const { error } = await supabaseAdmin.from("lab_dim_agendamento").upsert(agendamentos, { onConflict: "agendamento_id" });
     if (error) console.error("[SYNC-AGENDA] Erro DB:", error);
   }
   return agendamentos.length;
 }
+
+export const labSyncAgenda = createServerFn({ method: "POST" })
+  .inputValidator((data: { start: string; end: string }) => data)
+  .handler(async ({ data }) => {
+    return await syncAgendaPeriodo(data.start, data.end);
+  });
+
 
 // --- SYNC PRINCIPAL ---
 
@@ -653,20 +662,29 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const { data_inicio, data_fim } = data;
     
-    // 1. Buscar agendamentos do período (tabela de produção)
+    // Antes de buscar a conciliação, garantimos que a agenda base do período está sincronizada
+    // na lab_dim_agendamento para possíveis enriquecimentos futuros
+    await syncAgendaPeriodo(data_inicio, data_fim);
+    
+
+    
+    // 1. Buscar atendimentos realizados na produção
     const { data: agenda, error: aErr } = await supabaseAdmin
-      .from("agendamentos")
+      .from("lab_producao_feegow")
       .select(`
         agendamento_id,
-        data,
-        valor_estimado,
+        data_execucao,
+        valor,
         paciente_id,
         profissional_id,
-        procedimento_id
+        procedimento_id,
+        paciente_nome,
+        prontuario
       `)
-      .gte("data", data_inicio)
-      .lte("data", data_fim)
-      .order("data", { ascending: false });
+      .gte("data_execucao", data_inicio)
+      .lte("data_execucao", data_fim)
+      .order("data_execucao", { ascending: false });
+
 
     if (aErr) throw aErr;
 
@@ -707,7 +725,7 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
     // 3. Cruzar dados
     const conciliado = (agenda || []).map(a => {
       const agId = Number(a.agendamento_id);
-      const valorTabela = Number(a.valor_estimado || 0);
+      const valorTabela = Number(a.valor || 0);
       const valorFaturado = faturamentoMap.get(agId) || 0;
       const temFatura = faturamentoMap.has(agId);
       const diferenca = valorFaturado - valorTabela;
@@ -721,18 +739,18 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
 
       return {
         agendamento_id: agId,
-        data: a.data,
-        paciente: (a.paciente_id ? pacMap.get(a.paciente_id)?.nome : null) || "N/A",
-        prontuario: (a.paciente_id ? pacMap.get(a.paciente_id)?.prontuario : null) || "—",
+        data: a.data_execucao,
+        paciente: a.paciente_nome || (a.paciente_id ? pacMap.get(a.paciente_id)?.nome : null) || "N/A",
+        prontuario: a.prontuario || (a.paciente_id ? pacMap.get(a.paciente_id)?.prontuario : null) || "—",
         profissional: (a.profissional_id ? profMap.get(a.profissional_id) : null) || "N/A",
         procedimento: (a.procedimento_id ? procMap.get(a.procedimento_id) : null) || "N/A",
         valor_tabela: valorTabela,
-
         valor_faturado: valorFaturado,
         diferenca,
         status
       };
     });
+
 
     return conciliado;
   });
