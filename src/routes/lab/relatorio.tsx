@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useState, useMemo } from "react";
-import { FileText, Search, Filter, ArrowUpDown, Download, RefreshCw, Play, Settings } from "lucide-react";
+import { FileText, Search, Filter, ArrowUpDown, Download, RefreshCw, Play, Settings, Calendar, ChevronDown, ChevronRight, Info, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DatePickerWithRange } from "@/components/ui/date-picker-with-range";
 import { labSyncParticular } from "@/lib/lab-faturamento.functions";
@@ -28,6 +28,8 @@ function LabRelatorio() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncProgress, setSyncProgress] = useState(0);
   const [showSyncPanel, setShowSyncPanel] = useState(false);
+  const [syncWindowSize, setSyncWindowSize] = useState(1);
+  const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -40,7 +42,7 @@ function LabRelatorio() {
           tipo_transacao: 'C',
           dry_run: false,
           limpar_antes: false,
-          tamanho_janela: 3
+          tamanho_janela: syncWindowSize
         } 
       });
     },
@@ -68,6 +70,27 @@ function LabRelatorio() {
       }, 1000);
     }
   };
+  
+  const syncYesterday = async () => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    setDateRange({ start: yesterday, end: yesterday });
+    setSyncWindowSize(1);
+    setIsSyncing(true);
+    setSyncProgress(10);
+    
+    const dateStr = yesterday.toISOString().split('T')[0];
+
+    try {
+      await syncMutation.mutateAsync({ start: dateStr, end: dateStr });
+      setSyncProgress(100);
+    } finally {
+      setTimeout(() => {
+        setIsSyncing(false);
+        setSyncProgress(0);
+      }, 1000);
+    }
+  };
 
 
   const { data: reportData, isLoading } = useQuery({
@@ -79,10 +102,10 @@ function LabRelatorio() {
         .from('lab_faturamento')
         .select(`
           *,
-          paciente:pacientes(nome),
+          paciente:pacientes!paciente_id(nome),
           procedimento:lab_dim_procedimento(nome),
-          profissional:profissionais(nome),
-          convenio:convenios(nome)
+          profissional:profissionais!profissional_id(nome),
+          convenio:convenios!convenio_id(nome)
         `)
         .order('data_competencia', { ascending: false });
 
@@ -186,17 +209,49 @@ function LabRelatorio() {
                   onRangeChange={(from, to) => setDateRange({ start: from, end: to })} 
                 />
               </div>
-              <Button 
-                className="bg-indigo-600 hover:bg-indigo-700" 
-                onClick={runSync}
-                disabled={isSyncing}
-              >
-                {isSyncing ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Play className="w-4 h-4 mr-2" />}
-                Iniciar Sincronização
-              </Button>
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold uppercase text-muted-foreground">Modo</label>
+                <div className="flex gap-1">
+                  <Button 
+                    variant={syncWindowSize === 1 ? "default" : "outline"} 
+                    size="sm" 
+                    className="h-9 text-[10px]"
+                    onClick={() => setSyncWindowSize(1)}
+                  >
+                    Granular (1d)
+                  </Button>
+                  <Button 
+                    variant={syncWindowSize === 3 ? "default" : "outline"} 
+                    size="sm" 
+                    className="h-9 text-[10px]"
+                    onClick={() => setSyncWindowSize(3)}
+                  >
+                    Bloco (3d)
+                  </Button>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  className="bg-indigo-600 hover:bg-indigo-700" 
+                  onClick={runSync}
+                  disabled={isSyncing}
+                >
+                  {isSyncing ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Play className="w-4 h-4 mr-2" />}
+                  Iniciar
+                </Button>
+                <Button 
+                  variant="outline"
+                  className="border-indigo-600 text-indigo-600 hover:bg-indigo-50" 
+                  onClick={syncYesterday}
+                  disabled={isSyncing}
+                >
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Sincronizar Ontem
+                </Button>
+              </div>
               <div className="text-[10px] text-muted-foreground max-w-xs">
-                A sincronização trará lançamentos do tipo <b>Receita (C)</b> para o período selecionado. 
-                Para configurações avançadas (dry-run, despesas), use a aba principal do Lab.
+                A sincronização trará lançamentos do tipo <b>Receita (C)</b>. 
+                O modo granular é recomendado para conferência profunda de dados diários.
               </div>
             </div>
             {isSyncing && (
@@ -236,6 +291,7 @@ function LabRelatorio() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
+                  <TableHead className="w-[40px]"></TableHead>
                   <TableHead className="cursor-pointer hover:text-primary" onClick={() => handleSort('data_competencia')}>
                     Data <ArrowUpDown className="inline w-3 h-3 ml-1" />
                   </TableHead>
@@ -244,48 +300,106 @@ function LabRelatorio() {
                     Paciente <ArrowUpDown className="inline w-3 h-3 ml-1" />
                   </TableHead>
                   <TableHead>Procedimento</TableHead>
-                  <TableHead>Grupo</TableHead>
-                  <TableHead className="text-right">Faturado</TableHead>
+                  <TableHead className="text-right">Bruto</TableHead>
+                  <TableHead className="text-right">Desc/Acr</TableHead>
+                  <TableHead className="text-right">Líquido</TableHead>
                   <TableHead className="text-center">Origem</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-32 text-center">Carregando dados da auditoria...</TableCell>
+                    <TableCell colSpan={9} className="h-32 text-center">Carregando dados da auditoria...</TableCell>
                   </TableRow>
                 ) : filteredData.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">Nenhum registro encontrado para comparação.</TableCell>
+                    <TableCell colSpan={9} className="h-32 text-center text-muted-foreground">Nenhum registro encontrado para comparação.</TableCell>
                   </TableRow>
                 ) : (
                   filteredData.map((item: any) => (
-                    <TableRow key={item.id} className={item.is_cancelado ? "opacity-50 bg-slate-50" : ""}>
-                      <TableCell className="text-xs font-mono">
-                        {item.data_competencia ? new Date(item.data_competencia).toLocaleDateString('pt-BR') : '-'}
-                      </TableCell>
-                      <TableCell className="text-xs">
-                        <span className="font-bold">{item.documento_id}</span>
-                        {item.item_id && <span className="text-[10px] text-muted-foreground block">Item: {item.item_id}</span>}
-                      </TableCell>
-                      <TableCell className="text-sm font-medium">
-                        {item.paciente?.nome || `ID: ${item.paciente_id}`}
-                      </TableCell>
-                      <TableCell className="text-xs max-w-[200px] truncate" title={item.procedimento?.nome}>
-                        {item.procedimento?.nome || 'N/A'}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-[9px] uppercase">{item.grupo_nome || 'Outros'}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right font-mono text-sm">
-                        R$ {Number(item.valor_faturado || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant={item.origem === 'particular' ? 'secondary' : 'default'} className="text-[9px] uppercase">
-                          {item.origem}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
+                    <>
+                      <TableRow 
+                        key={item.id} 
+                        className={`${item.is_cancelado ? "opacity-50 bg-slate-50" : ""} cursor-pointer hover:bg-muted/30 transition-colors`}
+                        onClick={() => setExpandedRow(expandedRow === item.id ? null : item.id)}
+                      >
+                        <TableCell>
+                          {expandedRow === item.id ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+                        </TableCell>
+                        <TableCell className="text-xs font-mono">
+                          {item.data_competencia ? new Date(item.data_competencia).toLocaleDateString('pt-BR') : '-'}
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          <span className="font-bold">{item.documento_id}</span>
+                          {item.item_id && <span className="text-[10px] text-muted-foreground block">Item: {item.item_id}</span>}
+                        </TableCell>
+                        <TableCell className="text-sm font-medium">
+                          {item.paciente?.nome || `ID: ${item.paciente_id}`}
+                        </TableCell>
+                        <TableCell className="text-xs max-w-[200px] truncate" title={item.procedimento?.nome}>
+                          {item.procedimento?.nome || 'N/A'}
+                          <Badge variant="outline" className="text-[8px] uppercase block w-fit mt-1">{item.grupo_nome || 'Outros'}</Badge>
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-xs text-muted-foreground">
+                          R$ {Number(item.valor_bruto || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-xs text-amber-600">
+                          {item.desconto > 0 && <span>- R$ {Number(item.desconto).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>}
+                          {item.acrescimo > 0 && <span className="block text-emerald-600">+ R$ {Number(item.acrescimo).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>}
+                          {item.desconto === 0 && item.acrescimo === 0 && <span>—</span>}
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-sm font-bold">
+                          R$ {Number(item.valor_faturado || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant={item.origem === 'particular' ? 'secondary' : 'default'} className="text-[9px] uppercase">
+                            {item.origem}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                      {expandedRow === item.id && (
+                        <TableRow className="bg-slate-50 border-x-2 border-indigo-200">
+                          <TableCell colSpan={9} className="p-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              <div className="space-y-3">
+                                <h4 className="text-xs font-bold uppercase text-indigo-900 flex items-center gap-2">
+                                  <Info className="w-3 h-3" /> Detalhes da Operação
+                                </h4>
+                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                  <div className="p-2 bg-white rounded border">
+                                    <span className="text-muted-foreground block text-[10px]">Profissional</span>
+                                    <span className="font-medium">{item.profissional?.nome || 'N/A'}</span>
+                                  </div>
+                                  <div className="p-2 bg-white rounded border">
+                                    <span className="text-muted-foreground block text-[10px]">Unidade</span>
+                                    <span className="font-medium">ID: {item.unidade_id}</span>
+                                  </div>
+                                  <div className="p-2 bg-white rounded border">
+                                    <span className="text-muted-foreground block text-[10px]">Data Atendimento</span>
+                                    <span className="font-medium">{item.data_atendimento ? new Date(item.data_atendimento).toLocaleDateString('pt-BR') : 'N/A'}</span>
+                                  </div>
+                                  <div className="p-2 bg-white rounded border">
+                                    <span className="text-muted-foreground block text-[10px]">Convênio</span>
+                                    <span className="font-medium">{item.convenio?.nome || 'Particular'}</span>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="space-y-3">
+                                <h4 className="text-xs font-bold uppercase text-indigo-900 flex items-center gap-2">
+                                  <Database className="w-3 h-3" /> Dados Brutos (API Feegow)
+                                </h4>
+                                <div className="bg-slate-900 text-slate-100 p-3 rounded-md text-[10px] font-mono overflow-auto max-h-[200px]">
+                                  <pre>{JSON.stringify(item.payload_raw, null, 2)}</pre>
+                                </div>
+                                <p className="text-[9px] text-muted-foreground italic">
+                                  Estes dados foram capturados diretamente do endpoint <code>financial/list-invoice</code> para conferência profunda.
+                                </p>
+                              </div>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </>
                   ))
                 )}
               </TableBody>
