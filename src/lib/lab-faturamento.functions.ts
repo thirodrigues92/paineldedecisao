@@ -631,3 +631,107 @@ export const labSyncProducao = createServerFn({ method: "POST" })
     return resumo;
   });
 
+export const getLabConciliacao = createServerFn({ method: "GET" })
+  .inputValidator((data: { 
+    data_inicio: string; 
+    data_fim: string; 
+  }) => data)
+  .handler(async ({ data }) => {
+    const { data_inicio, data_fim } = data;
+    
+    // 1. Buscar agendamentos do período (tabela de produção)
+    const { data: agenda, error: aErr } = await supabaseAdmin
+      .from("agendamentos")
+      .select(`
+        agendamento_id,
+        data,
+        valor_estimado,
+        paciente_id,
+        profissional_id,
+        procedimento_id
+      `)
+      .gte("data", data_inicio)
+      .lte("data", data_fim)
+      .order("data", { ascending: false });
+
+    if (aErr) throw aErr;
+
+    // 1.1 Buscar nomes em tabelas separadas para evitar problemas de join no TS/RPC
+    const { data: pacientes } = await supabaseAdmin.from("pacientes").select("paciente_id, nome");
+    const { data: profissionais } = await supabaseAdmin.from("profissionais").select("profissional_id, nome");
+    const { data: procedimentos } = await supabaseAdmin.from("procedimentos").select("procedimento_id, nome");
+
+    const pacMap = new Map((pacientes || []).map(p => [p.paciente_id, p.nome]));
+    const profMap = new Map((profissionais || []).map(p => [p.profissional_id, p.nome]));
+    const procMap = new Map((procedimentos || []).map(p => [p.procedimento_id, p.nome]));
+
+
+    // 2. Buscar faturamento experimental vinculado aos agendamentos
+    const ids = agenda?.map(a => a.agendamento_id) || [];
+    const faturamentoMap = new Map<number, number>();
+    
+    if (ids.length > 0) {
+      const chunk = 1000;
+      for (let i = 0; i < ids.length; i += chunk) {
+        const slice = ids.slice(i, i + chunk);
+        const { data: fats, error: fErr } = await supabaseAdmin
+          .from("lab_faturamento")
+          .select("agendamento_id, valor_faturado")
+          .in("agendamento_id", slice);
+        
+        if (fErr) throw fErr;
+        
+        for (const f of fats || []) {
+          if (f.agendamento_id) {
+            const id = Number(f.agendamento_id);
+            faturamentoMap.set(id, (faturamentoMap.get(id) || 0) + Number(f.valor_faturado || 0));
+          }
+        }
+      }
+    }
+
+    // 3. Cruzar dados
+    const conciliado = (agenda || []).map(a => {
+      const agId = Number(a.agendamento_id);
+      const valorTabela = Number(a.valor_estimado || 0);
+      const valorFaturado = faturamentoMap.get(agId) || 0;
+      const temFatura = faturamentoMap.has(agId);
+      const diferenca = valorFaturado - valorTabela;
+      
+      let status = "IGUAL";
+      if (!temFatura) {
+        status = "SEM_FATURA";
+      } else if (Math.abs(diferenca) > 0.01) {
+        status = "DIVERGENTE";
+      }
+
+      return {
+        agendamento_id: agId,
+        data: a.data,
+        paciente: (a.paciente_id ? pacMap.get(a.paciente_id) : null) || "N/A",
+        profissional: (a.profissional_id ? profMap.get(a.profissional_id) : null) || "N/A",
+        procedimento: (a.procedimento_id ? procMap.get(a.procedimento_id) : null) || "N/A",
+        valor_tabela: valorTabela,
+
+        valor_faturado: valorFaturado,
+        diferenca,
+        status
+      };
+    });
+
+    return conciliado;
+  });
+
+export const getLabFaturamentoItems = createServerFn({ method: "GET" })
+  .inputValidator((data: { agendamento_id: number }) => data)
+  .handler(async ({ data }) => {
+    const { data: rows, error } = await supabaseAdmin
+      .from("lab_faturamento")
+      .select("*")
+      .eq("agendamento_id", data.agendamento_id);
+    
+    if (error) throw error;
+    return rows || [];
+  });
+
+

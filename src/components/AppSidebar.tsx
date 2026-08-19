@@ -2,7 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, CalendarClock, UserX, DollarSign,
   Stethoscope, Building2, MapPinned, Settings, LogOut, Table2,
-  TrendingUp, PieChart, Activity, LineChart as LineIcon, Syringe, ShieldCheck,
+  TrendingUp, PieChart, Activity, LineChart as LineIcon, Syringe, ShieldCheck, Database
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
@@ -38,6 +38,7 @@ const navFooter = [
 
 const navLab = [
   { title: "🧪 Lab — Faturamento", url: "/lab/faturamento", icon: Table2 },
+  { title: "🧪 Lab — Conciliação", url: "/lab/conciliacao", icon: Database },
 ];
 
 

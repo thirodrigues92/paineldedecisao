@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LabRelatorioRouteImport } from './routes/lab/relatorio'
 import { Route as LabFaturamentoRouteImport } from './routes/lab/faturamento'
+import { Route as LabConciliacaoRouteImport } from './routes/lab/conciliacao'
 import { Route as AuthenticatedUnidadesRouteImport } from './routes/_authenticated/unidades'
 import { Route as AuthenticatedRelatorioAtendimentosRouteImport } from './routes/_authenticated/relatorio-atendimentos'
 import { Route as AuthenticatedProfissionaisRouteImport } from './routes/_authenticated/profissionais'
@@ -52,6 +53,11 @@ const LabRelatorioRoute = LabRelatorioRouteImport.update({
 const LabFaturamentoRoute = LabFaturamentoRouteImport.update({
   id: '/lab/faturamento',
   path: '/lab/faturamento',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LabConciliacaoRoute = LabConciliacaoRouteImport.update({
+  id: '/lab/conciliacao',
+  path: '/lab/conciliacao',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedUnidadesRoute = AuthenticatedUnidadesRouteImport.update({
@@ -150,6 +156,7 @@ export interface FileRoutesByFullPath {
   '/profissionais': typeof AuthenticatedProfissionaisRoute
   '/relatorio-atendimentos': typeof AuthenticatedRelatorioAtendimentosRoute
   '/unidades': typeof AuthenticatedUnidadesRoute
+  '/lab/conciliacao': typeof LabConciliacaoRoute
   '/lab/faturamento': typeof LabFaturamentoRoute
   '/lab/relatorio': typeof LabRelatorioRoute
   '/analytics/aplicacoes': typeof AuthenticatedAnalyticsAplicacoesRoute
@@ -171,6 +178,7 @@ export interface FileRoutesByTo {
   '/profissionais': typeof AuthenticatedProfissionaisRoute
   '/relatorio-atendimentos': typeof AuthenticatedRelatorioAtendimentosRoute
   '/unidades': typeof AuthenticatedUnidadesRoute
+  '/lab/conciliacao': typeof LabConciliacaoRoute
   '/lab/faturamento': typeof LabFaturamentoRoute
   '/lab/relatorio': typeof LabRelatorioRoute
   '/analytics/aplicacoes': typeof AuthenticatedAnalyticsAplicacoesRoute
@@ -194,6 +202,7 @@ export interface FileRoutesById {
   '/_authenticated/profissionais': typeof AuthenticatedProfissionaisRoute
   '/_authenticated/relatorio-atendimentos': typeof AuthenticatedRelatorioAtendimentosRoute
   '/_authenticated/unidades': typeof AuthenticatedUnidadesRoute
+  '/lab/conciliacao': typeof LabConciliacaoRoute
   '/lab/faturamento': typeof LabFaturamentoRoute
   '/lab/relatorio': typeof LabRelatorioRoute
   '/_authenticated/analytics/aplicacoes': typeof AuthenticatedAnalyticsAplicacoesRoute
@@ -217,6 +226,7 @@ export interface FileRouteTypes {
     | '/profissionais'
     | '/relatorio-atendimentos'
     | '/unidades'
+    | '/lab/conciliacao'
     | '/lab/faturamento'
     | '/lab/relatorio'
     | '/analytics/aplicacoes'
@@ -238,6 +248,7 @@ export interface FileRouteTypes {
     | '/profissionais'
     | '/relatorio-atendimentos'
     | '/unidades'
+    | '/lab/conciliacao'
     | '/lab/faturamento'
     | '/lab/relatorio'
     | '/analytics/aplicacoes'
@@ -260,6 +271,7 @@ export interface FileRouteTypes {
     | '/_authenticated/profissionais'
     | '/_authenticated/relatorio-atendimentos'
     | '/_authenticated/unidades'
+    | '/lab/conciliacao'
     | '/lab/faturamento'
     | '/lab/relatorio'
     | '/_authenticated/analytics/aplicacoes'
@@ -273,6 +285,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  LabConciliacaoRoute: typeof LabConciliacaoRoute
   LabFaturamentoRoute: typeof LabFaturamentoRoute
   LabRelatorioRoute: typeof LabRelatorioRoute
 }
@@ -312,6 +325,13 @@ declare module '@tanstack/react-router' {
       path: '/lab/faturamento'
       fullPath: '/lab/faturamento'
       preLoaderRoute: typeof LabFaturamentoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lab/conciliacao': {
+      id: '/lab/conciliacao'
+      path: '/lab/conciliacao'
+      fullPath: '/lab/conciliacao'
+      preLoaderRoute: typeof LabConciliacaoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/unidades': {
@@ -467,6 +487,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  LabConciliacaoRoute: LabConciliacaoRoute,
   LabFaturamentoRoute: LabFaturamentoRoute,
   LabRelatorioRoute: LabRelatorioRoute,
 }
