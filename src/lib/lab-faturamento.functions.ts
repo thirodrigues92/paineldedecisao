@@ -646,15 +646,25 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
         agendamento_id,
         data,
         valor_estimado,
-        pacientes(nome),
-        profissionais(nome),
-        procedimentos(nome)
+        paciente_id,
+        profissional_id,
+        procedimento_id
       `)
       .gte("data", data_inicio)
       .lte("data", data_fim)
       .order("data", { ascending: false });
 
     if (aErr) throw aErr;
+
+    // 1.1 Buscar nomes em tabelas separadas para evitar problemas de join no TS/RPC
+    const { data: pacientes } = await supabaseAdmin.from("pacientes").select("paciente_id, nome");
+    const { data: profissionais } = await supabaseAdmin.from("profissionais").select("profissional_id, nome");
+    const { data: procedimentos } = await supabaseAdmin.from("procedimentos").select("procedimento_id, nome");
+
+    const pacMap = new Map((pacientes || []).map(p => [p.paciente_id, p.nome]));
+    const profMap = new Map((profissionais || []).map(p => [p.profissional_id, p.nome]));
+    const procMap = new Map((procedimentos || []).map(p => [p.procedimento_id, p.nome]));
+
 
     // 2. Buscar faturamento experimental vinculado aos agendamentos
     const ids = agenda?.map(a => a.agendamento_id) || [];
@@ -698,10 +708,11 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
       return {
         agendamento_id: agId,
         data: a.data,
-        paciente: a.pacientes?.nome || "N/A",
-        profissional: a.profissionais?.nome || "N/A",
-        procedimento: a.procedimentos?.nome || "N/A",
+        paciente: (a.paciente_id ? pacMap.get(a.paciente_id) : null) || "N/A",
+        profissional: (a.profissional_id ? profMap.get(a.profissional_id) : null) || "N/A",
+        procedimento: (a.procedimento_id ? procMap.get(a.procedimento_id) : null) || "N/A",
         valor_tabela: valorTabela,
+
         valor_faturado: valorFaturado,
         diferenca,
         status
