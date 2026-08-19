@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,8 +6,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useState, useMemo } from "react";
-import { FileText, Search, Filter, ArrowUpDown, Download } from "lucide-react";
+import { FileText, Search, Filter, ArrowUpDown, Download, RefreshCw, Play, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DatePickerWithRange } from "@/components/ui/date-picker-with-range";
+import { labSyncParticular } from "@/lib/lab-faturamento.functions";
+import { toast } from "sonner";
+import { Progress } from "@/components/ui/progress";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/lab/relatorio")({
   component: LabRelatorio,
@@ -16,6 +21,54 @@ export const Route = createFileRoute("/lab/relatorio")({
 function LabRelatorio() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+  const [dateRange, setDateRange] = useState<{ start: Date; end: Date }>({ 
+    start: new Date(new Date().setDate(new Date().getDate() - 7)),
+    end: new Date()
+  });
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncProgress, setSyncProgress] = useState(0);
+  const [showSyncPanel, setShowSyncPanel] = useState(false);
+
+  const queryClient = useQueryClient();
+
+  const syncMutation = useMutation({
+    mutationFn: async ({ start, end }: { start: string, end: string }) => {
+      return labSyncParticular({ 
+        data: { 
+          data_inicio: start, 
+          data_fim: end, 
+          tipo_transacao: 'C',
+          dry_run: false,
+          limpar_antes: false,
+          tamanho_janela: 3
+        } 
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['lab-relatorio-comparativo'] });
+      toast.success("Sincronização concluída!");
+    },
+    onError: (e) => toast.error("Erro na sincronização: " + String(e))
+  });
+
+  const runSync = async () => {
+    setIsSyncing(true);
+    setSyncProgress(10);
+    
+    const startStr = dateRange.start.toISOString().split('T')[0];
+    const endStr = dateRange.end.toISOString().split('T')[0];
+
+    try {
+      await syncMutation.mutateAsync({ start: startStr, end: endStr });
+      setSyncProgress(100);
+    } finally {
+      setTimeout(() => {
+        setIsSyncing(false);
+        setSyncProgress(0);
+      }, 1000);
+    }
+  };
+
 
   const { data: reportData, isLoading } = useQuery({
     queryKey: ['lab-relatorio-comparativo'],
@@ -99,10 +152,66 @@ function LabRelatorio() {
           </h1>
           <p className="text-muted-foreground">Comparativo detalhado de consultas e atendimentos sincronizados.</p>
         </div>
-        <Button variant="outline" onClick={exportCSV} disabled={filteredData.length === 0}>
-          <Download className="w-4 h-4 mr-2" /> Exportar CSV
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant={showSyncPanel ? "secondary" : "outline"} 
+            onClick={() => setShowSyncPanel(!showSyncPanel)}
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
+            {isSyncing ? 'Sincronizando...' : 'Sincronizar Dados'}
+          </Button>
+          <Button variant="outline" onClick={exportCSV} disabled={filteredData.length === 0 || isSyncing}>
+            <Download className="w-4 h-4 mr-2" /> Exportar CSV
+          </Button>
+          <Link to="/lab/faturamento">
+            <Button variant="ghost">Voltar ao Lab</Button>
+          </Link>
+        </div>
       </div>
+
+      {showSyncPanel && (
+        <Card className="border-indigo-200 bg-indigo-50/10">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-bold flex items-center gap-2">
+              <Settings className="w-4 h-4" /> Configurar Sincronização Rápida
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-wrap items-end gap-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold uppercase text-muted-foreground">Período</label>
+                <DatePickerWithRange 
+                  from={dateRange.start} 
+                  to={dateRange.end} 
+                  onRangeChange={(from, to) => setDateRange({ start: from, end: to })} 
+                />
+              </div>
+              <Button 
+                className="bg-indigo-600 hover:bg-indigo-700" 
+                onClick={runSync}
+                disabled={isSyncing}
+              >
+                {isSyncing ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Play className="w-4 h-4 mr-2" />}
+                Iniciar Sincronização
+              </Button>
+              <div className="text-[10px] text-muted-foreground max-w-xs">
+                A sincronização trará lançamentos do tipo <b>Receita (C)</b> para o período selecionado. 
+                Para configurações avançadas (dry-run, despesas), use a aba principal do Lab.
+              </div>
+            </div>
+            {isSyncing && (
+              <div className="space-y-2">
+                <div className="flex justify-between text-[10px] font-bold uppercase">
+                  <span>Processando dados do Feegow...</span>
+                  <span>{syncProgress}%</span>
+                </div>
+                <Progress value={syncProgress} className="h-1" />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
 
       <Card>
         <CardHeader className="pb-3">
