@@ -163,9 +163,9 @@ function LabRelatorio() {
           <Button variant="outline" onClick={exportCSV} disabled={filteredData.length === 0 || isSyncing}>
             <Download className="w-4 h-4 mr-2" /> Exportar CSV
           </Button>
-          <Button variant="ghost" onClick={() => window.location.href = '/lab/faturamento'}>
-            Voltar ao Lab
-          </Button>
+          <Link to="/lab/faturamento">
+            <Button variant="ghost">Voltar ao Lab</Button>
+          </Link>
         </div>
       </div>
 
