@@ -135,7 +135,6 @@ async function syncAgendaPeriodo(start: string, end: string) {
     url.searchParams.set("start", String(offset));
     url.searchParams.set("offset", String(limit));
 
-    console.log(`[SYNC-AGENDA] Requesting: ${url.toString()}`);
     const res = await fetch(url.toString(), { headers });
     const body = await res.json();
     
@@ -143,19 +142,23 @@ async function syncAgendaPeriodo(start: string, end: string) {
     const list = body.content?.appointments || body.content || [];
     
     if (!Array.isArray(list) || list.length === 0) {
-      console.log(`[SYNC-AGENDA] Nenhuma agenda encontrada ou fim da lista.`);
       break;
     }
 
-    console.log(`[SYNC-AGENDA] Recebidos ${list.length} registros (offset ${offset})`);
-
     for (const a of list) {
-      if (!a.id) {
-        console.warn(`[SYNC-AGENDA] Agendamento sem ID ignorado.`, a);
-        continue;
-      }
+      if (!a.id) continue;
+      
+      const toBigInt = (val: any) => {
+        if (val === undefined || val === null || val === "") return null;
+        try {
+          return BigInt(val);
+        } catch (e) {
+          return null;
+        }
+      };
+
       agendamentos.push({
-        agendamento_id: BigInt(a.id),
+        agendamento_id: toBigInt(a.id),
         convenio_id: a.convenio_id ? Number(a.convenio_id) : null,
         plano_id: a.plano_id ? Number(a.plano_id) : null,
         paciente_id: a.paciente_id ? Number(a.paciente_id) : null,
@@ -174,12 +177,18 @@ async function syncAgendaPeriodo(start: string, end: string) {
   }
 
   if (agendamentos.length) {
-    console.log(`[SYNC-AGENDA] Gravando ${agendamentos.length} agendamentos.`);
     const { error } = await supabaseAdmin.from("lab_dim_agendamento").upsert(agendamentos, { onConflict: "agendamento_id" });
     if (error) console.error("[SYNC-AGENDA] Erro DB:", error);
   }
   return agendamentos.length;
 }
+
+export const labSyncAgenda = createServerFn({ method: "POST" })
+  .inputValidator((data: { start: string; end: string }) => data)
+  .handler(async ({ data }) => {
+    return await syncAgendaPeriodo(data.start, data.end);
+  });
+
 
 // --- SYNC PRINCIPAL ---
 
