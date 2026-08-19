@@ -21,6 +21,54 @@ export const Route = createFileRoute("/lab/relatorio")({
 function LabRelatorio() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+  const [dateRange, setDateRange] = useState<{ start: Date; end: Date }>({ 
+    start: new Date(new Date().setDate(new Date().getDate() - 7)),
+    end: new Date()
+  });
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncProgress, setSyncProgress] = useState(0);
+  const [showSyncPanel, setShowSyncPanel] = useState(false);
+
+  const queryClient = useQueryClient();
+
+  const syncMutation = useMutation({
+    mutationFn: async ({ start, end }: { start: string, end: string }) => {
+      return labSyncParticular({ 
+        data: { 
+          data_inicio: start, 
+          data_fim: end, 
+          tipo_transacao: 'C',
+          dry_run: false,
+          limpar_antes: false,
+          tamanho_janela: 3
+        } 
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['lab-relatorio-comparativo'] });
+      toast.success("Sincronização concluída!");
+    },
+    onError: (e) => toast.error("Erro na sincronização: " + String(e))
+  });
+
+  const runSync = async () => {
+    setIsSyncing(true);
+    setSyncProgress(10);
+    
+    const startStr = dateRange.start.toISOString().split('T')[0];
+    const endStr = dateRange.end.toISOString().split('T')[0];
+
+    try {
+      await syncMutation.mutateAsync({ start: startStr, end: endStr });
+      setSyncProgress(100);
+    } finally {
+      setTimeout(() => {
+        setIsSyncing(false);
+        setSyncProgress(0);
+      }, 1000);
+    }
+  };
+
 
   const { data: reportData, isLoading } = useQuery({
     queryKey: ['lab-relatorio-comparativo'],
