@@ -384,7 +384,10 @@ export const labSyncParticular = createServerFn({ method: "POST" })
 
           if (headers.length > 0) {
             const { error: hErr } = await supabaseAdmin.from("lab_invoice_header").upsert(headers, { onConflict: "invoice_id" });
-            if (hErr) throw new Error(`Erro DB Headers: ${hErr.message}`);
+            if (hErr) {
+              console.error("[SYNC] Erro Headers:", hErr);
+              throw new Error(`Erro DB Headers: ${hErr.message}`);
+            }
           }
           
           if (faturamentos.length > 0) {
