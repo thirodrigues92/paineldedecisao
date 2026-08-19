@@ -108,12 +108,12 @@ function LabRelatorio() {
   };
 
   const { data: producaoData, isLoading: isLoadingProd } = useQuery({
-    queryKey: ['lab-producao', dateRange.start.toISOString(), dateRange.end.toISOString()],
+    queryKey: ['lab-producao', dateRange.start.toISOString().split('T')[0], dateRange.end.toISOString().split('T')[0]],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('lab_producao_feegow')
         .select('*')
-        .or(`data_execucao.gte.${dateRange.start.toISOString().split('T')[0]},data_execucao.is.null`)
+        .gte("data_execucao", dateRange.start.toISOString().split('T')[0])
         .lte("data_execucao", dateRange.end.toISOString().split('T')[0])
         .order('data_execucao', { ascending: false, nullsFirst: false });
 
@@ -122,9 +122,16 @@ function LabRelatorio() {
     }
   });
 
+  const filteredProducaoData = useMemo(() => {
+    if (!producaoData) return [];
+    return producaoData.filter((item: any) => {
+      const searchStr = `${item.paciente_nome || ''} ${item.procedimento_nome || ''} ${item.profissional_nome || ''} ${item.convenio_nome || ''}`.toLowerCase();
+      return searchStr.includes(searchTerm.toLowerCase());
+    });
+  }, [producaoData, searchTerm]);
 
   const { data: reportData, isLoading } = useQuery({
-    queryKey: ['lab-relatorio-comparativo', dateRange.start.toISOString(), dateRange.end.toISOString()],
+    queryKey: ['lab-relatorio-comparativo', dateRange.start.toISOString().split('T')[0], dateRange.end.toISOString().split('T')[0]],
     queryFn: async () => {
       // Buscamos dados do lab_faturamento enriquecidos
       const { data, error } = await supabase
@@ -322,7 +329,7 @@ function LabRelatorio() {
 
       <Card>
         <CardHeader className="pb-3">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
@@ -485,17 +492,19 @@ function LabRelatorio() {
         <TabsContent value="producao">
           <Card>
             <CardHeader className="pb-3">
-              <div className="flex items-center gap-4">
+              <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
                 <div className="relative flex-1 max-w-sm">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Buscar na produção..."
                     className="pl-8"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <BarChart3 className="w-4 h-4" />
-                  <span>{producaoData?.length || 0} execuções encontradas</span>
+                  <span>{filteredProducaoData.length} execuções encontradas</span>
                 </div>
               </div>
             </CardHeader>
@@ -518,14 +527,14 @@ function LabRelatorio() {
                       <TableRow>
                         <TableCell colSpan={7} className="h-32 text-center">Carregando produção...</TableCell>
                       </TableRow>
-                    ) : producaoData?.length === 0 ? (
+                    ) : filteredProducaoData.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
-                          Nenhum dado de produção para o período.
+                          Nenhum dado de produção encontrado para o período ou busca selecionada.
                         </TableCell>
                       </TableRow>
                     ) : (
-                      producaoData?.map((item: any) => (
+                      filteredProducaoData.map((item: any) => (
                         <TableRow key={item.id}>
                           <TableCell className="text-xs font-mono">
                             {item.data_execucao ? new Date(item.data_execucao).toLocaleDateString('pt-BR') : '-'}
