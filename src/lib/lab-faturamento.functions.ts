@@ -134,6 +134,8 @@ export const labSyncParticular = createServerFn({ method: "POST" })
     const { data_inicio, data_fim, tipo_transacao = 'C', tamanho_janela = 7, dry_run = false, limpar_antes = false } = data;
     
     if (limpar_antes && !dry_run) {
+      console.log(`[SYNC] Limpando dados de ${data_inicio} a ${data_fim}`);
+      await supabaseAdmin.from("lab_invoice_header").delete().gte("data", data_inicio).lte("data", data_fim);
       await supabaseAdmin.from("lab_faturamento").delete().gte("data_competencia", data_inicio).lte("data_competencia", data_fim).eq("tipo_transacao", tipo_transacao);
     }
 
