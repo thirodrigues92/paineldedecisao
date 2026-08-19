@@ -301,9 +301,13 @@ export const labSyncParticular = createServerFn({ method: "POST" })
               acrescimo: acre,
               valor_faturado: finalVal,
               is_cancelado: isCancelado,
-              tipo_transacao: tipo_transacao,
-              payload_raw: item
-            });
+               tipo_transacao: tipo_transacao,
+               payload_raw: {
+                 ...item,
+                 _debug_invoice_header: invoice.detalhes?.[0],
+                 _debug_sync_at: new Date().toISOString()
+               }
+             });
 
             somaItensInvoice += finalVal;
             resumo.soma_faturada += finalVal;
@@ -323,7 +327,12 @@ export const labSyncParticular = createServerFn({ method: "POST" })
               data_pagamento: parseDataFeegow(pag.data),
               valor_recebido: valPag,
               forma_pagamento: pag.forma_pagamento,
-              payload_raw: pag
+              conta_destino_id: pag.conta_id ? Number(pag.conta_id) : null,
+              payload_raw: {
+                ...pag,
+                _debug_source: 'financial/list-invoice',
+                _debug_sync_at: new Date().toISOString()
+              }
             });
             resumo.soma_recebida += valPag;
             resumo.total_pagamentos++;
