@@ -47,7 +47,7 @@ function LabConciliacao() {
   const filteredData = useMemo(() => {
     if (!conciliacaoData) return [];
     return conciliacaoData.filter((item: any) => {
-      const searchMatch = `${item.paciente} ${item.procedimento} ${item.profissional}`.toLowerCase().includes(searchTerm.toLowerCase());
+      const searchMatch = `${item.paciente} ${item.procedimento} ${item.profissional} ${item.prontuario}`.toLowerCase().includes(searchTerm.toLowerCase());
       const statusMatch = statusFilter === "ALL" || item.status === statusFilter;
       return searchMatch && statusMatch;
     }).sort((a: any, b: any) => Math.abs(b.diferenca) - Math.abs(a.diferenca));
@@ -64,9 +64,10 @@ function LabConciliacao() {
 
   const exportCSV = () => {
     if (!filteredData.length) return;
-    const headers = ["Data", "Paciente", "Profissional", "Procedimento", "Valor Tabela", "Valor Faturado", "Diferenca", "Status"];
+    const headers = ["Data", "Prontuário", "Paciente", "Profissional", "Procedimento", "Valor Tabela", "Valor Faturado", "Diferenca", "Status"];
     const rows = filteredData.map((item: any) => [
       item.data,
+      item.prontuario,
       item.paciente,
       item.profissional,
       item.procedimento,
@@ -177,6 +178,7 @@ function LabConciliacao() {
             <TableHeader>
               <TableRow className="bg-muted/30">
                 <TableHead>Data</TableHead>
+                <TableHead>Prontuário</TableHead>
                 <TableHead>Paciente</TableHead>
                 <TableHead>Profissional</TableHead>
                 <TableHead>Procedimento</TableHead>
@@ -210,6 +212,7 @@ function LabConciliacao() {
                     <TableCell className="text-xs font-mono">
                       {item.data ? new Date(item.data).toLocaleDateString('pt-BR') : '-'}
                     </TableCell>
+                    <TableCell className="text-xs font-mono text-muted-foreground">{item.prontuario}</TableCell>
                     <TableCell className="text-sm font-medium">{item.paciente}</TableCell>
                     <TableCell className="text-xs text-muted-foreground">{item.profissional}</TableCell>
                     <TableCell className="text-xs">{item.procedimento}</TableCell>

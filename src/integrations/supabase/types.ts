@@ -427,6 +427,7 @@ export type Database = {
           procedimento_id: number | null
           procedimento_nome: string | null
           profissional_id: number | null
+          prontuario: string | null
           synced_at: string | null
           tabela_id: number | null
           tipo_transacao: string | null
@@ -465,6 +466,7 @@ export type Database = {
           procedimento_id?: number | null
           procedimento_nome?: string | null
           profissional_id?: number | null
+          prontuario?: string | null
           synced_at?: string | null
           tabela_id?: number | null
           tipo_transacao?: string | null
@@ -503,6 +505,7 @@ export type Database = {
           procedimento_id?: number | null
           procedimento_nome?: string | null
           profissional_id?: number | null
+          prontuario?: string | null
           synced_at?: string | null
           tabela_id?: number | null
           tipo_transacao?: string | null
@@ -555,6 +558,7 @@ export type Database = {
           procedimento_nome: string | null
           profissional_id: number | null
           profissional_nome: string | null
+          prontuario: string | null
           unidade_id: number | null
           valor: number | null
         }
@@ -573,6 +577,7 @@ export type Database = {
           procedimento_nome?: string | null
           profissional_id?: number | null
           profissional_nome?: string | null
+          prontuario?: string | null
           unidade_id?: number | null
           valor?: number | null
         }
@@ -591,6 +596,7 @@ export type Database = {
           procedimento_nome?: string | null
           profissional_id?: number | null
           profissional_nome?: string | null
+          prontuario?: string | null
           unidade_id?: number | null
           valor?: number | null
         }
@@ -694,6 +700,7 @@ export type Database = {
           nome: string | null
           origem_id: number | null
           paciente_id: number
+          prontuario: string | null
           sexo: string | null
           updated_at: string
         }
@@ -713,6 +720,7 @@ export type Database = {
           nome?: string | null
           origem_id?: number | null
           paciente_id: number
+          prontuario?: string | null
           sexo?: string | null
           updated_at?: string
         }
@@ -732,6 +740,7 @@ export type Database = {
           nome?: string | null
           origem_id?: number | null
           paciente_id?: number
+          prontuario?: string | null
           sexo?: string | null
           updated_at?: string
         }

@@ -39,6 +39,7 @@ export const Route = createFileRoute("/_authenticated/relatorio-atendimentos")({
 
 type Linha = {
   agendamento_id: number;
+  prontuario: string;
   celular: string;
   data: string;
   faturado: number;
@@ -55,6 +56,7 @@ type Linha = {
 type Coluna = { key: keyof Linha; label: string; align?: "right" };
 
 const COLUNAS: Coluna[] = [
+  { key: "prontuario", label: "Prontuário" },
   { key: "celular", label: "Celular" },
   { key: "data", label: "Data" },
   { key: "faturado", label: "Faturado", align: "right" },
@@ -98,6 +100,7 @@ function RelatorioAtendimentosPage() {
         const usaEstimado = real <= 0 && est > 0;
         return {
           agendamento_id: Number(a.agendamento_id),
+          prontuario: c?.prontuario ?? "—",
           celular: c?.celular ?? "—",
           data: a.data,
           faturado: faturado.get(Number(a.agendamento_id)) ?? 0,
@@ -120,7 +123,7 @@ function RelatorioAtendimentosPage() {
     let base = query.data ?? [];
     if (termo) {
       base = base.filter((l) =>
-        [l.paciente, l.celular, l.procedimento, l.local, l.status, l.origem]
+        [l.paciente, l.celular, l.procedimento, l.local, l.status, l.origem, l.prontuario]
           .join(" ")
           .toLowerCase()
           .includes(termo),
@@ -281,6 +284,7 @@ function RelatorioAtendimentosPage() {
                 <tbody>
                   {linhas.slice(0, 2000).map((l) => (
                     <tr key={l.agendamento_id} className="border-t border-border hover:bg-muted/40">
+                      <td className="whitespace-nowrap px-3 py-2 text-xs font-mono text-muted-foreground">{l.prontuario}</td>
                       <td className="whitespace-nowrap px-3 py-2">{l.celular}</td>
                       <td className="whitespace-nowrap px-3 py-2">{fmtData(l.data)}</td>
                       <td className="whitespace-nowrap px-3 py-2 text-right">

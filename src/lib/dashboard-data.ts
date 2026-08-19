@@ -205,7 +205,7 @@ export async function fetchDashboardAppointments(
     procedimentos: procMap.get(r.procedimento_id) ?? null,
   }));
 }
-export type PacienteContato = { nome: string | null; celular: string | null; origem_id: number | null };
+export type PacienteContato = { nome: string | null; celular: string | null; origem_id: number | null; prontuario: string | null };
 
 /** Mapa paciente_id → nome/celular/origem, usado no relatório de atendimentos. */
 export async function fetchPacientesContato(limit = 40_000): Promise<Map<number, PacienteContato>> {
@@ -214,12 +214,12 @@ export async function fetchPacientesContato(limit = 40_000): Promise<Map<number,
   for (let from = 0; from < limit; from += pageSize) {
     const { data, error } = await supabase
       .from("pacientes")
-      .select("paciente_id, nome, celular, origem_id")
+      .select("paciente_id, nome, celular, origem_id, prontuario")
       .order("paciente_id", { ascending: true })
       .range(from, from + pageSize - 1);
     if (error) throw error;
     for (const p of data ?? []) {
-      map.set(p.paciente_id, { nome: p.nome, celular: p.celular, origem_id: p.origem_id });
+      map.set(p.paciente_id, { nome: p.nome, celular: p.celular, origem_id: p.origem_id, prontuario: p.prontuario });
     }
     if (!data || data.length < pageSize) break;
   }
