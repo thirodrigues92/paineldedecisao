@@ -139,6 +139,10 @@ async function syncAgendaPeriodo(start: string, end: string) {
     console.log(`[SYNC-AGENDA] Recebidos ${list.length} registros (offset ${offset})`);
 
     for (const a of list) {
+      if (!a.id) {
+        console.warn(`[SYNC-AGENDA] Agendamento sem ID ignorado.`, a);
+        continue;
+      }
       agendamentos.push({
         agendamento_id: BigInt(a.id),
         convenio_id: a.convenio_id ? Number(a.convenio_id) : null,
