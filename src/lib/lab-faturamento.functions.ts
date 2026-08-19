@@ -73,11 +73,15 @@ async function syncAgendaPeriodo(start: string, end: string) {
   let offset = 0;
   const limit = 50;
   const agendamentos: any[] = [];
+  const ds = toFeegowDate(start);
+  const de = toFeegowDate(end);
+
+  console.log(`[SYNC-AGENDA] Buscando agenda de ${ds} a ${de}`);
 
   while (true) {
     const url = new URL(`${FEEGOW_BASE}/appoints/search`);
-    url.searchParams.set("data_start", toFeegowDate(start));
-    url.searchParams.set("data_end", toFeegowDate(end));
+    url.searchParams.set("data_start", ds);
+    url.searchParams.set("data_end", de);
     url.searchParams.set("list_procedures", "1");
     url.searchParams.set("start", String(offset));
     url.searchParams.set("offset", String(limit));
@@ -108,7 +112,9 @@ async function syncAgendaPeriodo(start: string, end: string) {
   }
 
   if (agendamentos.length) {
-    await supabaseAdmin.from("lab_dim_agendamento").upsert(agendamentos, { onConflict: "agendamento_id" });
+    console.log(`[SYNC-AGENDA] Gravando ${agendamentos.length} agendamentos.`);
+    const { error } = await supabaseAdmin.from("lab_dim_agendamento").upsert(agendamentos, { onConflict: "agendamento_id" });
+    if (error) console.error("[SYNC-AGENDA] Erro DB:", error);
   }
   return agendamentos.length;
 }
