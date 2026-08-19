@@ -592,7 +592,7 @@ export const labSyncProducao = createServerFn({ method: "POST" })
           profissional_nome: r.NomeProfissional || null,
           procedimento_id: toBigInt(r.ProcedimentoID),
           procedimento_nome: r.NomeProcedimento || null,
-          valor: typeof r.Valor === 'number' ? r.Valor : Number(String(r.Valor || 0).replace(',', '.')),
+          valor: typeof r.Valor === 'number' ? r.Valor : Number(String(r.Valor || 0).replace(/[^\d.,]/g, '').replace('.', '').replace(',', '.')),
           convenio_nome: r.Origem || null,
           unidade_id: toBigInt(r.UnidadeID),
           payload_raw: r

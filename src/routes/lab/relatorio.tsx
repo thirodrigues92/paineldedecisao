@@ -535,19 +535,39 @@ function LabRelatorio() {
                       </TableRow>
                     ) : (
                       filteredProducaoData.map((item: any) => (
-                        <TableRow key={item.id}>
-                          <TableCell className="text-xs font-mono">
-                            {item.data_execucao ? new Date(item.data_execucao).toLocaleDateString('pt-BR') : '-'}
-                          </TableCell>
-                          <TableCell className="text-xs">{item.hora_inicio}</TableCell>
-                          <TableCell className="text-sm font-medium">{item.paciente_nome}</TableCell>
-                          <TableCell className="text-xs">{item.profissional_nome}</TableCell>
-                          <TableCell className="text-xs">{item.procedimento_nome}</TableCell>
-                          <TableCell className="text-[10px] uppercase">{item.convenio_nome}</TableCell>
-                          <TableCell className="text-right font-mono font-bold">
-                            R$ {Number(item.valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                          </TableCell>
-                        </TableRow>
+                        <>
+                          <TableRow 
+                            key={item.id}
+                            className="cursor-pointer hover:bg-muted/30 transition-colors"
+                            onClick={() => setExpandedRow(expandedRow === item.id ? null : item.id)}
+                          >
+                            <TableCell className="text-xs font-mono">
+                              {item.data_execucao ? new Date(item.data_execucao).toLocaleDateString('pt-BR') : '-'}
+                            </TableCell>
+                            <TableCell className="text-xs">{item.hora_inicio}</TableCell>
+                            <TableCell className="text-sm font-medium">{item.paciente_nome}</TableCell>
+                            <TableCell className="text-xs">{item.profissional_nome}</TableCell>
+                            <TableCell className="text-xs">{item.procedimento_nome}</TableCell>
+                            <TableCell className="text-[10px] uppercase">{item.convenio_nome}</TableCell>
+                            <TableCell className="text-right font-mono font-bold">
+                              R$ {Number(item.valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </TableCell>
+                          </TableRow>
+                          {expandedRow === item.id && (
+                            <TableRow className="bg-slate-50 border-x-2 border-indigo-200">
+                              <TableCell colSpan={7} className="p-4">
+                                <div className="space-y-3">
+                                  <h4 className="text-xs font-bold uppercase text-indigo-900 flex items-center gap-2">
+                                    <Database className="w-3 h-3" /> Dados Brutos (Relatório de Execução)
+                                  </h4>
+                                  <div className="bg-slate-900 text-slate-100 p-3 rounded-md text-[10px] font-mono overflow-auto max-h-[200px]">
+                                    <pre>{JSON.stringify(item.payload_raw, null, 2)}</pre>
+                                  </div>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </>
                       ))
                     )}
                   </TableBody>
