@@ -662,6 +662,12 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const { data_inicio, data_fim } = data;
     
+    // Antes de buscar a conciliação, garantimos que a agenda base do período está sincronizada
+    // na lab_dim_agendamento para possíveis enriquecimentos futuros
+    await syncAgendaPeriodo(data_inicio, data_fim);
+    
+
+    
     // 1. Buscar atendimentos realizados na produção
     const { data: agenda, error: aErr } = await supabaseAdmin
       .from("lab_producao_feegow")
