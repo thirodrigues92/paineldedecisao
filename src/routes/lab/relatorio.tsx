@@ -527,14 +527,14 @@ function LabRelatorio() {
                       <TableRow>
                         <TableCell colSpan={7} className="h-32 text-center">Carregando produção...</TableCell>
                       </TableRow>
-                    ) : producaoData?.length === 0 ? (
+                    ) : filteredProducaoData.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
-                          Nenhum dado de produção para o período.
+                          Nenhum dado de produção encontrado para o período ou busca selecionada.
                         </TableCell>
                       </TableRow>
                     ) : (
-                      producaoData?.map((item: any) => (
+                      filteredProducaoData.map((item: any) => (
                         <TableRow key={item.id}>
                           <TableCell className="text-xs font-mono">
                             {item.data_execucao ? new Date(item.data_execucao).toLocaleDateString('pt-BR') : '-'}
