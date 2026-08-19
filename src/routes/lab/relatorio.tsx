@@ -298,11 +298,11 @@ function LabRelatorio() {
                 <Progress value={syncProgress} className="h-1" />
               </div>
             )}
-            {syncMutation.data && (resumo => (
-              <div className="mt-2 p-2 bg-slate-100 rounded text-[10px] font-mono whitespace-pre-wrap max-h-40 overflow-y-auto">
-                {(syncMutation.data as any).logs?.join('\n')}
+            {syncMutation.data && (syncMutation.data as any).logs && (
+              <div className="mt-2 p-2 bg-slate-100 rounded text-[10px] font-mono whitespace-pre-wrap max-h-40 overflow-y-auto border">
+                {(syncMutation.data as any).logs.join('\n')}
               </div>
-            ))(syncMutation.data)}
+            )}
           </CardContent>
         </Card>
       )}
