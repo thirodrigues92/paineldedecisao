@@ -262,8 +262,13 @@ export const labSyncParticular = createServerFn({ method: "POST" })
         let duplicados = 0;
 
         for (const invoice of lista) {
-          const invoice_id = Number(invoice.invoice_id);
-          // Guarda anti-duplicidade dentro da mesma resposta (mesmo sem laço while, mantemos por segurança)
+          const invoice_id = invoice.invoice_id ? Number(invoice.invoice_id) : null;
+          
+          if (!invoice_id) {
+            console.warn("[SYNC] Invoice sem ID ignorada:", invoice);
+            continue;
+          }
+
           if (vistos.has(invoice_id)) { 
             duplicados++; 
             continue; 
