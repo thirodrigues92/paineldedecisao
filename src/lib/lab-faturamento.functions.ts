@@ -299,8 +299,8 @@ export const labSyncParticular = createServerFn({ method: "POST" })
 
             faturamentos.push({
               origem: 'particular',
-              documento_id: invoice_id,
-              item_id: item.item_id ? Number(item.item_id) : Math.floor(Math.random() * 1000000), // Fallback para item_id ausente
+              documento_id: BigInt(invoice_id),
+              item_id: item.item_id ? BigInt(item.item_id) : BigInt(Math.floor(Math.random() * 1000000)),
               agendamento_id: item.agendamento_id ? Number(item.agendamento_id) : null,
               // Fallback importante: a API no list-invoice as vezes não manda o paciente_id no topo, 
               // mas a agenda (syncAgendaPeriodo) tem esse dado. O lab_enriquecer_faturamento vai completar via agendamento_id.
@@ -336,8 +336,8 @@ export const labSyncParticular = createServerFn({ method: "POST" })
             const valPag = parseValorCentavos(pag.valor);
             recebimentos.push({
               origem: 'particular',
-              documento_id: invoice_id,
-              pagamento_id: pag.pagamento_id ? Number(pag.pagamento_id) : Math.floor(Math.random() * 1000000),
+              documento_id: BigInt(invoice_id),
+              pagamento_id: pag.pagamento_id ? BigInt(pag.pagamento_id) : BigInt(Math.floor(Math.random() * 1000000)),
               data_pagamento: parseDataFeegow(pag.data),
               valor_recebido: valPag,
               forma_pagamento: pag.forma_pagamento,
