@@ -447,6 +447,7 @@ function LabFaturamento() {
           <button onClick={() => setTab("sincronizacao")} className={`px-4 py-2 whitespace-nowrap cursor-pointer ${tab === "sincronizacao" ? "border-b-2 border-primary font-bold" : ""}`}>Sincronização</button>
           <button onClick={() => setTab("auditoria")} className={`px-4 py-2 whitespace-nowrap cursor-pointer ${tab === "auditoria" ? "border-b-2 border-primary font-bold" : ""}`}>Auditoria</button>
           <button onClick={() => setTab("diagnostico")} className={`px-4 py-2 whitespace-nowrap cursor-pointer ${tab === "diagnostico" ? "border-b-2 border-primary font-bold" : ""}`}>Debug API</button>
+          <button onClick={() => window.location.href = '/lab/relatorio'} className="px-4 py-2 whitespace-nowrap cursor-pointer text-indigo-600 hover:font-bold">📋 Relatório Comparativo</button>
         </div>
 
 
