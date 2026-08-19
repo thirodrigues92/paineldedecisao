@@ -278,8 +278,11 @@ export const labSyncParticular = createServerFn({ method: "POST" })
 
         for (const invoice of lista) {
           // Garante que invoice_id é BigInt
-          const invoice_id_raw = invoice.invoice_id ? Number(invoice.invoice_id) : null;
-          if (!invoice_id_raw) continue;
+          const invoice_id_raw = invoice.invoice_id ? Number(invoice.invoice_id) : (invoice.detalhes?.[0]?.invoice_id ? Number(invoice.detalhes[0].invoice_id) : null);
+          if (!invoice_id_raw) {
+            console.log("[SYNC] Pulando invoice sem ID:", JSON.stringify(invoice.detalhes?.[0]));
+            continue;
+          }
 
           if (vistos.has(invoice_id_raw)) { 
             duplicados++; 
@@ -329,6 +332,8 @@ export const labSyncParticular = createServerFn({ method: "POST" })
               valor_faturado: finalVal,
               is_cancelado: isCancelado,
               tipo_transacao: tipo_transacao,
+              paciente_nome: invoice.paciente_nome || invoice.paciente || null,
+              procedimento_nome: item.procedimento_nome || item.procedimento || null,
               payload_raw: {
                 ...item,
                 _debug_invoice_header: invoice.detalhes?.[0],
@@ -381,13 +386,19 @@ export const labSyncParticular = createServerFn({ method: "POST" })
 
           if (headers.length > 0) {
             const { error: hErr } = await supabaseAdmin.from("lab_invoice_header").upsert(headers, { onConflict: "invoice_id" });
-            if (hErr) throw new Error(`Erro DB Headers: ${hErr.message}`);
+            if (hErr) {
+              console.error("[SYNC] Erro Headers:", hErr);
+              throw new Error(`Erro DB Headers: ${hErr.message}`);
+            }
           }
           
           if (faturamentos.length > 0) {
             for (const bloco of chunk(faturamentos, 50)) {
               const { error: fErr } = await supabaseAdmin.from("lab_faturamento").upsert(bloco, { onConflict: "origem,documento_id,item_id" });
-              if (fErr) throw new Error(`Erro DB Faturamento: ${fErr.message}`);
+              if (fErr) {
+                console.error("[SYNC] Erro detalhado faturamento:", JSON.stringify(fErr), "Amostra bloco:", JSON.stringify(bloco[0]));
+                throw new Error(`Erro DB Faturamento: ${fErr.message}`);
+              }
             }
           }
           
