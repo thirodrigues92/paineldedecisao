@@ -24,7 +24,6 @@ import { Route as AuthenticatedFinanceiroRouteImport } from './routes/_authentic
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedConfigRouteImport } from './routes/_authenticated/config'
 import { Route as AuthenticatedAuditoriaRouteImport } from './routes/_authenticated/auditoria'
-import { Route as ApiPublicLabResetRouteImport } from './routes/api/public/lab-reset'
 import { Route as AuthenticatedAnalyticsRentabilidadeRouteImport } from './routes/_authenticated/analytics/rentabilidade'
 import { Route as AuthenticatedAnalyticsPrevisoesRouteImport } from './routes/_authenticated/analytics/previsoes'
 import { Route as AuthenticatedAnalyticsComercialRouteImport } from './routes/_authenticated/analytics/comercial'
@@ -107,11 +106,6 @@ const AuthenticatedAuditoriaRoute = AuthenticatedAuditoriaRouteImport.update({
   path: '/auditoria',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const ApiPublicLabResetRoute = ApiPublicLabResetRouteImport.update({
-  id: '/api/public/lab-reset',
-  path: '/api/public/lab-reset',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuthenticatedAnalyticsRentabilidadeRoute =
   AuthenticatedAnalyticsRentabilidadeRouteImport.update({
     id: '/analytics/rentabilidade',
@@ -163,7 +157,6 @@ export interface FileRoutesByFullPath {
   '/analytics/comercial': typeof AuthenticatedAnalyticsComercialRoute
   '/analytics/previsoes': typeof AuthenticatedAnalyticsPrevisoesRoute
   '/analytics/rentabilidade': typeof AuthenticatedAnalyticsRentabilidadeRoute
-  '/api/public/lab-reset': typeof ApiPublicLabResetRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -185,7 +178,6 @@ export interface FileRoutesByTo {
   '/analytics/comercial': typeof AuthenticatedAnalyticsComercialRoute
   '/analytics/previsoes': typeof AuthenticatedAnalyticsPrevisoesRoute
   '/analytics/rentabilidade': typeof AuthenticatedAnalyticsRentabilidadeRoute
-  '/api/public/lab-reset': typeof ApiPublicLabResetRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -209,7 +201,6 @@ export interface FileRoutesById {
   '/_authenticated/analytics/comercial': typeof AuthenticatedAnalyticsComercialRoute
   '/_authenticated/analytics/previsoes': typeof AuthenticatedAnalyticsPrevisoesRoute
   '/_authenticated/analytics/rentabilidade': typeof AuthenticatedAnalyticsRentabilidadeRoute
-  '/api/public/lab-reset': typeof ApiPublicLabResetRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -233,7 +224,6 @@ export interface FileRouteTypes {
     | '/analytics/comercial'
     | '/analytics/previsoes'
     | '/analytics/rentabilidade'
-    | '/api/public/lab-reset'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -255,7 +245,6 @@ export interface FileRouteTypes {
     | '/analytics/comercial'
     | '/analytics/previsoes'
     | '/analytics/rentabilidade'
-    | '/api/public/lab-reset'
   id:
     | '__root__'
     | '/'
@@ -278,7 +267,6 @@ export interface FileRouteTypes {
     | '/_authenticated/analytics/comercial'
     | '/_authenticated/analytics/previsoes'
     | '/_authenticated/analytics/rentabilidade'
-    | '/api/public/lab-reset'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -287,7 +275,6 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   LabFaturamentoRoute: typeof LabFaturamentoRoute
   LabRelatorioRoute: typeof LabRelatorioRoute
-  ApiPublicLabResetRoute: typeof ApiPublicLabResetRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -397,13 +384,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAuditoriaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/api/public/lab-reset': {
-      id: '/api/public/lab-reset'
-      path: '/api/public/lab-reset'
-      fullPath: '/api/public/lab-reset'
-      preLoaderRoute: typeof ApiPublicLabResetRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_authenticated/analytics/rentabilidade': {
       id: '/_authenticated/analytics/rentabilidade'
       path: '/analytics/rentabilidade'
@@ -489,7 +469,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   LabFaturamentoRoute: LabFaturamentoRoute,
   LabRelatorioRoute: LabRelatorioRoute,
-  ApiPublicLabResetRoute: ApiPublicLabResetRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
