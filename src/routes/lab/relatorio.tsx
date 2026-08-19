@@ -6,13 +6,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useState, useMemo } from "react";
-import { FileText, Search, Filter, ArrowUpDown, Download, RefreshCw, Play, Settings, Calendar, ChevronDown, ChevronRight, Info, Database } from "lucide-react";
+import { FileText, Search, Filter, ArrowUpDown, Download, RefreshCw, Play, Settings, Calendar, ChevronDown, ChevronRight, Info, Database, BarChart3, ListChecks } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DatePickerWithRange } from "@/components/ui/date-picker-with-range";
-import { labSyncParticular } from "@/lib/lab-faturamento.functions";
+import { labSyncParticular, labSyncProducao } from "@/lib/lab-faturamento.functions";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export const Route = createFileRoute("/lab/relatorio")({
   component: LabRelatorio,
@@ -34,7 +35,16 @@ function LabRelatorio() {
   const queryClient = useQueryClient();
 
   const syncMutation = useMutation({
-    mutationFn: async ({ start, end }: { start: string, end: string }) => {
+    mutationFn: async ({ start, end, type }: { start: string, end: string, type: 'faturamento' | 'producao' }) => {
+      if (type === 'producao') {
+        return labSyncProducao({ 
+          data: { 
+            start_date: start, 
+            end_date: end,
+            dry_run: false
+          } 
+        });
+      }
       return labSyncParticular({ 
         data: { 
           data_inicio: start, 
@@ -46,14 +56,19 @@ function LabRelatorio() {
         } 
       });
     },
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ['lab-relatorio-comparativo'] });
-      toast.success("Sincronização concluída!");
+      queryClient.invalidateQueries({ queryKey: ['lab-producao'] });
+      
+      const msg = res?.inseridos !== undefined 
+        ? `Sincronizados ${res.inseridos} registros!`
+        : "Sincronização concluída!";
+      toast.success(msg);
     },
     onError: (e) => toast.error("Erro na sincronização: " + String(e))
   });
 
-  const runSync = async () => {
+  const runSync = async (type: 'faturamento' | 'producao' = 'faturamento') => {
     setIsSyncing(true);
     setSyncProgress(10);
     
@@ -61,7 +76,7 @@ function LabRelatorio() {
     const endStr = dateRange.end.toISOString().split('T')[0];
 
     try {
-      await syncMutation.mutateAsync({ start: startStr, end: endStr });
+      await syncMutation.mutateAsync({ start: startStr, end: endStr, type });
       setSyncProgress(100);
     } finally {
       setTimeout(() => {
@@ -71,7 +86,7 @@ function LabRelatorio() {
     }
   };
   
-  const syncYesterday = async () => {
+  const syncYesterday = async (type: 'faturamento' | 'producao' = 'faturamento') => {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     setDateRange({ start: yesterday, end: yesterday });
@@ -82,7 +97,7 @@ function LabRelatorio() {
     const dateStr = yesterday.toISOString().split('T')[0];
 
     try {
-      await syncMutation.mutateAsync({ start: dateStr, end: dateStr });
+      await syncMutation.mutateAsync({ start: dateStr, end: dateStr, type });
       setSyncProgress(100);
     } finally {
       setTimeout(() => {
@@ -91,6 +106,21 @@ function LabRelatorio() {
       }, 1000);
     }
   };
+
+  const { data: producaoData, isLoading: isLoadingProd } = useQuery({
+    queryKey: ['lab-producao', dateRange.start.toISOString(), dateRange.end.toISOString()],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('lab_producao_feegow')
+        .select('*')
+        .gte("data_execucao", dateRange.start.toISOString().split('T')[0])
+        .lte("data_execucao", dateRange.end.toISOString().split('T')[0])
+        .order('data_execucao', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    }
+  });
 
 
   const { data: reportData, isLoading } = useQuery({
@@ -201,7 +231,7 @@ function LabRelatorio() {
         <Card className="border-indigo-200 bg-indigo-50/10">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-bold flex items-center gap-2">
-              <Settings className="w-4 h-4" /> Configurar Sincronização Rápida
+              <Settings className="w-4 h-4" /> Configurar Sincronização
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -214,49 +244,49 @@ function LabRelatorio() {
                   onRangeChange={(from, to) => setDateRange({ start: from, end: to })} 
                 />
               </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase text-muted-foreground">Modo</label>
-                <div className="flex gap-1">
-                  <Button 
-                    variant={syncWindowSize === 1 ? "default" : "outline"} 
-                    size="sm" 
-                    className="h-9 text-[10px]"
-                    onClick={() => setSyncWindowSize(1)}
-                  >
-                    Granular (1d)
-                  </Button>
-                  <Button 
-                    variant={syncWindowSize === 3 ? "default" : "outline"} 
-                    size="sm" 
-                    className="h-9 text-[10px]"
-                    onClick={() => setSyncWindowSize(3)}
-                  >
-                    Bloco (3d)
-                  </Button>
-                </div>
-              </div>
               <div className="flex gap-2">
-                <Button 
-                  className="bg-indigo-600 hover:bg-indigo-700" 
-                  onClick={runSync}
-                  disabled={isSyncing}
-                >
-                  {isSyncing ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Play className="w-4 h-4 mr-2" />}
-                  Iniciar
-                </Button>
-                <Button 
-                  variant="outline"
-                  className="border-indigo-600 text-indigo-600 hover:bg-indigo-50" 
-                  onClick={syncYesterday}
-                  disabled={isSyncing}
-                >
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Sincronizar Ontem
-                </Button>
-              </div>
-              <div className="text-[10px] text-muted-foreground max-w-xs">
-                A sincronização trará lançamentos do tipo <b>Receita (C)</b>. 
-                O modo granular é recomendado para conferência profunda de dados diários.
+                <div className="space-y-2 border-r pr-4">
+                  <label className="text-[10px] font-bold uppercase text-amber-600 block">Auditoria Financeira</label>
+                  <div className="flex gap-2">
+                    <Button 
+                      className="bg-amber-600 hover:bg-amber-700 h-9" 
+                      onClick={() => runSync('faturamento')}
+                      disabled={isSyncing}
+                    >
+                      <Play className="w-4 h-4 mr-2" />
+                      Sync Faturamento
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      className="border-amber-600 text-amber-600 hover:bg-amber-50 h-9" 
+                      onClick={() => syncYesterday('faturamento')}
+                      disabled={isSyncing}
+                    >
+                      Ontem
+                    </Button>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase text-indigo-600 block">Produção (Execução)</label>
+                  <div className="flex gap-2">
+                    <Button 
+                      className="bg-indigo-600 hover:bg-indigo-700 h-9" 
+                      onClick={() => runSync('producao')}
+                      disabled={isSyncing}
+                    >
+                      <BarChart3 className="w-4 h-4 mr-2" />
+                      Sync Produção
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      className="border-indigo-600 text-indigo-600 hover:bg-indigo-50 h-9" 
+                      onClick={() => syncYesterday('producao')}
+                      disabled={isSyncing}
+                    >
+                      Ontem
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
             {isSyncing && (
@@ -268,9 +298,26 @@ function LabRelatorio() {
                 <Progress value={syncProgress} className="h-1" />
               </div>
             )}
+            {syncMutation.data && (syncMutation.data as any).logs && (
+              <div className="mt-2 p-2 bg-slate-100 rounded text-[10px] font-mono whitespace-pre-wrap max-h-40 overflow-y-auto border">
+                {(syncMutation.data as any).logs.join('\n')}
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
+
+      <Tabs defaultValue="faturamento" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2 max-w-[400px]">
+          <TabsTrigger value="faturamento" className="flex items-center gap-2">
+            <Database className="w-4 h-4" /> Financeiro (list-invoice)
+          </TabsTrigger>
+          <TabsTrigger value="producao" className="flex items-center gap-2">
+            <BarChart3 className="w-4 h-4" /> Produção (reports)
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="faturamento">
 
 
       <Card>
@@ -433,6 +480,74 @@ function LabRelatorio() {
           <p>Este relatório utiliza exclusivamente dados da tabela <code>lab_faturamento</code>, que é populada durante a sincronização no Lab. Se os números não baterem com o Feegow, verifique se a janela de sincronização foi executada para o período desejado e se o modo <b>Dry-run</b> estava desativado.</p>
         </div>
       </div>
+        </TabsContent>
+
+        <TabsContent value="producao">
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-4">
+                <div className="relative flex-1 max-w-sm">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar na produção..."
+                    className="pl-8"
+                  />
+                </div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <BarChart3 className="w-4 h-4" />
+                  <span>{producaoData?.length || 0} execuções encontradas</span>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-md border overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50">
+                      <TableHead>Data Exec.</TableHead>
+                      <TableHead>Hora</TableHead>
+                      <TableHead>Paciente</TableHead>
+                      <TableHead>Profissional</TableHead>
+                      <TableHead>Procedimento</TableHead>
+                      <TableHead>Convênio</TableHead>
+                      <TableHead className="text-right">Valor</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {isLoadingProd ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="h-32 text-center">Carregando produção...</TableCell>
+                      </TableRow>
+                    ) : producaoData?.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
+                          Nenhum dado de produção para o período.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      producaoData?.map((item: any) => (
+                        <TableRow key={item.id}>
+                          <TableCell className="text-xs font-mono">
+                            {item.data_execucao ? new Date(item.data_execucao).toLocaleDateString('pt-BR') : '-'}
+                          </TableCell>
+                          <TableCell className="text-xs">{item.hora_inicio}</TableCell>
+                          <TableCell className="text-sm font-medium">{item.paciente_nome}</TableCell>
+                          <TableCell className="text-xs">{item.profissional_nome}</TableCell>
+                          <TableCell className="text-xs">{item.procedimento_nome}</TableCell>
+                          <TableCell className="text-[10px] uppercase">{item.convenio_nome}</TableCell>
+                          <TableCell className="text-right font-mono font-bold">
+                            R$ {Number(item.valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
