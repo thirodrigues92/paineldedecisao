@@ -190,8 +190,7 @@ export const labSyncParticular = createServerFn({ method: "POST" })
       }
 
       try {
-        // O endpoint IGNORA start/offset: devolve o período inteiro em uma única resposta.
-        // Por isso fazemos UMA chamada por janela de data (paginar causava laço infinito).
+        // O endpoint financial/list-invoice precisa de parâmetros específicos para trazer itens e pagamentos
         const url = new URL(`${FEEGOW_BASE}/financial/list-invoice`);
         url.searchParams.set("data_start", ds);
         url.searchParams.set("data_end", de);
