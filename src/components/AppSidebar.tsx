@@ -38,6 +38,7 @@ const navFooter = [
 
 const navLab = [
   { title: "🧪 Lab — Faturamento", url: "/lab/faturamento", icon: Table2 },
+  { title: "🧪 Lab — Conciliação", url: "/lab/conciliacao", icon: Database },
 ];
 
 
