@@ -94,7 +94,7 @@ function LabRelatorio() {
 
 
   const { data: reportData, isLoading } = useQuery({
-    queryKey: ['lab-relatorio-comparativo'],
+    queryKey: ['lab-relatorio-comparativo', dateRange.start.toISOString(), dateRange.end.toISOString()],
     queryFn: async () => {
       // Buscamos dados do lab_faturamento enriquecidos
       const { data, error } = await supabase
