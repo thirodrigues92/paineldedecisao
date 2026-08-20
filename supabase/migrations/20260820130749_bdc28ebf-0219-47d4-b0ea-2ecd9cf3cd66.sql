@@ -1,0 +1,19 @@
+GRANT ALL ON public.lab_faturamento TO authenticated;
+GRANT ALL ON public.lab_recebimento TO authenticated;
+GRANT ALL ON public.lab_producao_feegow TO authenticated;
+GRANT ALL ON public.lab_dim_agendamento TO authenticated;
+GRANT ALL ON public.lab_dim_procedimento TO authenticated;
+GRANT ALL ON public.lab_dim_categoria TO authenticated;
+GRANT ALL ON public.lab_dim_centro_custo TO authenticated;
+GRANT ALL ON public.lab_invoice_header TO authenticated;
+GRANT ALL ON public.lab_sync_log TO authenticated;
+
+GRANT ALL ON public.lab_faturamento TO service_role;
+GRANT ALL ON public.lab_recebimento TO service_role;
+GRANT ALL ON public.lab_producao_feegow TO service_role;
+GRANT ALL ON public.lab_dim_agendamento TO service_role;
+GRANT ALL ON public.lab_dim_procedimento TO service_role;
+GRANT ALL ON public.lab_dim_categoria TO service_role;
+GRANT ALL ON public.lab_dim_centro_custo TO service_role;
+GRANT ALL ON public.lab_invoice_header TO service_role;
+GRANT ALL ON public.lab_sync_log TO service_role;
