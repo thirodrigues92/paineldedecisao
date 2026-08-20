@@ -163,20 +163,15 @@ function LabRelatorio() {
   const { data: reportData, isLoading } = useQuery({
     queryKey: ['lab-relatorio-comparativo', dateRange.start.toISOString().split('T')[0], dateRange.end.toISOString().split('T')[0]],
     queryFn: async () => {
-      // Buscamos dados do lab_faturamento enriquecidos
+      // Buscamos dados da VIEW categorizada (vw_faturamento_categorizado)
       const { data, error } = await supabase
-        .from('lab_faturamento')
-        .select(`
-          *,
-          paciente:pacientes!paciente_id(nome),
-          procedimento:lab_dim_procedimento(nome),
-          profissional:profissionais!profissional_id(nome),
-          convenio:convenios!convenio_id(nome)
-        `)
+        .from('vw_faturamento_categorizado')
+        .select('*')
         .gte("data_competencia", dateRange.start.toISOString().split('T')[0])
         .lte("data_competencia", dateRange.end.toISOString().split('T')[0])
         .order('data_competencia', { ascending: false })
-        .limit(1000);
+        .limit(2000);
+
 
       if (error) {
         console.error("Erro ao buscar relatório:", error);
