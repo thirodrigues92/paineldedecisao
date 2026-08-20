@@ -9,7 +9,7 @@ import { useState, useMemo } from "react";
 import { FileText, Search, Filter, ArrowUpDown, Download, RefreshCw, Play, Settings, Calendar, ChevronDown, ChevronRight, Info, Database, BarChart3, ListChecks } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DatePickerWithRange } from "@/components/ui/date-picker-with-range";
-import { labSyncParticular, labSyncProducao } from "@/lib/lab-faturamento.functions";
+import { labSyncParticular, labSyncProducao, labSyncConvenioCatalog, labEnrichFaturamento, getLabEnrichmentStatus } from "@/lib/lab-faturamento.functions";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
