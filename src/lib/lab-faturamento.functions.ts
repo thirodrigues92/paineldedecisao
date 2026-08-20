@@ -930,7 +930,11 @@ export const labEnrichFaturamento = createServerFn({ method: "POST" })
       const ids = new Set<number>();
       const page = 1000;
       for (let from = 0; from < 100000; from += page) {
-        let q = supabaseAdmin.from(table).select('agendamento_id').range(from, from + page - 1);
+        let q = supabaseAdmin
+          .from(table)
+          .select('agendamento_id')
+          .order('agendamento_id', { ascending: true })
+          .range(from, from + page - 1);
         if (table === 'lab_faturamento') q = q.not('agendamento_id', 'is', null);
         const { data: rows } = await q;
         (rows || []).forEach((r: any) => { if (r.agendamento_id != null) ids.add(Number(r.agendamento_id)); });
@@ -1011,6 +1015,7 @@ export const getLabEnrichmentStatus = createServerFn({ method: "GET" }).handler(
       .from('lab_faturamento')
       .select('agendamento_id')
       .not('agendamento_id', 'is', null)
+      .order('agendamento_id', { ascending: true })
       .range(from, from + 999);
     (rows || []).forEach((r) => { if (r.agendamento_id != null) idsUnicos.add(Number(r.agendamento_id)); });
     if (!rows || rows.length < 1000) break;
