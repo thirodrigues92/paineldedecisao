@@ -100,21 +100,22 @@ function LabConciliacao() {
 
   const exportCSV = () => {
     if (!filteredData.length) return;
-    const headers = ["Data", "Prontuário", "Paciente", "Profissional", "Procedimento", "Valor Tabela", "Valor Faturado", "Diferenca", "Formas Pagamento", "Status"];
+    const headers = ["Data", "Prontuario", "Paciente", "Profissional", "Procedimento", "Valor Tabela", "Valor Faturado", "Diferenca", "Status", "Pagamento"];
     const rows = filteredData.map((item: any) => [
-      item.data,
-      item.prontuario,
-      item.paciente,
-      item.profissional,
-      item.procedimento,
-      item.valor_tabela,
-      item.valor_faturado,
-      item.diferenca,
-      (item.formas_pagamento || []).join(" | "),
-      item.status
+      item.data ? item.data.split('-').reverse().join('/') : '-',
+      item.prontuario || "",
+      item.paciente || "",
+      item.profissional || "",
+      item.procedimento || "",
+      item.valor_tabela.toFixed(2).replace('.', ','),
+      item.valor_faturado.toFixed(2).replace('.', ','),
+      item.diferenca.toFixed(2).replace('.', ','),
+      item.status,
+      (item.formas_pagamento || []).join(" / ")
     ]);
 
-    const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+    // Usar delimitador ponto e vírgula e BOM para compatibilidade com Excel em PT-BR
+    const csvContent = "\uFEFF" + [headers, ...rows].map(e => e.map(val => `"${val}"`).join(";")).join("\n");
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
@@ -257,7 +258,7 @@ function LabConciliacao() {
                     onClick={() => setSelectedAgendamento(item.agendamento_id)}
                   >
                     <TableCell className="text-xs font-mono">
-                      {item.data ? new Date(item.data).toLocaleDateString('pt-BR') : '-'}
+                      {item.data ? item.data.split('-').reverse().join('/') : '-'}
                     </TableCell>
                     <TableCell className="text-xs font-mono text-muted-foreground">{item.prontuario}</TableCell>
                     <TableCell className="text-sm font-medium">{item.paciente}</TableCell>
