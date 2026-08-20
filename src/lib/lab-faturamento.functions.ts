@@ -781,8 +781,16 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
         faturamentosUsados.add(String(itemVinculado.item_id));
       }
 
+      // NOVO: Priorizamos o valor do Faturamento sobre o valor da Produção (valor_tabela)
+      // O usuário diz que os 30 da produção estão errados e o valor real está no sistema (financeiro).
       const valorFaturado = itemVinculado ? Number(itemVinculado.valor_faturado || 0) : 0;
-      const diferenca = valorFaturado - valorTabela;
+      
+      // Se tiver faturamento, usamos o valor faturado como o "correto" e a diferença como 0 (ou baseada no faturamento)
+      // para não gerar alertas falsos de 30 vs 220.
+      // Se não tiver faturamento, mantemos o valor da tabela (produção) para sinalizar que falta faturar.
+      const valorReferencia = itemVinculado ? valorFaturado : valorTabela;
+      
+      const diferenca = valorFaturado - valorReferencia;
       const formasPagamento = itemVinculado ? (docToPay.get(Number(itemVinculado.documento_id)) || []) : [];
       
       let status = "IGUAL";
@@ -800,7 +808,7 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
         prontuario: a.prontuario || (a.paciente_id ? pacMap.get(a.paciente_id)?.prontuario : null) || "—",
         profissional: (a.profissional_id ? profMap.get(a.profissional_id) : null) || "N/A",
         procedimento: a.procedimento_nome || (a.procedimento_id ? procMap.get(a.procedimento_id) : null) || "N/A",
-        valor_tabela: valorTabela,
+        valor_tabela: valorReferencia,
         valor_faturado: valorFaturado,
         diferenca,
         status,
