@@ -930,8 +930,9 @@ export const labEnrichFaturamento = createServerFn({ method: "POST" })
           const isConvenio = a.convenio_id && Number(a.plano_id) === 1;
           
           await supabaseAdmin.from('lab_agendamento_enriquecido').upsert({
-            agendamento_id: BigInt(agId),
+            agendamento_id: Number(agId),
             convenio_id: a.convenio_id ? Number(a.convenio_id) : null,
+
             plano_id: a.plano_id ? Number(a.plano_id) : 0,
             categoria_receita: isConvenio ? 'convenio' : 'particular',
             procedimento_id: a.procedimento_id ? Number(a.procedimento_id) : null,
