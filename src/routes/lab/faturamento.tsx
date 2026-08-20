@@ -137,6 +137,59 @@ function LabFaturamento() {
     extra_params: 'start=0&offset=5'
   });
   const [requestHistory, setRequestHistory] = useState<any[]>([]);
+
+  // --- Categorização de convênio ---
+  const enrichStatus = useQuery({
+    queryKey: ["lab-enrich-status"],
+    queryFn: () => getLabEnrichmentStatus(),
+  });
+
+  const catalogMutation = useMutation({
+    mutationFn: () => labSyncConvenioCatalog(),
+    onSuccess: (r: any) => toast.success(`Catálogo de convênios sincronizado: ${r?.count ?? 0} registros`),
+    onError: (e: any) => toast.error(e?.message || "Falha ao sincronizar convênios"),
+  });
+
+  const [enriching, setEnriching] = useState(false);
+  const [enrichProgress, setEnrichProgress] = useState<{ processed: number; total: number; message: string }>({
+    processed: 0,
+    total: 0,
+    message: "",
+  });
+
+  const runEnrichmentLoop = async () => {
+    setEnriching(true);
+    try {
+      const inicial = await getLabEnrichmentStatus();
+      let total = inicial.pendente;
+      let processed = 0;
+      setEnrichProgress({ processed: 0, total, message: "Iniciando..." });
+
+      let guard = 0;
+      while (guard < 5000) {
+        guard++;
+        const res: any = await labEnrichFaturamento({ data: { limit: 20 } });
+        const n = Number(res?.processados ?? 0);
+        if (n === 0) break;
+        processed += n;
+        setEnrichProgress({ processed, total: Math.max(total, processed), message: `Lote de ${n} processado` });
+        const st = await getLabEnrichmentStatus();
+        if (st.pendente === 0) {
+          total = processed;
+          setEnrichProgress({ processed, total: Math.max(processed, 1), message: "Concluído" });
+          break;
+        }
+      }
+      await enrichStatus.refetch();
+      toast.success(`Categorização concluída: ${processed} agendamentos processados`);
+    } catch (e: any) {
+      toast.error(e?.message || "Falha ao processar categorização");
+    } finally {
+      setEnriching(false);
+    }
+  };
+
+
   
   const toFeegowDate = (iso: string) => {
     const d = new Date(iso);
