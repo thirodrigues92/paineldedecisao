@@ -773,6 +773,51 @@ export type Database = {
         }
         Relationships: []
       }
+      lab_tabela_precos_convenio: {
+        Row: {
+          atualizado_em: string | null
+          codigo_tuss: string | null
+          convenio_id: number
+          fonte: string | null
+          id: number
+          procedimento_id: number
+          valor: number
+        }
+        Insert: {
+          atualizado_em?: string | null
+          codigo_tuss?: string | null
+          convenio_id: number
+          fonte?: string | null
+          id?: number
+          procedimento_id: number
+          valor: number
+        }
+        Update: {
+          atualizado_em?: string | null
+          codigo_tuss?: string | null
+          convenio_id?: number
+          fonte?: string | null
+          id?: number
+          procedimento_id?: number
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_tabela_precos_convenio_convenio_id_fkey"
+            columns: ["convenio_id"]
+            isOneToOne: false
+            referencedRelation: "lab_convenios"
+            referencedColumns: ["convenio_id"]
+          },
+          {
+            foreignKeyName: "lab_tabela_precos_convenio_procedimento_id_fkey"
+            columns: ["procedimento_id"]
+            isOneToOne: false
+            referencedRelation: "procedimentos"
+            referencedColumns: ["procedimento_id"]
+          },
+        ]
+      }
       pacientes: {
         Row: {
           ano_nascimento: number | null
