@@ -358,7 +358,7 @@ function LabConciliacao() {
               <div className="flex flex-col items-center justify-center p-12 text-center space-y-3 bg-red-50 rounded-lg border border-red-100">
                 <AlertCircle className="w-12 h-12 text-red-500" />
                 <h3 className="font-bold text-red-900">Nenhum faturamento encontrado</h3>
-                <p className="text-xs text-red-700">Este agendamento consta na agenda do Feegow, mas não existe nenhum registro correspondente na tabela <code>lab_faturamento</code>.</p>
+                <p className="text-xs text-red-700">Este atendimento consta na Produção do Feegow, mas não existe nenhum registro correspondente no Financeiro (contas a receber).</p>
               </div>
             )}
 
