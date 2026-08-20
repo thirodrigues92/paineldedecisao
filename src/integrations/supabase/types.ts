@@ -1078,7 +1078,7 @@ export type Database = {
         }
         Returns: boolean
       }
-      lab_enriquecer_faturamento: { Args: never; Returns: undefined }
+      lab_enriquecer_faturamento: { Args: never; Returns: Json }
       lab_popular_dimensoes: { Args: never; Returns: undefined }
       refresh_dashboard_views: { Args: never; Returns: undefined }
     }
