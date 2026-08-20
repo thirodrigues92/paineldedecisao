@@ -544,70 +544,82 @@ export const labSyncProducao = createServerFn({ method: "POST" })
   .inputValidator((data: { start_date: string; end_date: string; dry_run?: boolean }) => data)
   .handler(async ({ data }) => {
     const { start_date, end_date, dry_run = false } = data;
-    const resumo = {
-      total: 0,
-      inseridos: 0,
-      erros: 0,
-      logs: [] as string[]
-    };
+    const resumo = { total: 0, inseridos: 0, erros: 0, logs: [] as string[] };
 
     const ds = toFeegowDate(start_date, "/");
     const de = toFeegowDate(end_date, "/");
 
-    const fetchReport = async (reportSlug: string) => {
-      resumo.logs.push(`Tentando relatório: ${reportSlug} (${ds} a ${de})`);
-      
-      if (!dry_run) {
-        await supabaseAdmin.from("lab_sync_log").insert({
-          endpoint: `reports/generate:${reportSlug}`,
-          parametros: { ds, de, dry_run },
-          api_success: false,
-          registros: 0,
-          erro: "iniciado"
-        });
+    // Parser robusto de valor BR: aceita "5,04", "1.234,56", number, null
+    const parseValorBR = (v: any): number => {
+      if (v === null || v === undefined || v === "") return 0;
+      if (typeof v === "number") return v;
+      const s = String(v).trim();
+      if (s.includes(",")) {
+        return Number(s.replace(/\./g, "").replace(",", ".")) || 0;
       }
-      const res = await fetch(`${FEEGOW_BASE}/reports/generate`, {
-        method: "POST",
-        headers: {
-          "x-access-token": FEEGOW_TOKEN(),
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          report: reportSlug,
-          DATA_INICIO: ds,
-          DATA_FIM: de
-        })
-      });
-      return await res.json();
+      return Number(s) || 0;
     };
 
-    let reportRes = await fetchReport("production");
-    
-    // Fallback para duration-of-service se production vier vazio/false
-    if (!reportRes.success || !reportRes.data || (Array.isArray(reportRes.data) && reportRes.data.length === 0)) {
-      resumo.logs.push(`Relatório 'production' sem dados ou erro. Iniciando fallback para 'duration-of-service'.`);
-      reportRes = await fetchReport("duration-of-service");
+    // Hash determinístico string -> bigint positivo (pra manter feegow_id preenchido e estável,
+    // mesmo não sendo mais a chave de upsert)
+    const hashToBigInt = (s: string): bigint => {
+      let h = 5381n;
+      for (let i = 0; i < s.length; i++) {
+        h = ((h * 33n) + BigInt(s.charCodeAt(i))) & 0xFFFFFFFFFFFFn;
+      }
+      return h;
+    };
+
+    resumo.logs.push(`Chamando reports/generate com parâmetros completos (${ds} a ${de})`);
+
+    if (!dry_run) {
+      await supabaseAdmin.from("lab_sync_log").insert({
+        endpoint: "reports/generate:production-detalhado",
+        parametros: { ds, de, dry_run },
+        api_success: false,
+        registros: 0,
+        erro: "iniciado"
+      });
     }
+
+    const res = await fetch(`${FEEGOW_BASE}/reports/generate`, {
+      method: "POST",
+      headers: {
+        "x-access-token": FEEGOW_TOKEN(),
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        report: "production",
+        DATA_INICIO: ds,
+        DATA_FIM: de,
+        UNIDADE_IDS: [0],
+        TIPO_DATA_PRODUCAO: ["EXECUCAO"],
+        EXECUCAO_ITEM: ["S"]
+      })
+    });
+    const reportRes = await res.json();
 
     if (reportRes.success && Array.isArray(reportRes.data)) {
       const rows = reportRes.data;
       resumo.total = rows.length;
-      resumo.logs.push(`Processando ${rows.length} registros da API.`);
+      resumo.logs.push(`Processando ${rows.length} itens de execução da API.`);
 
       const records = rows.map((r: any) => {
-        // Safe conversion to BigInt or null
         const toBigInt = (val: any) => {
           if (val === undefined || val === null || val === "") return null;
-          try {
-            return BigInt(val);
-          } catch (e) {
-            console.error(`[SYNC-PRODUCAO] Erro ao converter BigInt: ${val}`, e);
-            return null;
-          }
+          try { return BigInt(val); } catch { return null; }
         };
 
+        const idTransacao = String(r.IDTransacao ?? "");
+        const nGuia = String(r.NGuiaPrestador ?? "");
+        const procId = String(r.ProcedimentoID ?? "");
+        const agId = String(r.AgendamentoID ?? "");
+        const chaveNatural = `${idTransacao}|${nGuia}|${procId}|${agId}`;
+
         return {
-          feegow_id: toBigInt(r.id) || BigInt(Math.floor(Math.random() * 1000000000)),
+          feegow_id: hashToBigInt(chaveNatural || `${Date.now()}-${Math.random()}`),
+          id_transacao: idTransacao || null,
+          n_guia_prestador: nGuia || null,
           paciente_id: toBigInt(r.PacienteID),
           paciente_nome: r.NomePaciente || null,
           prontuario: r.Prontuario || r.ProntuarioPaciente || null,
@@ -618,8 +630,17 @@ export const labSyncProducao = createServerFn({ method: "POST" })
           profissional_nome: r.NomeProfissional || null,
           procedimento_id: toBigInt(r.ProcedimentoID),
           procedimento_nome: r.NomeProcedimento || null,
-          valor: typeof r.Valor === 'number' ? r.Valor : Number(String(r.Valor || 0).replace(/[^\d.,]/g, '').replace('.', '').replace(',', '.')),
-          convenio_nome: r.Origem || null,
+          valor: parseValorBR(r.Valor),
+          valor_pago: parseValorBR(r.ValorPago),
+          convenio_id: r.ConvenioID != null ? Number(r.ConvenioID) : null,
+          convenio_nome: r.NomeConvenio || r.Origem || null,
+          situacao: r.Situacao || null,
+          situacao_conta: r.SituacaoConta || null,
+          grupo_id: r.GrupoID != null ? Number(r.GrupoID) : null,
+          grupo_nome: r.NomeGrupo || null,
+          tipo_procedimento: r.TipoProcedimento || null,
+          forma_pagamento: r.FormaPagamento || null,
+          tipo_guia: r.TipoGuia || null,
           unidade_id: toBigInt(r.UnidadeID),
           payload_raw: r
         };
@@ -633,7 +654,9 @@ export const labSyncProducao = createServerFn({ method: "POST" })
         }, []);
 
         for (const bloco of chunk(records, 50)) {
-          const { error: fErr } = await supabaseAdmin.from("lab_producao_feegow").upsert(bloco, { onConflict: "feegow_id" });
+          const { error: fErr } = await supabaseAdmin
+            .from("lab_producao_feegow")
+            .upsert(bloco, { onConflict: "id_transacao,n_guia_prestador,procedimento_id,agendamento_id" });
           if (fErr) {
             resumo.erros += bloco.length;
             resumo.logs.push(`Erro DB: ${fErr.message}`);
@@ -642,12 +665,14 @@ export const labSyncProducao = createServerFn({ method: "POST" })
           }
         }
       }
+    } else {
+      resumo.logs.push(`API retornou success=false ou data vazio/inválido. Resposta: ${JSON.stringify(reportRes).slice(0, 500)}`);
     }
-    
+
     if (resumo.inseridos > 0 && !dry_run) {
       await supabaseAdmin.from("lab_sync_log").insert({
-        endpoint: `reports/generate:success`,
-        parametros: { ds, de, report: reportRes.success ? 'found' : 'fallback' },
+        endpoint: "reports/generate:production-detalhado:success",
+        parametros: { ds, de },
         api_success: true,
         registros: resumo.inseridos,
         erro: "concluido"
