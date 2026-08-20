@@ -679,6 +679,7 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
         profissional_id,
         procedimento_id,
         paciente_nome,
+        procedimento_nome,
         prontuario
       `)
       .gte("data_execucao", data_inicio)
