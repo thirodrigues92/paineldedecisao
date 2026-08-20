@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useState, useMemo } from "react";
-import { FileText, Search, Filter, ArrowUpDown, Download, RefreshCw, Play, Settings, Calendar, ChevronDown, ChevronRight, Info, Database, BarChart3, ListChecks } from "lucide-react";
+import { FileText, Search, Filter, ArrowUpDown, Download, RefreshCw, Play, Settings, Calendar, ChevronDown, ChevronRight, Info, Database, BarChart3, ListChecks, CheckCircle2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DatePickerWithRange } from "@/components/ui/date-picker-with-range";
 import { labSyncParticular, labSyncProducao, labSyncConvenioCatalog, labEnrichFaturamento, getLabEnrichmentStatus } from "@/lib/lab-faturamento.functions";
