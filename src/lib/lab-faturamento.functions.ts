@@ -672,6 +672,7 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
     const { data: agenda, error: aErr } = await supabaseAdmin
       .from("lab_producao_feegow")
       .select(`
+        feegow_id,
         agendamento_id,
         data_execucao,
         valor,
@@ -700,8 +701,10 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
 
 
     // 2. Buscar faturamento experimental vinculado aos agendamentos
-    const ids = agenda?.map(a => a.agendamento_id) || [];
-    const faturamentoMap = new Map<number, number>();
+    const ids = Array.from(new Set(agenda?.map(a => a.agendamento_id).filter(Boolean).map(id => Number(id))));
+    
+    // Mapeamento granular: agendamento_id -> lista de itens de faturamento
+    const faturamentoPorAgendamento = new Map<number, any[]>();
     
     if (ids.length > 0) {
       const chunk = 1000;
@@ -709,7 +712,7 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
         const slice = ids.slice(i, i + chunk);
         const { data: fats, error: fErr } = await supabaseAdmin
           .from("lab_faturamento")
-          .select("agendamento_id, valor_faturado")
+          .select("agendamento_id, item_id, valor_faturado, procedimento_id, documento_id")
           .in("agendamento_id", slice);
         
         if (fErr) throw fErr;
@@ -717,87 +720,80 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
         for (const f of fats || []) {
           if (f.agendamento_id) {
             const id = Number(f.agendamento_id);
-            faturamentoMap.set(id, (faturamentoMap.get(id) || 0) + Number(f.valor_faturado || 0));
+            const list = faturamentoPorAgendamento.get(id) || [];
+            list.push(f);
+            faturamentoPorAgendamento.set(id, list);
           }
         }
       }
     }
 
-    // 2.5 Buscar formas de pagamento vinculadas
-    const docIds = Array.from(new Set((agenda || []).map(a => a.agendamento_id).filter(Boolean)));
-    const paymentMethodsMap = new Map<number, string[]>();
+    // 2.5 Buscar formas de pagamento vinculadas aos documentos
+    const allDocIds = Array.from(new Set(
+      Array.from(faturamentoPorAgendamento.values()).flat().map(f => Number(f.documento_id)).filter(Boolean)
+    ));
+    const docToPay = new Map<number, string[]>();
     
-    if (docIds.length > 0) {
-      // O join correto seria via lab_faturamento para pegar o documento_id
-      const { data: fatsForDocs } = await supabaseAdmin
-        .from("lab_faturamento")
-        .select("agendamento_id, documento_id")
-        .in("agendamento_id", docIds);
-        
-      const agToDoc = new Map<number, number[]>();
-      for (const f of fatsForDocs || []) {
-        if (f.agendamento_id && f.documento_id) {
-          const ag = Number(f.agendamento_id);
-          const doc = Number(f.documento_id);
-          const existing = agToDoc.get(ag) || [];
-          if (!existing.includes(doc)) agToDoc.set(ag, [...existing, doc]);
-        }
-      }
-
-      const docToPay = new Map<number, string[]>();
+    if (allDocIds.length > 0) {
       const formaNomes: Record<number, string> = {
-        1: "Dinheiro",
-        2: "Cheque",
-        3: "Cartão de Crédito",
-        4: "Cartão de Débito",
-        6: "Boleto",
-        7: "Depósito/Transferência",
-        8: "Pix",
-        15: "Faturamento"
+        1: "Dinheiro", 2: "Cheque", 3: "Cartão de Crédito", 4: "Cartão de Débito",
+        6: "Boleto", 7: "Depósito/Transferência", 8: "Pix", 15: "Faturamento"
       };
 
-      const allDocIds = Array.from(new Set(Array.from(agToDoc.values()).flat()));
-      if (allDocIds.length > 0) {
-        const { data: pays } = await supabaseAdmin
-          .from("lab_recebimento")
-          .select("documento_id, forma_pagamento")
-          .in("documento_id", allDocIds);
-          
-        for (const p of pays || []) {
-          const doc = Number(p.documento_id);
-          const fPag = p.forma_pagamento as number;
-          const desc = (fPag != null ? formaNomes[fPag] : null) || `Forma ${fPag}`;
-          const existing = docToPay.get(doc) || [];
-          if (!existing.includes(desc)) docToPay.set(doc, [...existing, desc]);
-        }
-      }
-
-      for (const [ag, docs] of agToDoc.entries()) {
-        const methods = docs.flatMap(d => docToPay.get(d) || []);
-        if (methods.length > 0) {
-          paymentMethodsMap.set(ag, Array.from(new Set(methods)));
-        }
+      const { data: pays } = await supabaseAdmin
+        .from("lab_recebimento")
+        .select("documento_id, forma_pagamento")
+        .in("documento_id", allDocIds);
+        
+      for (const p of pays || []) {
+        const doc = Number(p.documento_id);
+        const fPag = p.forma_pagamento as number;
+        const desc = (fPag != null ? formaNomes[fPag] : null) || `Forma ${fPag}`;
+        const existing = docToPay.get(doc) || [];
+        if (!existing.includes(desc)) docToPay.set(doc, [...existing, desc]);
       }
     }
 
-    // 3. Cruzar dados
+    // 3. Cruzar dados sem agrupar por agendamento (cada linha da produção é um item)
+    // Controle de quais itens de faturamento já foram "consumidos" para evitar duplicidade
+    const faturamentosUsados = new Set<string>();
+
     const conciliado = (agenda || []).map(a => {
       const agId = Number(a.agendamento_id);
+      const feegowId = a.feegow_id ? String(a.feegow_id) : `temp-${Math.random()}`;
       const valorTabela = Number(a.valor || 0);
-      const valorFaturado = faturamentoMap.get(agId) || 0;
-      const temFatura = faturamentoMap.has(agId);
+      const procId = a.procedimento_id ? Number(a.procedimento_id) : null;
+      
+      const itensFaturamento = faturamentoPorAgendamento.get(agId) || [];
+      
+      // Tenta encontrar um item de faturamento que bata com o procedimento
+      let itemVinculado = itensFaturamento.find(f => 
+        !faturamentosUsados.has(String(f.item_id)) && 
+        (procId ? Number(f.procedimento_id) === procId : true)
+      );
+
+      // Se não achou pelo procedimento, pega qualquer um disponível para este agendamento que ainda não foi usado
+      if (!itemVinculado) {
+        itemVinculado = itensFaturamento.find(f => !faturamentosUsados.has(String(f.item_id)));
+      }
+
+      if (itemVinculado) {
+        faturamentosUsados.add(String(itemVinculado.item_id));
+      }
+
+      const valorFaturado = itemVinculado ? Number(itemVinculado.valor_faturado || 0) : 0;
       const diferenca = valorFaturado - valorTabela;
+      const formasPagamento = itemVinculado ? (docToPay.get(Number(itemVinculado.documento_id)) || []) : [];
       
       let status = "IGUAL";
-      if (!temFatura) {
-        // Se não tem fatura vinculada ao agendamento, tentamos buscar pelo paciente + data + valor aproximado?
-        // Por enquanto mantemos SEM_FATURA para precisão.
+      if (!itemVinculado) {
         status = "SEM_FATURA";
       } else if (Math.abs(diferenca) > 0.01) {
         status = "DIVERGENTE";
       }
 
       return {
+        feegow_id: feegowId,
         agendamento_id: agId,
         data: a.data_execucao,
         paciente: a.paciente_nome || (a.paciente_id ? pacMap.get(a.paciente_id)?.nome : null) || "N/A",
@@ -808,9 +804,11 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
         valor_faturado: valorFaturado,
         diferenca,
         status,
-        formas_pagamento: paymentMethodsMap.get(agId) || []
+        formas_pagamento: formasPagamento
       };
     });
+
+    return conciliado;
 
 
     return conciliado;
