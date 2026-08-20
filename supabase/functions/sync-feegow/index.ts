@@ -1170,25 +1170,33 @@ Deno.serve(async (req) => {
     }
 
     if (mode === "probe-tabelas") {
-      // Compara o preço do mesmo procedimento em tabelas diferentes: o parâmetro é respeitado?
+      // Compara o preço do mesmo procedimento por convênio: o parâmetro é respeitado?
       const pid = Number(url.searchParams.get("procedimento") ?? 377);
+      const convParam = url.searchParams.get("convenios");
+      const convenios = convParam ? convParam.split(",").map((s) => s.trim()) : ["33", "21", "9", "2"];
       const out: Record<string, unknown> = {};
-      for (const t of ["1", "2", "13", "14", "99"]) {
+
+      const call = async (label: string, params: Record<string, string>) => {
         try {
-          const rows = asArray(await feegow("/procedures/list", { tabela_id: t }));
+          const raw = await feegow("/procedures/list", params);
+          const rows = asArray(raw);
           const alvo = rows.find((r: any) => Number(r.procedimento_id ?? r.id) === pid);
-          out[`tabela_id=${t}`] = { registros: rows.length, valorProcedimento: alvo?.valor ?? null };
-        } catch (e) { out[`tabela_id=${t}`] = String(e).slice(0, 160); }
-      }
-      for (const params of [{ convenio_id: "2" }, { convenio_id: "2", tabela_id: "13" }, { plano_id: "0", convenio_id: "2" }]) {
-        try {
-          const rows = asArray(await feegow("/procedures/list", params as Record<string, string>));
-          const alvo = rows.find((r: any) => Number(r.procedimento_id ?? r.id) === pid);
-          out[JSON.stringify(params)] = { registros: rows.length, valorProcedimento: alvo?.valor ?? null };
-        } catch (e) { out[JSON.stringify(params)] = String(e).slice(0, 160); }
-      }
+          out[label] = {
+            params,
+            registros: rows.length,
+            registroBruto: alvo ?? null,
+            valorProcedimento: alvo?.valor ?? null,
+            amostraPrimeiroRegistro: rows[0] ?? null,
+          };
+        } catch (e) { out[label] = { params, erro: String(e).slice(0, 300) }; }
+      };
+
+      await call("particular (sem convenio_id)", {});
+      for (const c of convenios) await call(`convenio_id=${c}`, { convenio_id: c });
+
       extra = { ...extra, procedimento: pid, probeTabelas: out };
     }
+
 
 
     if (mode === "probe-precos") {
