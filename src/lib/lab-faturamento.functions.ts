@@ -925,19 +925,24 @@ export const labEnrichFaturamento = createServerFn({ method: "POST" })
     
     // 1. Identificar agendamento_id que estão no faturamento mas não no enriquecimento
     // Fazemos via query direta pois o RPC pode ser pesado ou não estar disponível
-    const { data: allFaturamentoIds } = await supabaseAdmin
-      .from('lab_faturamento')
-      .select('agendamento_id')
-      .not('agendamento_id', 'is', null);
-      
-    const uniqueFatIds = Array.from(new Set((allFaturamentoIds || []).map(f => Number(f.agendamento_id))));
-    
-    const { data: enriched } = await supabaseAdmin
-      .from('lab_agendamento_enriquecido')
-      .select('agendamento_id');
-      
-    const enrichedIds = new Set((enriched || []).map(e => Number(e.agendamento_id)));
+    // Paginação obrigatória: o Data API limita a 1000 linhas por select
+    const fetchAllIds = async (table: 'lab_faturamento' | 'lab_agendamento_enriquecido') => {
+      const ids = new Set<number>();
+      const page = 1000;
+      for (let from = 0; from < 100000; from += page) {
+        let q = supabaseAdmin.from(table).select('agendamento_id').range(from, from + page - 1);
+        if (table === 'lab_faturamento') q = q.not('agendamento_id', 'is', null);
+        const { data: rows } = await q;
+        (rows || []).forEach((r: any) => { if (r.agendamento_id != null) ids.add(Number(r.agendamento_id)); });
+        if (!rows || rows.length < page) break;
+      }
+      return ids;
+    };
+
+    const uniqueFatIds = Array.from(await fetchAllIds('lab_faturamento'));
+    const enrichedIds = await fetchAllIds('lab_agendamento_enriquecido');
     const toProcess = uniqueFatIds.filter(id => !enrichedIds.has(id)).slice(0, limit);
+
 
     if (toProcess.length === 0) return { ok: true, processados: 0, mensagem: "Tudo enriquecido!" };
     
@@ -1000,12 +1005,17 @@ export const labEnrichFaturamento = createServerFn({ method: "POST" })
   });
 
 export const getLabEnrichmentStatus = createServerFn({ method: "GET" }).handler(async () => {
-  const { data: fats } = await supabaseAdmin
-    .from('lab_faturamento')
-    .select('agendamento_id')
-    .not('agendamento_id', 'is', null);
-  
-  const totalUnicos = new Set((fats || []).map(f => Number(f.agendamento_id))).size;
+  const idsUnicos = new Set<number>();
+  for (let from = 0; from < 100000; from += 1000) {
+    const { data: rows } = await supabaseAdmin
+      .from('lab_faturamento')
+      .select('agendamento_id')
+      .not('agendamento_id', 'is', null)
+      .range(from, from + 999);
+    (rows || []).forEach((r) => { if (r.agendamento_id != null) idsUnicos.add(Number(r.agendamento_id)); });
+    if (!rows || rows.length < 1000) break;
+  }
+  const totalUnicos = idsUnicos.size;
 
   const { count: totalEnriquecido } = await supabaseAdmin
     .from('lab_agendamento_enriquecido')
