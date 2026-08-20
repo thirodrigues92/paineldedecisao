@@ -257,7 +257,7 @@ function LabConciliacao() {
                     onClick={() => setSelectedAgendamento(item.agendamento_id)}
                   >
                     <TableCell className="text-xs font-mono">
-                      {item.data ? new Date(item.data).toLocaleDateString('pt-BR') : '-'}
+                      {item.data ? item.data.split('-').reverse().join('/') : '-'}
                     </TableCell>
                     <TableCell className="text-xs font-mono text-muted-foreground">{item.prontuario}</TableCell>
                     <TableCell className="text-sm font-medium">{item.paciente}</TableCell>
