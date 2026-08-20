@@ -34,6 +34,36 @@ function LabRelatorio() {
 
   const queryClient = useQueryClient();
 
+  const { data: enrichmentStatus, refetch: refetchStatus } = useQuery({
+    queryKey: ['lab-enrichment-status'],
+    queryFn: () => getLabEnrichmentStatus()
+  });
+
+  const enrichMutation = useMutation({
+    mutationFn: async () => {
+      const res = await labEnrichFaturamento({ data: { limit: 50 } });
+      return res;
+    },
+    onSuccess: (res: any) => {
+      refetchStatus();
+      if (res.processados > 0) {
+        toast.success(`Processados ${res.processados} agendamentos!`);
+      } else {
+        toast.info(res.mensagem || "Processamento concluído.");
+      }
+    },
+    onError: (e) => toast.error("Erro no enriquecimento: " + String(e))
+  });
+
+  const syncConveniosMutation = useMutation({
+    mutationFn: () => labSyncConvenioCatalog(),
+    onSuccess: (res: any) => {
+      toast.success(`Sincronizados ${res.count} convênios!`);
+    },
+    onError: (e) => toast.error("Erro ao sincronizar convênios: " + String(e))
+  });
+
+
   const syncMutation = useMutation({
     mutationFn: async ({ start, end, type }: { start: string, end: string, type: 'faturamento' | 'producao' }) => {
       if (type === 'producao') {
