@@ -764,7 +764,8 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
           
         for (const p of pays || []) {
           const doc = Number(p.documento_id);
-          const desc = formaNomes[p.forma_pagamento] || `Forma ${p.forma_pagamento}`;
+          const fPag = p.forma_pagamento as number;
+          const desc = (fPag != null ? formaNomes[fPag] : null) || `Forma ${fPag}`;
           const existing = docToPay.get(doc) || [];
           if (!existing.includes(desc)) docToPay.set(doc, [...existing, desc]);
         }
