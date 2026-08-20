@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
-import { labDebugFeegow, labSyncParticular, labSyncConvenio, clearLabData } from "@/lib/lab-faturamento.functions";
+import { labDebugFeegow, labSyncParticular, labSyncConvenio, clearLabData, labSyncConvenioCatalog, labEnrichFaturamento, getLabEnrichmentStatus } from "@/lib/lab-faturamento.functions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -137,6 +137,59 @@ function LabFaturamento() {
     extra_params: 'start=0&offset=5'
   });
   const [requestHistory, setRequestHistory] = useState<any[]>([]);
+
+  // --- Categorização de convênio ---
+  const enrichStatus = useQuery({
+    queryKey: ["lab-enrich-status"],
+    queryFn: () => getLabEnrichmentStatus(),
+  });
+
+  const catalogMutation = useMutation({
+    mutationFn: () => labSyncConvenioCatalog(),
+    onSuccess: (r: any) => toast.success(`Catálogo de convênios sincronizado: ${r?.count ?? 0} registros`),
+    onError: (e: any) => toast.error(e?.message || "Falha ao sincronizar convênios"),
+  });
+
+  const [enriching, setEnriching] = useState(false);
+  const [enrichProgress, setEnrichProgress] = useState<{ processed: number; total: number; message: string }>({
+    processed: 0,
+    total: 0,
+    message: "",
+  });
+
+  const runEnrichmentLoop = async () => {
+    setEnriching(true);
+    try {
+      const inicial = await getLabEnrichmentStatus();
+      let total = inicial.pendente;
+      let processed = 0;
+      setEnrichProgress({ processed: 0, total, message: "Iniciando..." });
+
+      let guard = 0;
+      while (guard < 5000) {
+        guard++;
+        const res: any = await labEnrichFaturamento({ data: { limit: 20 } });
+        const n = Number(res?.processados ?? 0);
+        if (n === 0) break;
+        processed += n;
+        setEnrichProgress({ processed, total: Math.max(total, processed), message: `Lote de ${n} processado` });
+        const st = await getLabEnrichmentStatus();
+        if (st.pendente === 0) {
+          total = processed;
+          setEnrichProgress({ processed, total: Math.max(processed, 1), message: "Concluído" });
+          break;
+        }
+      }
+      await enrichStatus.refetch();
+      toast.success(`Categorização concluída: ${processed} agendamentos processados`);
+    } catch (e: any) {
+      toast.error(e?.message || "Falha ao processar categorização");
+    } finally {
+      setEnriching(false);
+    }
+  };
+
+
   
   const toFeegowDate = (iso: string) => {
     const d = new Date(iso);
@@ -446,6 +499,8 @@ function LabFaturamento() {
           <button onClick={() => setTab("faturamento")} className={`px-4 py-2 whitespace-nowrap cursor-pointer ${tab === "faturamento" ? "border-b-2 border-primary font-bold" : ""}`}>Faturado x Recebido</button>
           <button onClick={() => setTab("sincronizacao")} className={`px-4 py-2 whitespace-nowrap cursor-pointer ${tab === "sincronizacao" ? "border-b-2 border-primary font-bold" : ""}`}>Sincronização</button>
           <button onClick={() => setTab("auditoria")} className={`px-4 py-2 whitespace-nowrap cursor-pointer ${tab === "auditoria" ? "border-b-2 border-primary font-bold" : ""}`}>Auditoria</button>
+          <button onClick={() => setTab("categorizacao")} className={`px-4 py-2 whitespace-nowrap cursor-pointer ${tab === "categorizacao" ? "border-b-2 border-primary font-bold" : ""}`}>Categorização de Convênio</button>
+
           <button onClick={() => setTab("diagnostico")} className={`px-4 py-2 whitespace-nowrap cursor-pointer ${tab === "diagnostico" ? "border-b-2 border-primary font-bold" : ""}`}>Debug API</button>
           <button onClick={() => window.location.href = '/lab/relatorio'} className="px-4 py-2 whitespace-nowrap cursor-pointer text-indigo-600 hover:font-bold">📋 Relatório Comparativo</button>
         </div>
@@ -752,6 +807,68 @@ function LabFaturamento() {
             </CardContent>
            </Card>
          )}
+ 
+
+ 
+         {tab === "categorizacao" && (
+           <Card>
+             <CardHeader>
+               <CardTitle>Categorização de Convênio</CardTitle>
+             </CardHeader>
+             <CardContent className="space-y-4">
+               <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+                 {[
+                   { label: "Total", value: enrichStatus.data?.total ?? 0 },
+                   { label: "Enriquecido", value: enrichStatus.data?.enriquecido ?? 0 },
+                   { label: "Pendente", value: enrichStatus.data?.pendente ?? 0 },
+                   { label: "Particular", value: enrichStatus.data?.particular ?? 0 },
+                   { label: "Convênio", value: enrichStatus.data?.convenio ?? 0 },
+                   { label: "Sem dados", value: enrichStatus.data?.sem_dados ?? 0 },
+                 ].map((s) => (
+                   <div key={s.label} className="rounded-md border p-3">
+                     <div className="text-xs text-muted-foreground">{s.label}</div>
+                     <div className="text-xl font-bold">{s.value.toLocaleString("pt-BR")}</div>
+                   </div>
+                 ))}
+               </div>
+
+               <div className="flex flex-wrap gap-2">
+                 <Button
+                   variant="outline"
+                   disabled={catalogMutation.isPending}
+                   onClick={() => catalogMutation.mutate()}
+                 >
+                   <RefreshCw className={`w-4 h-4 mr-2 ${catalogMutation.isPending ? "animate-spin" : ""}`} />
+                   Sincronizar catálogo de convênios
+                 </Button>
+                 <Button disabled={enriching} onClick={runEnrichmentLoop}>
+                   <Play className="w-4 h-4 mr-2" />
+                   {enriching ? "Processando..." : "Processar categorização"}
+                 </Button>
+                 <Button variant="ghost" onClick={() => enrichStatus.refetch()}>
+                   Atualizar status
+                 </Button>
+               </div>
+
+               {(enriching || enrichProgress.processed > 0) && (
+                 <div className="space-y-2">
+                   <Progress
+                     value={
+                       enrichProgress.total > 0
+                         ? Math.min(100, (enrichProgress.processed / enrichProgress.total) * 100)
+                         : 0
+                     }
+                   />
+                   <div className="text-xs text-muted-foreground">
+                     {enrichProgress.processed} de {enrichProgress.total} agendamentos processados
+                     {enrichProgress.message ? ` — ${enrichProgress.message}` : ""}
+                   </div>
+                 </div>
+               )}
+             </CardContent>
+           </Card>
+         )}
+
  
          {tab === "auditoria" && (
            <Card>

@@ -1,0 +1,1 @@
+TRUNCATE TABLE public.lab_agendamento_enriquecido;
