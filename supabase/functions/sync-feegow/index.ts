@@ -1197,6 +1197,130 @@ Deno.serve(async (req) => {
       extra = { ...extra, procedimento: pid, probeTabelas: out };
     }
 
+    if (mode === "probe-tiss") {
+      // Diagnóstico bruto do módulo TISS/Guias de convênio.
+      const hoje = new Date();
+      const d90 = new Date(hoje.getTime() - 90 * 86400000);
+      const fmt = (d: Date) => `${String(d.getDate()).padStart(2, "0")}-${String(d.getMonth() + 1).padStart(2, "0")}-${d.getFullYear()}`;
+      const start = url.searchParams.get("data_start") ?? fmt(d90);
+      const end = url.searchParams.get("data_end") ?? fmt(hoje);
+
+      const rawCall = async (method: string, path: string, params: Record<string, string>) => {
+        const u = new URL(FEEGOW_BASE + path);
+        try {
+          let res: Response;
+          if (method === "GET") {
+            for (const [k, v] of Object.entries(params)) u.searchParams.set(k, v);
+            res = await fetch(u.toString(), { headers: { "x-access-token": FEEGOW_TOKEN } });
+          } else {
+            res = await fetch(u.toString(), {
+              method: "POST",
+              headers: { "x-access-token": FEEGOW_TOKEN, "Content-Type": "application/json" },
+              body: JSON.stringify(params),
+            });
+          }
+          const text = await res.text();
+          let parsed: any = null;
+          try { parsed = JSON.parse(text); } catch { /* não-JSON */ }
+          const content = parsed?.content;
+          const rows = Array.isArray(content) ? content : (content && typeof content === "object" ? asArray(content) : []);
+          return {
+            url: `${method} ${u.pathname}${method === "GET" ? u.search : ""}`,
+            body: method === "POST" ? params : undefined,
+            httpStatus: res.status,
+            success: parsed?.success ?? null,
+            message: parsed?.message ?? parsed?.msg ?? null,
+            registros: rows.length,
+            amostraBruta: rows.slice(0, 3),
+            respostaBruta: rows.length ? undefined : text.slice(0, 1500),
+          };
+        } catch (e) { return { url: `${method} ${path}`, erro: String(e).slice(0, 400) }; }
+      };
+
+      const calls: Array<[string, string, Record<string, string>]> = [
+        ["GET", "/insurance/list-guides", { data_start: start, data_end: end }],
+        ["GET", "/insurance/list-guides", { data_start: start, data_end: end, unidade_id: "0" }],
+        ["GET", "/insurance/guides", { data_start: start, data_end: end }],
+        ["GET", "/insurance/list-guide", { data_start: start, data_end: end }],
+        ["GET", "/billing/list-guides", { data_start: start, data_end: end }],
+        ["GET", "/billing/insurances-billing", { data_start: start, data_end: end }],
+        ["GET", "/billing/insurances-billing", { billing_type_id: "1", insurance_id: "33", billing: "1" }],
+        ["GET", "/billing/list-billing", { data_start: start, data_end: end }],
+        ["GET", "/billing/list-billing-type", {}],
+        ["GET", "/billing/list", {}],
+        ["GET", "/tiss/list-guides", { data_start: start, data_end: end }],
+        ["GET", "/tiss/list", { data_start: start, data_end: end }],
+        ["POST", "/billing/insurances-billing", { billing_type_id: 1 as unknown as string, insurance_id: 33 as unknown as string, billing: 1 as unknown as string }],
+      ];
+      const tiss: Record<string, unknown> = {};
+      for (const [m, p, params] of calls) {
+        tiss[`${m} ${p} ${JSON.stringify(params)}`] = await rawCall(m, p, params);
+      }
+      extra = { ...extra, janela: { start, end }, probeTiss: tiss };
+    }
+
+    if (mode === "probe-lotes") {
+      // Varre lotes (billing) do módulo TISS por convênio, coletando datas e valores reais.
+      const insurances = (url.searchParams.get("convenios") ?? "33,21,9,2,15,31,35,28").split(",");
+      const maxLote = Number(url.searchParams.get("max") ?? 60);
+      const alvoAg = Number(url.searchParams.get("agendamento") ?? 300092);
+      const tipos = (url.searchParams.get("tipos") ?? "1,2,3").split(",");
+
+      const get = async (params: Record<string, string>) => {
+        const u = new URL(FEEGOW_BASE + "/billing/insurances-billing");
+        for (const [k, v] of Object.entries(params)) u.searchParams.set(k, v);
+        const res = await fetch(u.toString(), { headers: { "x-access-token": FEEGOW_TOKEN } });
+        const text = await res.text();
+        try { const j = JSON.parse(text); return Array.isArray(j?.content) ? j.content : []; } catch { return []; }
+      };
+
+      const resumo: Record<string, any> = {};
+      let totalGuias = 0;
+      let maisRecente: any = null;
+      const guiasAlvo: any[] = [];
+      const guias2025mais: any[] = [];
+
+      const datasPorMes: Record<string, number> = {};
+      for (const ins of insurances) {
+        for (const tipo of tipos) {
+          let achados = 0;
+          const datas: string[] = [];
+          for (let base = 1; base <= maxLote; base += 20) {
+            const lote = [];
+            for (let b = base; b < base + 20 && b <= maxLote; b++) {
+              lote.push(get({ billing_type_id: tipo, insurance_id: ins, billing: String(b) }));
+            }
+            const resps = await Promise.all(lote);
+            for (const rows of resps) {
+              if (!rows.length) continue;
+              achados += rows.length; totalGuias += rows.length;
+              for (const r of rows) {
+                const d = String(r.DataAtendimento ?? "");
+                if (d) { datas.push(d); datasPorMes[d.slice(0, 7)] = (datasPorMes[d.slice(0, 7)] ?? 0) + 1; }
+                if (!maisRecente || d > String(maisRecente.DataAtendimento)) maisRecente = r;
+                if (Number(r.AgendamentoID) === alvoAg) guiasAlvo.push(r);
+                if (d >= "2026-06-01" && guias2025mais.length < 10) guias2025mais.push(r);
+              }
+            }
+          }
+          if (achados) {
+            datas.sort();
+            resumo[`insurance_id=${ins} billing_type_id=${tipo}`] = {
+              guias: achados,
+              dataMin: datas[0] ?? null,
+              dataMax: datas[datas.length - 1] ?? null,
+            };
+          }
+        }
+      }
+      extra = { ...extra, porMes: datasPorMes };
+
+
+      extra = { ...extra, probeLotes: { totalGuias, resumo, maisRecente, guiasAlvo, guias2025mais, alvoAgendamento: alvoAg } };
+    }
+
+
+
 
 
     if (mode === "probe-precos") {
