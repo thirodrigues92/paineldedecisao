@@ -296,6 +296,87 @@ export type Database = {
         }
         Relationships: []
       }
+      lab_agendamento_enriquecido: {
+        Row: {
+          agendamento_id: number
+          atualizado_em: string | null
+          canal_id: number | null
+          categoria_receita: string
+          convenio_id: number | null
+          especialidade_id: number | null
+          grupo_procedimento_id: number | null
+          plano_id: number
+          primeiro_agendamento: boolean | null
+          procedimento_id: number | null
+          profissional_id: number | null
+          retorno: boolean | null
+          sem_dados_agendamento: boolean | null
+          status_id: number | null
+          telemedicina: boolean | null
+          unidade_id: number | null
+        }
+        Insert: {
+          agendamento_id: number
+          atualizado_em?: string | null
+          canal_id?: number | null
+          categoria_receita: string
+          convenio_id?: number | null
+          especialidade_id?: number | null
+          grupo_procedimento_id?: number | null
+          plano_id: number
+          primeiro_agendamento?: boolean | null
+          procedimento_id?: number | null
+          profissional_id?: number | null
+          retorno?: boolean | null
+          sem_dados_agendamento?: boolean | null
+          status_id?: number | null
+          telemedicina?: boolean | null
+          unidade_id?: number | null
+        }
+        Update: {
+          agendamento_id?: number
+          atualizado_em?: string | null
+          canal_id?: number | null
+          categoria_receita?: string
+          convenio_id?: number | null
+          especialidade_id?: number | null
+          grupo_procedimento_id?: number | null
+          plano_id?: number
+          primeiro_agendamento?: boolean | null
+          procedimento_id?: number | null
+          profissional_id?: number | null
+          retorno?: boolean | null
+          sem_dados_agendamento?: boolean | null
+          status_id?: number | null
+          telemedicina?: boolean | null
+          unidade_id?: number | null
+        }
+        Relationships: []
+      }
+      lab_convenios: {
+        Row: {
+          atualizado_em: string | null
+          cnpj: string | null
+          convenio_id: number
+          nome: string
+          registro_ans: string | null
+        }
+        Insert: {
+          atualizado_em?: string | null
+          cnpj?: string | null
+          convenio_id: number
+          nome: string
+          registro_ans?: string | null
+        }
+        Update: {
+          atualizado_em?: string | null
+          cnpj?: string | null
+          convenio_id?: number
+          nome?: string
+          registro_ans?: string | null
+        }
+        Relationships: []
+      }
       lab_dim_agendamento: {
         Row: {
           agendamento_id: number
@@ -1029,6 +1110,59 @@ export type Database = {
           especialidade: string | null
           estado: string | null
           no_shows: number | null
+        }
+        Relationships: []
+      }
+      vw_faturamento_categorizado: {
+        Row: {
+          acrescimo: number | null
+          agendamento_id: number | null
+          atendimento_id: number | null
+          categoria_id: number | null
+          categoria_receita: string | null
+          centro_custo_id: number | null
+          codigo_procedimento: string | null
+          convenio_id: number | null
+          convenio_nome: string | null
+          data_atendimento: string | null
+          data_competencia: string | null
+          data_vencimento: string | null
+          desconto: number | null
+          documento_id: number | null
+          e_convenio_id: number | null
+          e_especialidade_id: number | null
+          e_grupo_procedimento_id: number | null
+          e_profissional_id: number | null
+          e_unidade_id: number | null
+          especialidade_id: number | null
+          glosado: number | null
+          grupo_id: number | null
+          grupo_nome: string | null
+          guia_status: string | null
+          id: string | null
+          is_cancelado: boolean | null
+          item_id: number | null
+          local_nome: string | null
+          lote_id: number | null
+          motivo_glosa: string | null
+          nome_convenio: string | null
+          origem: string | null
+          paciente_id: number | null
+          paciente_nome: string | null
+          payload_raw: Json | null
+          plano_id: number | null
+          procedimento_id: number | null
+          procedimento_nome: string | null
+          profissional_id: number | null
+          prontuario: string | null
+          sem_dados_agendamento: boolean | null
+          synced_at: string | null
+          tabela_id: number | null
+          tipo_transacao: string | null
+          unidade_id: number | null
+          unidade_nome: string | null
+          valor_bruto: number | null
+          valor_faturado: number | null
         }
         Relationships: []
       }

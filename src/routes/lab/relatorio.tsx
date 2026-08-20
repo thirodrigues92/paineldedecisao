@@ -9,7 +9,7 @@ import { useState, useMemo } from "react";
 import { FileText, Search, Filter, ArrowUpDown, Download, RefreshCw, Play, Settings, Calendar, ChevronDown, ChevronRight, Info, Database, BarChart3, ListChecks } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DatePickerWithRange } from "@/components/ui/date-picker-with-range";
-import { labSyncParticular, labSyncProducao } from "@/lib/lab-faturamento.functions";
+import { labSyncParticular, labSyncProducao, labSyncConvenioCatalog, labEnrichFaturamento, getLabEnrichmentStatus } from "@/lib/lab-faturamento.functions";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -33,6 +33,36 @@ function LabRelatorio() {
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
+
+  const { data: enrichmentStatus, refetch: refetchStatus } = useQuery({
+    queryKey: ['lab-enrichment-status'],
+    queryFn: () => getLabEnrichmentStatus()
+  });
+
+  const enrichMutation = useMutation({
+    mutationFn: async () => {
+      const res = await labEnrichFaturamento({ data: { limit: 50 } });
+      return res;
+    },
+    onSuccess: (res: any) => {
+      refetchStatus();
+      if (res.processados > 0) {
+        toast.success(`Processados ${res.processados} agendamentos!`);
+      } else {
+        toast.info(res.mensagem || "Processamento concluído.");
+      }
+    },
+    onError: (e) => toast.error("Erro no enriquecimento: " + String(e))
+  });
+
+  const syncConveniosMutation = useMutation({
+    mutationFn: () => labSyncConvenioCatalog(),
+    onSuccess: (res: any) => {
+      toast.success(`Sincronizados ${res.count} convênios!`);
+    },
+    onError: (e) => toast.error("Erro ao sincronizar convênios: " + String(e))
+  });
+
 
   const syncMutation = useMutation({
     mutationFn: async ({ start, end, type }: { start: string, end: string, type: 'faturamento' | 'producao' }) => {
@@ -133,20 +163,15 @@ function LabRelatorio() {
   const { data: reportData, isLoading } = useQuery({
     queryKey: ['lab-relatorio-comparativo', dateRange.start.toISOString().split('T')[0], dateRange.end.toISOString().split('T')[0]],
     queryFn: async () => {
-      // Buscamos dados do lab_faturamento enriquecidos
+      // Buscamos dados da VIEW categorizada (vw_faturamento_categorizado)
       const { data, error } = await supabase
-        .from('lab_faturamento')
-        .select(`
-          *,
-          paciente:pacientes!paciente_id(nome),
-          procedimento:lab_dim_procedimento(nome),
-          profissional:profissionais!profissional_id(nome),
-          convenio:convenios!convenio_id(nome)
-        `)
+        .from('vw_faturamento_categorizado')
+        .select('*')
         .gte("data_competencia", dateRange.start.toISOString().split('T')[0])
         .lte("data_competencia", dateRange.end.toISOString().split('T')[0])
         .order('data_competencia', { ascending: false })
-        .limit(1000);
+        .limit(2000);
+
 
       if (error) {
         console.error("Erro ao buscar relatório:", error);
@@ -159,9 +184,10 @@ function LabRelatorio() {
   const filteredData = useMemo(() => {
     if (!reportData) return [];
     let filtered = reportData.filter((item: any) => {
-      const searchStr = `${item.paciente?.nome || ''} ${item.procedimento?.nome || ''} ${item.documento_id} ${item.grupo_nome || ''}`.toLowerCase();
+      const searchStr = `${item.paciente_nome || ''} ${item.procedimento_nome || ''} ${item.documento_id} ${item.grupo_nome || ''} ${item.categoria_final || ''} ${item.convenio_nome || ''}`.toLowerCase();
       return searchStr.includes(searchTerm.toLowerCase());
     });
+
 
     if (sortConfig) {
       filtered.sort((a: any, b: any) => {
@@ -294,8 +320,30 @@ function LabRelatorio() {
                     </Button>
                   </div>
                 </div>
+                <div className="space-y-2 border-l pl-4">
+                  <label className="text-[10px] font-bold uppercase text-emerald-600 block">Enriquecimento (Convênios)</label>
+                  <div className="flex gap-2">
+                    <Button 
+                      className="bg-emerald-600 hover:bg-emerald-700 h-9" 
+                      onClick={() => syncConveniosMutation.mutate()}
+                      disabled={syncConveniosMutation.isPending}
+                    >
+                      <ListChecks className="w-4 h-4 mr-2" />
+                      Sync Catálogo
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      className="border-emerald-600 text-emerald-600 hover:bg-emerald-50 h-9" 
+                      onClick={() => enrichMutation.mutate()}
+                      disabled={enrichMutation.isPending}
+                    >
+                      {enrichMutation.isPending ? 'Processando...' : 'Enriquecer Lote (50)'}
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
+
             {isSyncing && (
               <div className="space-y-2">
                 <div className="flex justify-between text-[10px] font-bold uppercase">
@@ -314,7 +362,63 @@ function LabRelatorio() {
         </Card>
       )}
 
+      {enrichmentStatus && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card className="bg-slate-50 border-slate-200">
+            <CardHeader className="py-3 px-4">
+              <CardTitle className="text-[10px] font-bold uppercase text-slate-500">Total Faturamento</CardTitle>
+            </CardHeader>
+            <CardContent className="py-0 px-4 pb-4">
+              <div className="text-2xl font-bold">{enrichmentStatus.total}</div>
+              <p className="text-[10px] text-muted-foreground">Agendamentos únicos</p>
+            </CardContent>
+          </Card>
+          <Card className={`${enrichmentStatus.pendente > 0 ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200'}`}>
+            <CardHeader className="py-3 px-4">
+              <CardTitle className={`text-[10px] font-bold uppercase ${enrichmentStatus.pendente > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                Status Enriquecimento
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="py-0 px-4 pb-4">
+              <div className="text-2xl font-bold">{enrichmentStatus.enriquecido}</div>
+              <p className="text-[10px] text-muted-foreground">
+                {enrichmentStatus.pendente > 0 ? `${enrichmentStatus.pendente} pendentes` : '100% processado'}
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="bg-indigo-50 border-indigo-200">
+            <CardHeader className="py-3 px-4">
+              <CardTitle className="text-[10px] font-bold uppercase text-indigo-600">Mix de Receita</CardTitle>
+            </CardHeader>
+            <CardContent className="py-0 px-4 pb-4">
+              <div className="flex gap-4">
+                <div>
+                  <div className="text-xl font-bold text-indigo-700">{Math.round((enrichmentStatus.convenio / Math.max(1, enrichmentStatus.enriquecido)) * 100)}%</div>
+                  <p className="text-[9px] uppercase font-bold text-slate-400">Convênio</p>
+                </div>
+                <div>
+                  <div className="text-xl font-bold text-slate-700">{Math.round((enrichmentStatus.particular / Math.max(1, enrichmentStatus.enriquecido)) * 100)}%</div>
+                  <p className="text-[9px] uppercase font-bold text-slate-400">Particular</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className={`${enrichmentStatus.sem_dados > (enrichmentStatus.total * 0.05) ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-200'}`}>
+            <CardHeader className="py-3 px-4">
+              <CardTitle className={`text-[10px] font-bold uppercase ${enrichmentStatus.sem_dados > (enrichmentStatus.total * 0.05) ? 'text-red-600' : 'text-slate-500'}`}>
+                Agendamentos Sem Dados
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="py-0 px-4 pb-4">
+              <div className="text-2xl font-bold">{enrichmentStatus.sem_dados}</div>
+              <p className="text-[10px] text-muted-foreground">Registros ignorados na API</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       <Tabs defaultValue="faturamento" className="space-y-6">
+
         <TabsList className="grid w-full grid-cols-2 max-w-[400px]">
           <TabsTrigger value="faturamento" className="flex items-center gap-2">
             <Database className="w-4 h-4" /> Financeiro (list-invoice)
@@ -406,12 +510,14 @@ function LabRelatorio() {
                           {item.item_id && <span className="text-[10px] text-muted-foreground block">Item: {item.item_id}</span>}
                         </TableCell>
                         <TableCell className="text-sm font-medium">
-                          {item.paciente?.nome || item.paciente_nome || `ID: ${item.paciente_id}`}
+                          {item.paciente_nome || `ID: ${item.paciente_id}`}
+                          {item.prontuario && <span className="text-[10px] text-muted-foreground block">Pront: {item.prontuario}</span>}
                         </TableCell>
-                        <TableCell className="text-xs max-w-[200px] truncate" title={item.procedimento?.nome}>
-                          {item.procedimento?.nome || item.procedimento_nome || 'N/A'}
+                        <TableCell className="text-xs max-w-[200px] truncate" title={item.procedimento_nome}>
+                          {item.procedimento_nome || 'N/A'}
                           <Badge variant="outline" className="text-[8px] uppercase block w-fit mt-1">{item.grupo_nome || 'Outros'}</Badge>
                         </TableCell>
+
                         <TableCell className="text-right font-mono text-xs text-muted-foreground">
                           R$ {Number(item.valor_bruto || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </TableCell>
@@ -424,10 +530,15 @@ function LabRelatorio() {
                           R$ {Number(item.valor_faturado || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </TableCell>
                         <TableCell className="text-center">
-                          <Badge variant={item.origem === 'particular' ? 'secondary' : 'default'} className="text-[9px] uppercase">
-                            {item.origem}
+                          <Badge 
+                            variant={item.categoria_final === 'particular' ? 'secondary' : 'default'} 
+                            className={`text-[9px] uppercase ${item.categoria_final === 'convenio' ? 'bg-indigo-600' : ''}`}
+                            title={item.convenio_nome || undefined}
+                          >
+                            {item.categoria_final === 'convenio' ? (item.convenio_nome || 'Convênio') : 'Particular'}
                           </Badge>
                         </TableCell>
+
                       </TableRow>
                       {expandedRow === item.id && (
                         <TableRow className="bg-slate-50 border-x-2 border-indigo-200">
@@ -440,20 +551,21 @@ function LabRelatorio() {
                                 <div className="grid grid-cols-2 gap-2 text-xs">
                                   <div className="p-2 bg-white rounded border">
                                     <span className="text-muted-foreground block text-[10px]">Profissional</span>
-                                    <span className="font-medium">{item.profissional?.nome || 'N/A'}</span>
+                                    <span className="font-medium">{item.profissional_nome || 'N/A'}</span>
                                   </div>
                                   <div className="p-2 bg-white rounded border">
-                                    <span className="text-muted-foreground block text-[10px]">Unidade</span>
-                                    <span className="font-medium">ID: {item.unidade_id}</span>
+                                    <span className="text-muted-foreground block text-[10px]">Local / Unidade</span>
+                                    <span className="font-medium truncate block">{item.local_nome || item.unidade_nome || `ID: ${item.unidade_id}`}</span>
                                   </div>
                                   <div className="p-2 bg-white rounded border">
                                     <span className="text-muted-foreground block text-[10px]">Data Atendimento</span>
                                     <span className="font-medium">{item.data_atendimento ? new Date(item.data_atendimento).toLocaleDateString('pt-BR') : 'N/A'}</span>
                                   </div>
                                   <div className="p-2 bg-white rounded border">
-                                    <span className="text-muted-foreground block text-[10px]">Convênio</span>
-                                    <span className="font-medium">{item.convenio?.nome || 'Particular'}</span>
+                                    <span className="text-muted-foreground block text-[10px]">Categoria Receita</span>
+                                    <span className="font-medium uppercase">{item.categoria_final} {item.convenio_nome ? `| ${item.convenio_nome}` : ''}</span>
                                   </div>
+
                                 </div>
                               </div>
                               <div className="space-y-3">

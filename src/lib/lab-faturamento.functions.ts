@@ -850,4 +850,142 @@ export const getLabFaturamentoItems = createServerFn({ method: "GET" })
     return rows || [];
   });
 
+export const labSyncConvenioCatalog = createServerFn({ method: "POST" }).handler(async () => {
+  const headers = { "x-access-token": FEEGOW_TOKEN() };
+  try {
+    const res = await fetch(`${FEEGOW_BASE}/insurance/list`, { headers });
+    const body = await res.json();
+    const list = body.content || [];
+    
+    if (!list.length) return { ok: true, count: 0 };
+
+    const convenios = list.map((c: any) => ({
+      convenio_id: Number(c.convenio_id),
+      nome: c.nome,
+      registro_ans: c.registro_ans || null,
+      cnpj: c.CNPJ || null,
+      atualizado_em: new Date().toISOString()
+    }));
+
+    const { error } = await supabaseAdmin.from("lab_convenios").upsert(convenios, { onConflict: "convenio_id" });
+    if (error) throw error;
+
+    return { ok: true, count: convenios.length };
+  } catch (err: any) {
+    console.error("[SYNC-CONVENIOS] Erro:", err);
+    throw err;
+  }
+});
+
+export const labEnrichFaturamento = createServerFn({ method: "POST" })
+  .inputValidator((data: { limit?: number }) => data)
+  .handler(async ({ data }) => {
+    const limit = data.limit || 20;
+    const headers = { "x-access-token": FEEGOW_TOKEN() };
+    
+    // 1. Identificar agendamento_id que estão no faturamento mas não no enriquecimento
+    // Fazemos via query direta pois o RPC pode ser pesado ou não estar disponível
+    const { data: allFaturamentoIds } = await supabaseAdmin
+      .from('lab_faturamento')
+      .select('agendamento_id')
+      .not('agendamento_id', 'is', null);
+      
+    const uniqueFatIds = Array.from(new Set((allFaturamentoIds || []).map(f => Number(f.agendamento_id))));
+    
+    const { data: enriched } = await supabaseAdmin
+      .from('lab_agendamento_enriquecido')
+      .select('agendamento_id');
+      
+    const enrichedIds = new Set((enriched || []).map(e => Number(e.agendamento_id)));
+    const toProcess = uniqueFatIds.filter(id => !enrichedIds.has(id)).slice(0, limit);
+
+    if (toProcess.length === 0) return { ok: true, processados: 0, mensagem: "Tudo enriquecido!" };
+    
+    const resultados = {
+      processados: 0,
+      sucesso: 0,
+      falhas: [] as any[]
+    };
+
+    for (const agId of toProcess) {
+      try {
+        const res = await fetch(`${FEEGOW_BASE}/appoints/search?agendamento_id=${agId}`, { headers });
+        const body = await res.json();
+        const content = body.content?.appointments || body.content || [];
+        
+        if (!Array.isArray(content) || content.length === 0) {
+          // Se não encontrou agendamento (deletado/cancelado), marca como particular default
+          await supabaseAdmin.from('lab_agendamento_enriquecido').upsert({
+            agendamento_id: Number(agId),
+            categoria_receita: 'particular',
+            plano_id: 0,
+            sem_dados_agendamento: true,
+            atualizado_em: new Date().toISOString()
+          });
+          resultados.sucesso++;
+
+        } else {
+          const a = content[0];
+          // Regra de negócio: convenio_id is not null e plano_id = 1 -> convenio
+          const isConvenio = a.convenio_id && Number(a.plano_id) === 1;
+          
+          await supabaseAdmin.from('lab_agendamento_enriquecido').upsert({
+            agendamento_id: Number(agId),
+            convenio_id: a.convenio_id ? Number(a.convenio_id) : null,
+
+            plano_id: a.plano_id ? Number(a.plano_id) : 0,
+            categoria_receita: isConvenio ? 'convenio' : 'particular',
+            procedimento_id: a.procedimento_id ? Number(a.procedimento_id) : null,
+            grupo_procedimento_id: a.grupo_procedimento_id ? Number(a.grupo_procedimento_id) : null,
+            especialidade_id: a.especialidade_id ? Number(a.especialidade_id) : null,
+            unidade_id: a.unidade_id ? Number(a.unidade_id) : null,
+            profissional_id: a.profissional_id ? Number(a.profissional_id) : null,
+            status_id: a.status_id ? Number(a.status_id) : null,
+            telemedicina: !!a.telemedicina,
+            retorno: !!a.retorno,
+            primeiro_agendamento: !!a.primeiro_agendamento,
+            canal_id: a.canal_id ? Number(a.canal_id) : null,
+            sem_dados_agendamento: false,
+            atualizado_em: new Date().toISOString()
+          });
+          resultados.sucesso++;
+        }
+      } catch (e: any) {
+        resultados.falhas.push({ agendamento_id: agId, erro: e.message });
+      }
+      resultados.processados++;
+    }
+
+    return resultados;
+  });
+
+export const getLabEnrichmentStatus = createServerFn({ method: "GET" }).handler(async () => {
+  const { data: fats } = await supabaseAdmin
+    .from('lab_faturamento')
+    .select('agendamento_id')
+    .not('agendamento_id', 'is', null);
+  
+  const totalUnicos = new Set((fats || []).map(f => Number(f.agendamento_id))).size;
+
+  const { count: totalEnriquecido } = await supabaseAdmin
+    .from('lab_agendamento_enriquecido')
+    .select('*', { count: 'exact', head: true });
+
+  const { data: resumoCategoria } = await supabaseAdmin
+    .from('lab_agendamento_enriquecido')
+    .select('categoria_receita, sem_dados_agendamento');
+
+  const stats = {
+    total: totalUnicos,
+    enriquecido: totalEnriquecido || 0,
+    pendente: Math.max(0, totalUnicos - (totalEnriquecido || 0)),
+    particular: resumoCategoria?.filter(r => r.categoria_receita === 'particular').length || 0,
+    convenio: resumoCategoria?.filter(r => r.categoria_receita === 'convenio').length || 0,
+    sem_dados: resumoCategoria?.filter((r: any) => r.sem_dados_agendamento).length || 0
+  };
+
+  return stats;
+});
+
+
 
