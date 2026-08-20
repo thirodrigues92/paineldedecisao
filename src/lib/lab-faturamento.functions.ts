@@ -681,7 +681,10 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
         procedimento_id,
         paciente_nome,
         procedimento_nome,
-        prontuario
+        prontuario,
+        convenio_nome,
+        unidade_id,
+        payload_raw
       `)
       .gte("data_execucao", data_inicio)
       .lte("data_execucao", data_fim)
@@ -712,7 +715,7 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
         const slice = ids.slice(i, i + chunk);
         const { data: fats, error: fErr } = await supabaseAdmin
           .from("lab_faturamento")
-          .select("agendamento_id, item_id, valor_faturado, procedimento_id, documento_id")
+          .select("agendamento_id, item_id, valor_faturado, procedimento_id, documento_id, local_nome, unidade_nome, convenio_nome")
           .in("agendamento_id", slice);
         
         if (fErr) throw fErr;
@@ -825,7 +828,10 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
         valor_faturado: valorFaturado,
         diferenca,
         status,
-        formas_pagamento: formasPagamento
+        formas_pagamento: formasPagamento,
+        local_nome: itemVinculado?.local_nome || a.payload_raw?.NomeLocal || null,
+        unidade_nome: itemVinculado?.unidade_nome || a.payload_raw?.NomeUnidade || null,
+        convenio_nome: itemVinculado?.convenio_nome || a.convenio_nome || null
       };
     });
 
