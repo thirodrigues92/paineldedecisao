@@ -861,7 +861,17 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
         formas_pagamento: formasPagamento,
         local_nome: itemVinculado?.local_nome || (a.payload_raw as any)?.NomeLocal || null,
         unidade_nome: itemVinculado?.unidade_nome || (a.payload_raw as any)?.NomeUnidade || null,
-        convenio_nome: itemVinculado?.convenio_nome || a.convenio_nome || null
+        convenio_nome: (() => {
+          const enr = enriquecidoMap.get(agId);
+          if (enr?.categoria_receita === 'convenio' && enr.convenio_id) {
+            return convenioNomeMap.get(Number(enr.convenio_id)) || `Convênio ID ${enr.convenio_id}`;
+          }
+          if (enr?.categoria_receita === 'particular') return null;
+          
+          // Fallback para agendamentos não enriquecidos
+          if (a.convenio_nome === 'CONVÊNIOS') return 'Convênio (aguardando categorização)';
+          return itemVinculado?.convenio_nome || a.convenio_nome || null;
+        })()
       };
     });
 
