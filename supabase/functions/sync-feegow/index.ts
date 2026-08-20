@@ -1372,7 +1372,8 @@ Deno.serve(async (req) => {
       resumo.push(await pega("sem tabela_id (particular)", {}, true));
       resumo.push(await pega("tabela_id=22", { tabela_id: "22" }, true));
 
-      for (let t = 1; t <= maxT; t++) {
+      const minT = Number(url.searchParams.get("min_tabela") ?? 1);
+      for (let t = minT; t <= maxT; t++) {
         resumo.push(await pega(`tabela_id=${t}`, { tabela_id: String(t) }, false));
       }
 
