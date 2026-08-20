@@ -1005,12 +1005,17 @@ export const labEnrichFaturamento = createServerFn({ method: "POST" })
   });
 
 export const getLabEnrichmentStatus = createServerFn({ method: "GET" }).handler(async () => {
-  const { data: fats } = await supabaseAdmin
-    .from('lab_faturamento')
-    .select('agendamento_id')
-    .not('agendamento_id', 'is', null);
-  
-  const totalUnicos = new Set((fats || []).map(f => Number(f.agendamento_id))).size;
+  const idsUnicos = new Set<number>();
+  for (let from = 0; from < 100000; from += 1000) {
+    const { data: rows } = await supabaseAdmin
+      .from('lab_faturamento')
+      .select('agendamento_id')
+      .not('agendamento_id', 'is', null)
+      .range(from, from + 999);
+    (rows || []).forEach((r) => { if (r.agendamento_id != null) idsUnicos.add(Number(r.agendamento_id)); });
+    if (!rows || rows.length < 1000) break;
+  }
+  const totalUnicos = idsUnicos.size;
 
   const { count: totalEnriquecido } = await supabaseAdmin
     .from('lab_agendamento_enriquecido')
