@@ -377,58 +377,60 @@ function LabRelatorio() {
       )}
 
       {enrichmentStatus && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="bg-slate-50 border-slate-200">
             <CardHeader className="py-3 px-4">
-              <CardTitle className="text-[10px] font-bold uppercase text-slate-500">Total Faturamento</CardTitle>
+              <CardTitle className="text-[10px] font-bold uppercase text-slate-500">Total Auditado</CardTitle>
             </CardHeader>
             <CardContent className="py-0 px-4 pb-4">
               <div className="text-2xl font-bold">{enrichmentStatus.total}</div>
               <p className="text-[10px] text-muted-foreground">Agendamentos únicos</p>
             </CardContent>
           </Card>
-          <Card className={`${enrichmentStatus.pendente > 0 ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200'}`}>
+
+          <Card className="bg-emerald-50 border-emerald-200">
             <CardHeader className="py-3 px-4">
-              <CardTitle className={`text-[10px] font-bold uppercase ${enrichmentStatus.pendente > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
-                Status Enriquecimento
+              <CardTitle className="text-[10px] font-bold uppercase text-emerald-600">
+                Valor Real (Tabela Manual)
               </CardTitle>
             </CardHeader>
             <CardContent className="py-0 px-4 pb-4">
-              <div className="text-2xl font-bold">{enrichmentStatus.enriquecido}</div>
-              <p className="text-[10px] text-muted-foreground">
-                {enrichmentStatus.pendente > 0 ? `${enrichmentStatus.pendente} pendentes` : '100% processado'}
-              </p>
-            </CardContent>
-          </Card>
-          <Card className="bg-indigo-50 border-indigo-200">
-            <CardHeader className="py-3 px-4">
-              <CardTitle className="text-[10px] font-bold uppercase text-indigo-600">Mix de Receita</CardTitle>
-            </CardHeader>
-            <CardContent className="py-0 px-4 pb-4">
-              <div className="flex gap-4">
-                <div>
-                  <div className="text-xl font-bold text-indigo-700">{Math.round((enrichmentStatus.convenio / Math.max(1, enrichmentStatus.enriquecido)) * 100)}%</div>
-                  <p className="text-[9px] uppercase font-bold text-slate-400">Convênio</p>
-                </div>
-                <div>
-                  <div className="text-xl font-bold text-slate-700">{Math.round((enrichmentStatus.particular / Math.max(1, enrichmentStatus.enriquecido)) * 100)}%</div>
-                  <p className="text-[9px] uppercase font-bold text-slate-400">Particular</p>
-                </div>
+              <div className="text-2xl font-bold">
+                {filteredData.filter(i => i.origem === 'convenio_tabela_manual').length}
               </div>
+              <p className="text-[10px] text-muted-foreground">Preços validados por planilha</p>
             </CardContent>
           </Card>
-          <Card className={`${enrichmentStatus.sem_dados > (enrichmentStatus.total * 0.05) ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-200'}`}>
+
+          <Card className="bg-amber-50 border-amber-200">
             <CardHeader className="py-3 px-4">
-              <CardTitle className={`text-[10px] font-bold uppercase ${enrichmentStatus.sem_dados > (enrichmentStatus.total * 0.05) ? 'text-red-600' : 'text-slate-500'}`}>
-                Agendamentos Sem Dados
+              <CardTitle className="text-[10px] font-bold uppercase text-amber-600">
+                Pendente: Preço
               </CardTitle>
             </CardHeader>
             <CardContent className="py-0 px-4 pb-4">
-              <div className="text-2xl font-bold">{enrichmentStatus.sem_dados}</div>
-              <p className="text-[10px] text-muted-foreground">Registros ignorados na API</p>
+              <div className="text-2xl font-bold">
+                {filteredData.filter(i => i.origem === 'convenio_pendente_preco').length}
+              </div>
+              <p className="text-[10px] text-muted-foreground">Falta cadastrar o valor do TUSS</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-red-50 border-red-200">
+            <CardHeader className="py-3 px-4">
+              <CardTitle className="text-[10px] font-bold uppercase text-red-600">
+                Pendente: Cadastro Feegow
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="py-0 px-4 pb-4">
+              <div className="text-2xl font-bold">
+                {filteredData.filter(i => i.origem === 'convenio_pendente_identificacao').length}
+              </div>
+              <p className="text-[10px] text-muted-foreground">Agenda sem convênio vinculado</p>
             </CardContent>
           </Card>
         </div>
+
       )}
 
       <Tabs defaultValue="faturamento" className="space-y-6">
