@@ -343,7 +343,14 @@ function LabConciliacao() {
                       {(item.formas_pagamento || []).length > 0 ? (
                         <div className="flex flex-wrap gap-1">
                           {item.formas_pagamento.map((f: string) => (
-                            <span key={f} className="bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100">{f}</span>
+                            <span key={f} className="bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100 flex items-center gap-1">
+                              {f}
+                              {f === "Convênio" && item.convenio_nome && (
+                                <span className="text-[9px] font-bold text-indigo-700 border-l border-indigo-200 pl-1 ml-0.5 uppercase">
+                                  {item.convenio_nome}
+                                </span>
+                              )}
+                            </span>
                           ))}
                         </div>
                       ) : (
