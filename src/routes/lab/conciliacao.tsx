@@ -239,11 +239,11 @@ function LabConciliacao() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="h-32 text-center">Calculando conciliação...</TableCell>
+                  <TableCell colSpan={10} className="h-32 text-center">Calculando conciliação...</TableCell>
                 </TableRow>
               ) : filteredData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="h-32 text-center text-muted-foreground">Nenhum registro encontrado para os filtros.</TableCell>
+                  <TableCell colSpan={10} className="h-32 text-center text-muted-foreground">Nenhum registro encontrado para os filtros.</TableCell>
                 </TableRow>
               ) : (
                 filteredData.map((item: any) => (
