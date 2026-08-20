@@ -84,7 +84,7 @@ function LabConciliacao() {
     if (!conciliacaoData) return [];
     return conciliacaoData.filter((item: any) => {
       const searchMatch = `${item.paciente} ${item.procedimento} ${item.profissional} ${item.prontuario}`.toLowerCase().includes(searchTerm.toLowerCase());
-      const statusMatch = statusFilter === "ALL" || item.status === statusFilter;
+      const statusMatch = statusFilter === "ALL" || item.status === statusFilter || (statusFilter === "SEM_FATURA" && item.status === "PENDENTE_FATURA");
       return searchMatch && statusMatch;
     }).sort((a: any, b: any) => Math.abs(b.diferenca) - Math.abs(a.diferenca));
   }, [conciliacaoData, searchTerm, statusFilter]);
