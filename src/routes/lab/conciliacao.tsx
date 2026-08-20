@@ -357,14 +357,12 @@ function LabConciliacao() {
                         ) : (
                           <span className="opacity-50">—</span>
                         )}
-                        {/* Se for Convênio mas não houver faturamento (sem formas_pagamento), mostra o nome do convênio vindo da agenda se disponível */}
                         {(!item.formas_pagamento || item.formas_pagamento.length === 0) && item.convenio_nome && (
                           <span className="bg-slate-50 text-slate-500 px-1.5 py-0.5 rounded border border-slate-100 self-start">
                             {item.convenio_nome}
                           </span>
                         )}
                       </div>
-                    </TableCell>
                     </TableCell>
                     <TableCell className="text-center">
                       <Badge 
