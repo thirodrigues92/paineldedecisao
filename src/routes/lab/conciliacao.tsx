@@ -340,22 +340,31 @@ function LabConciliacao() {
                     </TableCell>
 
                     <TableCell className="text-[10px] text-muted-foreground italic">
-                      {(item.formas_pagamento || []).length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {item.formas_pagamento.map((f: string) => (
-                            <span key={f} className="bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100 flex items-center gap-1">
-                              {f}
-                              {f === "Convênio" && item.convenio_nome && (
-                                <span className="text-[9px] font-bold text-indigo-700 border-l border-indigo-200 pl-1 ml-0.5 uppercase">
-                                  {item.convenio_nome}
-                                </span>
-                              )}
-                            </span>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="opacity-50">—</span>
-                      )}
+                      <div className="flex flex-col gap-1">
+                        {(item.formas_pagamento || []).length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {item.formas_pagamento.map((f: string) => (
+                              <span key={f} className="bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100 flex items-center gap-1">
+                                {f}
+                                {f === "Convênio" && item.convenio_nome && (
+                                  <span className="text-[9px] font-bold text-indigo-700 border-l border-indigo-200 pl-1 ml-0.5 uppercase">
+                                    {item.convenio_nome}
+                                  </span>
+                                )}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="opacity-50">—</span>
+                        )}
+                        {/* Se for Convênio mas não houver faturamento (sem formas_pagamento), mostra o nome do convênio vindo da agenda se disponível */}
+                        {(!item.formas_pagamento || item.formas_pagamento.length === 0) && item.convenio_nome && (
+                          <span className="bg-slate-50 text-slate-500 px-1.5 py-0.5 rounded border border-slate-100 self-start">
+                            {item.convenio_nome}
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
                     </TableCell>
                     <TableCell className="text-center">
                       <Badge 
