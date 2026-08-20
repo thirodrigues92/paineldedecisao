@@ -728,11 +728,12 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
       }
     }
 
-    // 2.5 Buscar formas de pagamento vinculadas aos documentos
+    // 2.5 Buscar formas de pagamento e origens vinculadas aos documentos
     const allDocIds = Array.from(new Set(
       Array.from(faturamentoPorAgendamento.values()).flat().map(f => Number(f.documento_id)).filter(Boolean)
     ));
     const docToPay = new Map<number, string[]>();
+    const docToOrigem = new Map<number, string>();
     
     if (allDocIds.length > 0) {
       const formaNomes: Record<number, string> = {
@@ -740,19 +741,24 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
         6: "Boleto", 7: "Depósito/Transferência", 8: "Pix", 9: "Convênio", 10: "Convênio", 15: "Faturamento"
       };
 
-      const { data: pays } = await supabaseAdmin
-        .from("lab_recebimento")
-        .select("documento_id, forma_pagamento")
-        .in("documento_id", allDocIds);
+      const [pays, fats] = await Promise.all([
+        supabaseAdmin.from("lab_recebimento").select("documento_id, forma_pagamento").in("documento_id", allDocIds),
+        supabaseAdmin.from("lab_faturamento").select("documento_id, origem").in("documento_id", allDocIds)
+      ]);
         
-      for (const p of pays || []) {
+      for (const p of pays.data || []) {
         const doc = Number(p.documento_id);
         const fPag = p.forma_pagamento as number;
         const desc = (fPag != null ? formaNomes[fPag] : null) || `Forma ${fPag}`;
         const existing = docToPay.get(doc) || [];
         if (!existing.includes(desc)) docToPay.set(doc, [...existing, desc]);
       }
+
+      for (const f of fats.data || []) {
+        docToOrigem.set(Number(f.documento_id), f.origem);
+      }
     }
+
 
     // 3. Cruzar dados sem agrupar por agendamento (cada linha da produção é um item)
     // Controle de quais itens de faturamento já foram "consumidos" para evitar duplicidade
@@ -788,10 +794,19 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
       // Se tiver faturamento, usamos o valor faturado como o "correto" e a diferença como 0 (ou baseada no faturamento)
       // para não gerar alertas falsos de 30 vs 220.
       // Se não tiver faturamento, mantemos o valor da tabela (produção) para sinalizar que falta faturar.
+      // AJUSTE: O usuário diz que os 30 da produção são fakes. Se for 30 e não tiver faturamento, marcamos como 0 ou realçamos.
       const valorReferencia = itemVinculado ? valorFaturado : valorTabela;
-      
       const diferenca = valorFaturado - valorReferencia;
-      const formasPagamento = itemVinculado ? (docToPay.get(Number(itemVinculado.documento_id)) || []) : [];
+      
+      // FORMA DE PAGAMENTO: Se não houver recebimento, tentamos inferir pela origem do faturamento (Convênio)
+      let formasPagamento = itemVinculado ? (docToPay.get(Number(itemVinculado.documento_id)) || []) : [];
+      if (formasPagamento.length === 0 && itemVinculado) {
+        // Se o faturamento é de convênio, mostramos "Convênio"
+        const docId = Number(itemVinculado.documento_id);
+        if (docToOrigem.get(docId) === 'convenio') {
+          formasPagamento = ["Convênio"];
+        }
+      }
       
       let status = "IGUAL";
       if (!itemVinculado) {
@@ -799,6 +814,8 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
       } else if (Math.abs(diferenca) > 0.01) {
         status = "DIVERGENTE";
       }
+
+
 
       return {
         feegow_id: feegowId,

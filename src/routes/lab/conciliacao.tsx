@@ -265,14 +265,25 @@ function LabConciliacao() {
                     <TableCell className="text-xs text-muted-foreground">{item.profissional}</TableCell>
                     <TableCell className="text-xs">{item.procedimento}</TableCell>
                     <TableCell className="text-right font-mono text-xs text-muted-foreground">
-                      {brl(item.valor_tabela)}
+                      {item.status === 'SEM_FATURA' && item.valor_tabela === 30 ? (
+                        <span className="text-[10px] italic opacity-50">Não faturado</span>
+                      ) : (
+                        brl(item.valor_tabela)
+                      )}
                     </TableCell>
                     <TableCell className="text-right font-mono text-xs font-bold">
-                      {brl(item.valor_faturado)}
+                      {item.status === 'SEM_FATURA' ? (
+                         <span className="text-red-500">R$ 0,00</span>
+                      ) : (
+                        brl(item.valor_faturado)
+                      )}
                     </TableCell>
-                    <TableCell className={`text-right font-mono text-sm font-bold ${item.diferenca < 0 ? 'text-red-600' : item.diferenca > 0 ? 'text-emerald-600' : ''}`}>
-                      {item.diferenca !== 0 ? brl(item.diferenca) : '—'}
+                    <TableCell className={`text-right font-mono text-sm font-bold ${item.diferenca < 0 || (item.status === 'SEM_FATURA') ? 'text-red-600' : item.diferenca > 0 ? 'text-emerald-600' : ''}`}>
+                      {item.status === 'SEM_FATURA' ? (
+                        item.valor_tabela === 30 ? 'Pendente' : brl(-item.valor_tabela)
+                      ) : item.diferenca !== 0 ? brl(item.diferenca) : '—'}
                     </TableCell>
+
                     <TableCell className="text-[10px] text-muted-foreground italic">
                       {(item.formas_pagamento || []).length > 0 ? (
                         <div className="flex flex-wrap gap-1">
