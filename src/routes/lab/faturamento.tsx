@@ -751,7 +751,66 @@ function LabFaturamento() {
               </div>
             </CardContent>
            </Card>
+ 
+         {tab === "categorizacao" && (
+           <Card>
+             <CardHeader>
+               <CardTitle>Categorização de Convênio</CardTitle>
+             </CardHeader>
+             <CardContent className="space-y-4">
+               <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+                 {[
+                   { label: "Total", value: enrichStatus.data?.total ?? 0 },
+                   { label: "Enriquecido", value: enrichStatus.data?.enriquecido ?? 0 },
+                   { label: "Pendente", value: enrichStatus.data?.pendente ?? 0 },
+                   { label: "Particular", value: enrichStatus.data?.particular ?? 0 },
+                   { label: "Convênio", value: enrichStatus.data?.convenio ?? 0 },
+                   { label: "Sem dados", value: enrichStatus.data?.sem_dados ?? 0 },
+                 ].map((s) => (
+                   <div key={s.label} className="rounded-md border p-3">
+                     <div className="text-xs text-muted-foreground">{s.label}</div>
+                     <div className="text-xl font-bold">{s.value.toLocaleString("pt-BR")}</div>
+                   </div>
+                 ))}
+               </div>
+
+               <div className="flex flex-wrap gap-2">
+                 <Button
+                   variant="outline"
+                   disabled={catalogMutation.isPending}
+                   onClick={() => catalogMutation.mutate()}
+                 >
+                   <RefreshCw className={`w-4 h-4 mr-2 ${catalogMutation.isPending ? "animate-spin" : ""}`} />
+                   Sincronizar catálogo de convênios
+                 </Button>
+                 <Button disabled={enriching} onClick={runEnrichmentLoop}>
+                   <Play className="w-4 h-4 mr-2" />
+                   {enriching ? "Processando..." : "Processar categorização"}
+                 </Button>
+                 <Button variant="ghost" onClick={() => enrichStatus.refetch()}>
+                   Atualizar status
+                 </Button>
+               </div>
+
+               {(enriching || enrichProgress.processed > 0) && (
+                 <div className="space-y-2">
+                   <Progress
+                     value={
+                       enrichProgress.total > 0
+                         ? Math.min(100, (enrichProgress.processed / enrichProgress.total) * 100)
+                         : 0
+                     }
+                   />
+                   <div className="text-xs text-muted-foreground">
+                     {enrichProgress.processed} de {enrichProgress.total} agendamentos processados
+                     {enrichProgress.message ? ` — ${enrichProgress.message}` : ""}
+                   </div>
+                 </div>
+               )}
+             </CardContent>
+           </Card>
          )}
+
  
          {tab === "auditoria" && (
            <Card>
