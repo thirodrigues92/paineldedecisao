@@ -731,6 +731,36 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
       }
     }
 
+    // 2.2 Buscar enriquecimento e catálogo de convênios
+    let enriquecidoMap = new Map<number, any>();
+    let convenioNomeMap = new Map<number, string>();
+
+    if (ids.length > 0) {
+      const { data: enriched } = await supabaseAdmin
+        .from("lab_agendamento_enriquecido")
+        .select("agendamento_id, convenio_id, categoria_receita")
+        .in("agendamento_id", ids);
+      
+      if (enriched) {
+        enriquecidoMap = new Map(enriched.map(e => [Number(e.agendamento_id), e]));
+        
+        const convenioIds = Array.from(new Set(
+          enriched.map(e => e.convenio_id).filter(Boolean).map(id => Number(id))
+        ));
+
+        if (convenioIds.length > 0) {
+          const { data: convs } = await supabaseAdmin
+            .from("lab_convenios")
+            .select("convenio_id, nome")
+            .in("convenio_id", convenioIds);
+          
+          if (convs) {
+            convenioNomeMap = new Map(convs.map(c => [Number(c.convenio_id), c.nome]));
+          }
+        }
+      }
+    }
+
     // 2.5 Buscar formas de pagamento e origens vinculadas aos documentos
     const allDocIds = Array.from(new Set(
       Array.from(faturamentoPorAgendamento.values()).flat().map(f => Number(f.documento_id)).filter(Boolean)
@@ -831,7 +861,17 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
         formas_pagamento: formasPagamento,
         local_nome: itemVinculado?.local_nome || (a.payload_raw as any)?.NomeLocal || null,
         unidade_nome: itemVinculado?.unidade_nome || (a.payload_raw as any)?.NomeUnidade || null,
-        convenio_nome: itemVinculado?.convenio_nome || a.convenio_nome || null
+        convenio_nome: (() => {
+          const enr = enriquecidoMap.get(agId);
+          if (enr?.categoria_receita === 'convenio' && enr.convenio_id) {
+            return convenioNomeMap.get(Number(enr.convenio_id)) || `Convênio ID ${enr.convenio_id}`;
+          }
+          if (enr?.categoria_receita === 'particular') return null;
+          
+          // Fallback para agendamentos não enriquecidos
+          if (a.convenio_nome === 'CONVÊNIOS') return 'Convênio (aguardando categorização)';
+          return itemVinculado?.convenio_nome || a.convenio_nome || null;
+        })()
       };
     });
 
