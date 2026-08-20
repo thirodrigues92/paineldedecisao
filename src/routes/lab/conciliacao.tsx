@@ -249,7 +249,7 @@ function LabConciliacao() {
               ) : (
                 filteredData.map((item: any) => (
                   <TableRow 
-                    key={item.agendamento_id}
+                    key={item.feegow_id}
                     className={`
                       cursor-pointer transition-colors
                       ${item.status === 'SEM_FATURA' ? 'bg-red-50/50 hover:bg-red-100/50' : ''}
