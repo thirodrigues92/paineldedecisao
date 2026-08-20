@@ -1197,6 +1197,68 @@ Deno.serve(async (req) => {
       extra = { ...extra, procedimento: pid, probeTabelas: out };
     }
 
+    if (mode === "probe-tiss") {
+      // Diagnóstico bruto do módulo TISS/Guias de convênio.
+      const hoje = new Date();
+      const d90 = new Date(hoje.getTime() - 90 * 86400000);
+      const fmt = (d: Date) => `${String(d.getDate()).padStart(2, "0")}-${String(d.getMonth() + 1).padStart(2, "0")}-${d.getFullYear()}`;
+      const start = url.searchParams.get("data_start") ?? fmt(d90);
+      const end = url.searchParams.get("data_end") ?? fmt(hoje);
+
+      const rawCall = async (method: string, path: string, params: Record<string, string>) => {
+        const u = new URL(FEEGOW_BASE + path);
+        try {
+          let res: Response;
+          if (method === "GET") {
+            for (const [k, v] of Object.entries(params)) u.searchParams.set(k, v);
+            res = await fetch(u.toString(), { headers: { "x-access-token": FEEGOW_TOKEN } });
+          } else {
+            res = await fetch(u.toString(), {
+              method: "POST",
+              headers: { "x-access-token": FEEGOW_TOKEN, "Content-Type": "application/json" },
+              body: JSON.stringify(params),
+            });
+          }
+          const text = await res.text();
+          let parsed: any = null;
+          try { parsed = JSON.parse(text); } catch { /* não-JSON */ }
+          const content = parsed?.content;
+          const rows = Array.isArray(content) ? content : (content && typeof content === "object" ? asArray(content) : []);
+          return {
+            url: `${method} ${u.pathname}${method === "GET" ? u.search : ""}`,
+            body: method === "POST" ? params : undefined,
+            httpStatus: res.status,
+            success: parsed?.success ?? null,
+            message: parsed?.message ?? parsed?.msg ?? null,
+            registros: rows.length,
+            amostraBruta: rows.slice(0, 3),
+            respostaBruta: rows.length ? undefined : text.slice(0, 1500),
+          };
+        } catch (e) { return { url: `${method} ${path}`, erro: String(e).slice(0, 400) }; }
+      };
+
+      const calls: Array<[string, string, Record<string, string>]> = [
+        ["GET", "/insurance/list-guides", { data_start: start, data_end: end }],
+        ["GET", "/insurance/list-guides", { data_start: start, data_end: end, unidade_id: "0" }],
+        ["GET", "/insurance/guides", { data_start: start, data_end: end }],
+        ["GET", "/insurance/list-guide", { data_start: start, data_end: end }],
+        ["GET", "/billing/list-guides", { data_start: start, data_end: end }],
+        ["GET", "/billing/insurances-billing", { data_start: start, data_end: end }],
+        ["GET", "/billing/insurances-billing", { billing_type_id: "1", insurance_id: "33", billing: "1" }],
+        ["GET", "/billing/list-billing", { data_start: start, data_end: end }],
+        ["GET", "/billing/list-billing-type", {}],
+        ["GET", "/billing/list", {}],
+        ["GET", "/tiss/list-guides", { data_start: start, data_end: end }],
+        ["GET", "/tiss/list", { data_start: start, data_end: end }],
+        ["POST", "/billing/insurances-billing", { billing_type_id: 1 as unknown as string, insurance_id: 33 as unknown as string, billing: 1 as unknown as string }],
+      ];
+      const tiss: Record<string, unknown> = {};
+      for (const [m, p, params] of calls) {
+        tiss[`${m} ${p} ${JSON.stringify(params)}`] = await rawCall(m, p, params);
+      }
+      extra = { ...extra, janela: { start, end }, probeTiss: tiss };
+    }
+
 
 
     if (mode === "probe-precos") {
