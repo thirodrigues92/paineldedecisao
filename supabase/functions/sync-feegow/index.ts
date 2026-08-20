@@ -1349,6 +1349,51 @@ Deno.serve(async (req) => {
       extra = { ...extra, probePrecos: results };
     }
 
+    if (mode === "probe-tabela-preco") {
+      // Hipótese: valor de convênio vem de uma "tabela" numerada (ex.: 22 - TUSS).
+      const pid = Number(url.searchParams.get("procedimento") ?? 3);
+      const maxT = Number(url.searchParams.get("max_tabela") ?? 30);
+      const detalhe: Record<string, unknown> = {};
+      const resumo: Array<Record<string, unknown>> = [];
+
+      const pega = async (label: string, params: Record<string, string>, guardarBruto: boolean) => {
+        try {
+          const raw = await feegow("/procedures/list", params);
+          const rows = asArray(raw);
+          const alvo = rows.find((r: any) => Number(r.procedimento_id ?? r.id) === pid) ?? null;
+          if (guardarBruto) detalhe[label] = { params, registros: rows.length, registroBruto: alvo, amostra: rows[0] ?? null };
+          return { label, registros: rows.length, valor: alvo?.valor ?? null, nome: alvo?.nome ?? alvo?.procedimento ?? null };
+        } catch (e) {
+          if (guardarBruto) detalhe[label] = { params, erro: String(e).slice(0, 300) };
+          return { label, erro: String(e).slice(0, 160) };
+        }
+      };
+
+      resumo.push(await pega("sem tabela_id (particular)", {}, true));
+      resumo.push(await pega("tabela_id=22", { tabela_id: "22" }, true));
+
+      const minT = Number(url.searchParams.get("min_tabela") ?? 1);
+      for (let t = minT; t <= maxT; t++) {
+        resumo.push(await pega(`tabela_id=${t}`, { tabela_id: String(t) }, false));
+      }
+
+      const valores = resumo.filter((r) => r.valor != null && Number(r.valor) !== 0);
+      const distintos = [...new Set(valores.map((r) => String(r.valor)))];
+
+      extra = {
+        ...extra,
+        procedimento: pid,
+        probeTabelaPreco: {
+          detalheBruto: detalhe,
+          resumo,
+          tabelasComValorNaoZero: valores.map((r) => ({ tabela: r.label, valor: r.valor })),
+          valoresDistintos: distintos,
+          bate122: valores.filter((r) => ["122", "122.00", "12200", "122,00"].includes(String(r.valor))).map((r) => r.label),
+        },
+      };
+    }
+
+
 
     if (mode === "geocode") extra = { ...extra, geocode: await geocodeBairros(supabase, limit || 30) };
 
