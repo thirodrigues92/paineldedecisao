@@ -916,13 +916,14 @@ export const labEnrichFaturamento = createServerFn({ method: "POST" })
         if (!Array.isArray(content) || content.length === 0) {
           // Se não encontrou agendamento (deletado/cancelado), marca como particular default
           await supabaseAdmin.from('lab_agendamento_enriquecido').upsert({
-            agendamento_id: BigInt(agId),
+            agendamento_id: Number(agId),
             categoria_receita: 'particular',
             plano_id: 0,
             sem_dados_agendamento: true,
             atualizado_em: new Date().toISOString()
           });
           resultados.sucesso++;
+
         } else {
           const a = content[0];
           // Regra de negócio: convenio_id is not null e plano_id = 1 -> convenio
