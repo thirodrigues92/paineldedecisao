@@ -551,20 +551,21 @@ function LabRelatorio() {
                                 <div className="grid grid-cols-2 gap-2 text-xs">
                                   <div className="p-2 bg-white rounded border">
                                     <span className="text-muted-foreground block text-[10px]">Profissional</span>
-                                    <span className="font-medium">{item.profissional?.nome || 'N/A'}</span>
+                                    <span className="font-medium">{item.profissional_nome || 'N/A'}</span>
                                   </div>
                                   <div className="p-2 bg-white rounded border">
-                                    <span className="text-muted-foreground block text-[10px]">Unidade</span>
-                                    <span className="font-medium">ID: {item.unidade_id}</span>
+                                    <span className="text-muted-foreground block text-[10px]">Local / Unidade</span>
+                                    <span className="font-medium truncate block">{item.local_nome || item.unidade_nome || `ID: ${item.unidade_id}`}</span>
                                   </div>
                                   <div className="p-2 bg-white rounded border">
                                     <span className="text-muted-foreground block text-[10px]">Data Atendimento</span>
                                     <span className="font-medium">{item.data_atendimento ? new Date(item.data_atendimento).toLocaleDateString('pt-BR') : 'N/A'}</span>
                                   </div>
                                   <div className="p-2 bg-white rounded border">
-                                    <span className="text-muted-foreground block text-[10px]">Convênio</span>
-                                    <span className="font-medium">{item.convenio?.nome || 'Particular'}</span>
+                                    <span className="text-muted-foreground block text-[10px]">Categoria Receita</span>
+                                    <span className="font-medium uppercase">{item.categoria_final} {item.convenio_nome ? `| ${item.convenio_nome}` : ''}</span>
                                   </div>
+
                                 </div>
                               </div>
                               <div className="space-y-3">
