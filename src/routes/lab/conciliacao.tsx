@@ -100,7 +100,7 @@ function LabConciliacao() {
 
   const exportCSV = () => {
     if (!filteredData.length) return;
-    const headers = ["Data", "Prontuário", "Paciente", "Profissional", "Procedimento", "Valor Tabela", "Valor Faturado", "Diferenca", "Status"];
+    const headers = ["Data", "Prontuário", "Paciente", "Profissional", "Procedimento", "Valor Tabela", "Valor Faturado", "Diferenca", "Formas Pagamento", "Status"];
     const rows = filteredData.map((item: any) => [
       item.data,
       item.prontuario,
@@ -110,6 +110,7 @@ function LabConciliacao() {
       item.valor_tabela,
       item.valor_faturado,
       item.diferenca,
+      (item.formas_pagamento || []).join(" | "),
       item.status
     ]);
 
@@ -230,6 +231,7 @@ function LabConciliacao() {
                 <TableHead className="text-right">Tabela (Agenda)</TableHead>
                 <TableHead className="text-right">Real (Financeiro)</TableHead>
                 <TableHead className="text-right">Diferença</TableHead>
+                <TableHead>Pagamento</TableHead>
                 <TableHead className="text-center">Status</TableHead>
                 <TableHead></TableHead>
               </TableRow>
@@ -237,11 +239,11 @@ function LabConciliacao() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="h-32 text-center">Calculando conciliação...</TableCell>
+                  <TableCell colSpan={10} className="h-32 text-center">Calculando conciliação...</TableCell>
                 </TableRow>
               ) : filteredData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="h-32 text-center text-muted-foreground">Nenhum registro encontrado para os filtros.</TableCell>
+                  <TableCell colSpan={10} className="h-32 text-center text-muted-foreground">Nenhum registro encontrado para os filtros.</TableCell>
                 </TableRow>
               ) : (
                 filteredData.map((item: any) => (
@@ -269,6 +271,17 @@ function LabConciliacao() {
                     </TableCell>
                     <TableCell className={`text-right font-mono text-sm font-bold ${item.diferenca < 0 ? 'text-red-600' : item.diferenca > 0 ? 'text-emerald-600' : ''}`}>
                       {item.diferenca !== 0 ? brl(item.diferenca) : '—'}
+                    </TableCell>
+                    <TableCell className="text-[10px] text-muted-foreground italic">
+                      {(item.formas_pagamento || []).length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {item.formas_pagamento.map((f: string) => (
+                            <span key={f} className="bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100">{f}</span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="opacity-50">—</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-center">
                       <Badge 

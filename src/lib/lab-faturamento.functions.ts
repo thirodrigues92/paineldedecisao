@@ -679,6 +679,7 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
         profissional_id,
         procedimento_id,
         paciente_nome,
+        procedimento_nome,
         prontuario
       `)
       .gte("data_execucao", data_inicio)
@@ -722,6 +723,63 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
       }
     }
 
+    // 2.5 Buscar formas de pagamento vinculadas
+    const docIds = Array.from(new Set((agenda || []).map(a => a.agendamento_id).filter(Boolean)));
+    const paymentMethodsMap = new Map<number, string[]>();
+    
+    if (docIds.length > 0) {
+      // O join correto seria via lab_faturamento para pegar o documento_id
+      const { data: fatsForDocs } = await supabaseAdmin
+        .from("lab_faturamento")
+        .select("agendamento_id, documento_id")
+        .in("agendamento_id", docIds);
+        
+      const agToDoc = new Map<number, number[]>();
+      for (const f of fatsForDocs || []) {
+        if (f.agendamento_id && f.documento_id) {
+          const ag = Number(f.agendamento_id);
+          const doc = Number(f.documento_id);
+          const existing = agToDoc.get(ag) || [];
+          if (!existing.includes(doc)) agToDoc.set(ag, [...existing, doc]);
+        }
+      }
+
+      const docToPay = new Map<number, string[]>();
+      const formaNomes: Record<number, string> = {
+        1: "Dinheiro",
+        2: "Cheque",
+        3: "Cartão de Crédito",
+        4: "Cartão de Débito",
+        6: "Boleto",
+        7: "Depósito/Transferência",
+        8: "Pix",
+        15: "Faturamento"
+      };
+
+      const allDocIds = Array.from(new Set(Array.from(agToDoc.values()).flat()));
+      if (allDocIds.length > 0) {
+        const { data: pays } = await supabaseAdmin
+          .from("lab_recebimento")
+          .select("documento_id, forma_pagamento")
+          .in("documento_id", allDocIds);
+          
+        for (const p of pays || []) {
+          const doc = Number(p.documento_id);
+          const fPag = p.forma_pagamento as number;
+          const desc = (fPag != null ? formaNomes[fPag] : null) || `Forma ${fPag}`;
+          const existing = docToPay.get(doc) || [];
+          if (!existing.includes(desc)) docToPay.set(doc, [...existing, desc]);
+        }
+      }
+
+      for (const [ag, docs] of agToDoc.entries()) {
+        const methods = docs.flatMap(d => docToPay.get(d) || []);
+        if (methods.length > 0) {
+          paymentMethodsMap.set(ag, Array.from(new Set(methods)));
+        }
+      }
+    }
+
     // 3. Cruzar dados
     const conciliado = (agenda || []).map(a => {
       const agId = Number(a.agendamento_id);
@@ -732,6 +790,8 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
       
       let status = "IGUAL";
       if (!temFatura) {
+        // Se não tem fatura vinculada ao agendamento, tentamos buscar pelo paciente + data + valor aproximado?
+        // Por enquanto mantemos SEM_FATURA para precisão.
         status = "SEM_FATURA";
       } else if (Math.abs(diferenca) > 0.01) {
         status = "DIVERGENTE";
@@ -743,11 +803,12 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
         paciente: a.paciente_nome || (a.paciente_id ? pacMap.get(a.paciente_id)?.nome : null) || "N/A",
         prontuario: a.prontuario || (a.paciente_id ? pacMap.get(a.paciente_id)?.prontuario : null) || "—",
         profissional: (a.profissional_id ? profMap.get(a.profissional_id) : null) || "N/A",
-        procedimento: (a.procedimento_id ? procMap.get(a.procedimento_id) : null) || "N/A",
+        procedimento: a.procedimento_nome || (a.procedimento_id ? procMap.get(a.procedimento_id) : null) || "N/A",
         valor_tabela: valorTabela,
         valor_faturado: valorFaturado,
         diferenca,
-        status
+        status,
+        formas_pagamento: paymentMethodsMap.get(agId) || []
       };
     });
 
