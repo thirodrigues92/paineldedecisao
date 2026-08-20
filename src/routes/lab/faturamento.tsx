@@ -751,6 +751,9 @@ function LabFaturamento() {
               </div>
             </CardContent>
            </Card>
+         )}
+ 
+
  
          {tab === "categorizacao" && (
            <Card>
