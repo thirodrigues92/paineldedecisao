@@ -829,8 +829,8 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
         diferenca,
         status,
         formas_pagamento: formasPagamento,
-        local_nome: itemVinculado?.local_nome || a.payload_raw?.NomeLocal || null,
-        unidade_nome: itemVinculado?.unidade_nome || a.payload_raw?.NomeUnidade || null,
+        local_nome: itemVinculado?.local_nome || (a.payload_raw as any)?.NomeLocal || null,
+        unidade_nome: itemVinculado?.unidade_nome || (a.payload_raw as any)?.NomeUnidade || null,
         convenio_nome: itemVinculado?.convenio_nome || a.convenio_nome || null
       };
     });
