@@ -184,9 +184,10 @@ function LabRelatorio() {
   const filteredData = useMemo(() => {
     if (!reportData) return [];
     let filtered = reportData.filter((item: any) => {
-      const searchStr = `${item.paciente?.nome || ''} ${item.procedimento?.nome || ''} ${item.documento_id} ${item.grupo_nome || ''}`.toLowerCase();
+      const searchStr = `${item.paciente_nome || ''} ${item.procedimento_nome || ''} ${item.documento_id} ${item.grupo_nome || ''} ${item.categoria_final || ''} ${item.convenio_nome || ''}`.toLowerCase();
       return searchStr.includes(searchTerm.toLowerCase());
     });
+
 
     if (sortConfig) {
       filtered.sort((a: any, b: any) => {
