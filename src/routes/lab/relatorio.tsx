@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useState, useMemo } from "react";
-import { FileText, Search, Filter, ArrowUpDown, Download, RefreshCw, Play, Settings, Calendar, ChevronDown, ChevronRight, Info, Database, BarChart3, ListChecks } from "lucide-react";
+import { FileText, Search, Filter, ArrowUpDown, Download, RefreshCw, Play, Settings, Calendar, ChevronDown, ChevronRight, Info, Database, BarChart3, ListChecks, CheckCircle2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DatePickerWithRange } from "@/components/ui/date-picker-with-range";
 import { labSyncParticular, labSyncProducao, labSyncConvenioCatalog, labEnrichFaturamento, getLabEnrichmentStatus } from "@/lib/lab-faturamento.functions";
@@ -377,58 +377,60 @@ function LabRelatorio() {
       )}
 
       {enrichmentStatus && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="bg-slate-50 border-slate-200">
             <CardHeader className="py-3 px-4">
-              <CardTitle className="text-[10px] font-bold uppercase text-slate-500">Total Faturamento</CardTitle>
+              <CardTitle className="text-[10px] font-bold uppercase text-slate-500">Total Auditado</CardTitle>
             </CardHeader>
             <CardContent className="py-0 px-4 pb-4">
               <div className="text-2xl font-bold">{enrichmentStatus.total}</div>
               <p className="text-[10px] text-muted-foreground">Agendamentos únicos</p>
             </CardContent>
           </Card>
-          <Card className={`${enrichmentStatus.pendente > 0 ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200'}`}>
+
+          <Card className="bg-emerald-50 border-emerald-200">
             <CardHeader className="py-3 px-4">
-              <CardTitle className={`text-[10px] font-bold uppercase ${enrichmentStatus.pendente > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
-                Status Enriquecimento
+              <CardTitle className="text-[10px] font-bold uppercase text-emerald-600">
+                Valor Real (Tabela Manual)
               </CardTitle>
             </CardHeader>
             <CardContent className="py-0 px-4 pb-4">
-              <div className="text-2xl font-bold">{enrichmentStatus.enriquecido}</div>
-              <p className="text-[10px] text-muted-foreground">
-                {enrichmentStatus.pendente > 0 ? `${enrichmentStatus.pendente} pendentes` : '100% processado'}
-              </p>
-            </CardContent>
-          </Card>
-          <Card className="bg-indigo-50 border-indigo-200">
-            <CardHeader className="py-3 px-4">
-              <CardTitle className="text-[10px] font-bold uppercase text-indigo-600">Mix de Receita</CardTitle>
-            </CardHeader>
-            <CardContent className="py-0 px-4 pb-4">
-              <div className="flex gap-4">
-                <div>
-                  <div className="text-xl font-bold text-indigo-700">{Math.round((enrichmentStatus.convenio / Math.max(1, enrichmentStatus.enriquecido)) * 100)}%</div>
-                  <p className="text-[9px] uppercase font-bold text-slate-400">Convênio</p>
-                </div>
-                <div>
-                  <div className="text-xl font-bold text-slate-700">{Math.round((enrichmentStatus.particular / Math.max(1, enrichmentStatus.enriquecido)) * 100)}%</div>
-                  <p className="text-[9px] uppercase font-bold text-slate-400">Particular</p>
-                </div>
+              <div className="text-2xl font-bold">
+                {filteredData.filter(i => i.origem === 'convenio_tabela_manual').length}
               </div>
+              <p className="text-[10px] text-muted-foreground">Preços validados por planilha</p>
             </CardContent>
           </Card>
-          <Card className={`${enrichmentStatus.sem_dados > (enrichmentStatus.total * 0.05) ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-200'}`}>
+
+          <Card className="bg-amber-50 border-amber-200">
             <CardHeader className="py-3 px-4">
-              <CardTitle className={`text-[10px] font-bold uppercase ${enrichmentStatus.sem_dados > (enrichmentStatus.total * 0.05) ? 'text-red-600' : 'text-slate-500'}`}>
-                Agendamentos Sem Dados
+              <CardTitle className="text-[10px] font-bold uppercase text-amber-600">
+                Pendente: Preço
               </CardTitle>
             </CardHeader>
             <CardContent className="py-0 px-4 pb-4">
-              <div className="text-2xl font-bold">{enrichmentStatus.sem_dados}</div>
-              <p className="text-[10px] text-muted-foreground">Registros ignorados na API</p>
+              <div className="text-2xl font-bold">
+                {filteredData.filter(i => i.origem === 'convenio_pendente_preco').length}
+              </div>
+              <p className="text-[10px] text-muted-foreground">Falta cadastrar o valor do TUSS</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-red-50 border-red-200">
+            <CardHeader className="py-3 px-4">
+              <CardTitle className="text-[10px] font-bold uppercase text-red-600">
+                Pendente: Cadastro Feegow
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="py-0 px-4 pb-4">
+              <div className="text-2xl font-bold">
+                {filteredData.filter(i => i.origem === 'convenio_pendente_identificacao').length}
+              </div>
+              <p className="text-[10px] text-muted-foreground">Agenda sem convênio vinculado</p>
             </CardContent>
           </Card>
         </div>
+
       )}
 
       <Tabs defaultValue="faturamento" className="space-y-6">
@@ -541,17 +543,28 @@ function LabRelatorio() {
                           {item.desconto === 0 && item.acrescimo === 0 && <span>—</span>}
                         </TableCell>
                         <TableCell className="text-right font-mono text-sm font-bold">
-                          R$ {Number(item.valor_faturado || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          {item.valor_faturado === null ? (
+                            <span className="text-[10px] text-amber-600 font-bold uppercase italic bg-amber-50 px-2 py-0.5 rounded border border-amber-100">Pendente</span>
+                          ) : (
+                            <>R$ {Number(item.valor_faturado || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</>
+                          )}
                         </TableCell>
+
                         <TableCell className="text-center">
                           <Badge 
                             variant={item.categoria_final === 'particular' ? 'secondary' : 'default'} 
-                            className={`text-[9px] uppercase ${item.categoria_final === 'convenio' ? 'bg-indigo-600' : ''}`}
+                            className={`text-[9px] uppercase ${
+                              item.origem === 'convenio_tabela_manual' ? 'bg-emerald-600 hover:bg-emerald-700' : 
+                              item.origem === 'convenio_pendente_preco' ? 'bg-amber-500 hover:bg-amber-600' :
+                              item.origem === 'convenio_pendente_identificacao' ? 'bg-red-500 hover:bg-red-600' :
+                              item.categoria_final === 'convenio' ? 'bg-indigo-600' : ''
+                            }`}
                             title={item.convenio_nome || undefined}
                           >
                             {item.categoria_final === 'convenio' ? (item.convenio_nome || 'Convênio') : 'Particular'}
                           </Badge>
                         </TableCell>
+
 
                       </TableRow>
                       {expandedRow === item.id && (
@@ -576,9 +589,14 @@ function LabRelatorio() {
                                     <span className="font-medium">{item.data_atendimento ? new Date(item.data_atendimento).toLocaleDateString('pt-BR') : 'N/A'}</span>
                                   </div>
                                   <div className="p-2 bg-white rounded border">
-                                    <span className="text-muted-foreground block text-[10px]">Categoria Receita</span>
-                                    <span className="font-medium uppercase">{item.categoria_final} {item.convenio_nome ? `| ${item.convenio_nome}` : ''}</span>
+                                    <span className="text-muted-foreground block text-[10px]">Origem Dado / Status</span>
+                                    <span className="font-medium uppercase text-[10px] flex items-center gap-1">
+                                      {item.origem}
+                                      {item.origem === 'convenio_tabela_manual' && <CheckCircle2 className="w-3 h-3 text-emerald-500" />}
+                                      {item.origem.includes('pendente') && <AlertCircle className="w-3 h-3 text-amber-500" />}
+                                    </span>
                                   </div>
+
 
                                 </div>
                               </div>

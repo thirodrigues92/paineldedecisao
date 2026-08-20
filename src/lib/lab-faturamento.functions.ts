@@ -471,6 +471,9 @@ export const labSyncParticular = createServerFn({ method: "POST" })
             erro: "concluido",
             amostra_raw: windowAmostra.length > 0 ? windowAmostra[0] : null
           });
+          // Gatilho do RPC de enriquecimento
+          await supabaseAdmin.rpc('lab_enriquecer_faturamento');
+
         }
 
       } catch (err: any) {
