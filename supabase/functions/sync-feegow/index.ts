@@ -1259,6 +1259,58 @@ Deno.serve(async (req) => {
       extra = { ...extra, janela: { start, end }, probeTiss: tiss };
     }
 
+    if (mode === "probe-lotes") {
+      // Varre lotes (billing) do módulo TISS por convênio, coletando datas e valores reais.
+      const insurances = (url.searchParams.get("convenios") ?? "33,21,9,2,15,31,35,28").split(",");
+      const maxLote = Number(url.searchParams.get("max") ?? 60);
+      const alvoAg = Number(url.searchParams.get("agendamento") ?? 300092);
+      const tipos = (url.searchParams.get("tipos") ?? "1,2,3").split(",");
+
+      const get = async (params: Record<string, string>) => {
+        const u = new URL(FEEGOW_BASE + "/billing/insurances-billing");
+        for (const [k, v] of Object.entries(params)) u.searchParams.set(k, v);
+        const res = await fetch(u.toString(), { headers: { "x-access-token": FEEGOW_TOKEN } });
+        const text = await res.text();
+        try { const j = JSON.parse(text); return Array.isArray(j?.content) ? j.content : []; } catch { return []; }
+      };
+
+      const resumo: Record<string, any> = {};
+      let totalGuias = 0;
+      let maisRecente: any = null;
+      const guiasAlvo: any[] = [];
+      const guias2025mais: any[] = [];
+
+      for (const ins of insurances) {
+        for (const tipo of tipos) {
+          let achados = 0; let vazios = 0;
+          const datas: string[] = [];
+          for (let b = 1; b <= maxLote && vazios < 15; b++) {
+            const rows = await get({ billing_type_id: tipo, insurance_id: ins, billing: String(b) });
+            if (!rows.length) { vazios++; continue; }
+            vazios = 0; achados += rows.length; totalGuias += rows.length;
+            for (const r of rows) {
+              if (r.DataAtendimento) datas.push(r.DataAtendimento);
+              if (!maisRecente || String(r.DataAtendimento) > String(maisRecente.DataAtendimento)) maisRecente = r;
+              if (Number(r.AgendamentoID) === alvoAg) guiasAlvo.push(r);
+              if (String(r.DataAtendimento ?? "") >= "2025-01-01" && guias2025mais.length < 10) guias2025mais.push(r);
+            }
+          }
+          if (achados) {
+            datas.sort();
+            resumo[`insurance_id=${ins} billing_type_id=${tipo}`] = {
+              guias: achados,
+              dataMin: datas[0] ?? null,
+              dataMax: datas[datas.length - 1] ?? null,
+            };
+          }
+        }
+      }
+
+      extra = { ...extra, probeLotes: { totalGuias, resumo, maisRecente, guiasAlvo, guias2025mais, alvoAgendamento: alvoAg } };
+    }
+
+
+
 
 
     if (mode === "probe-precos") {
