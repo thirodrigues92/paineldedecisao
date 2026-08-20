@@ -100,7 +100,7 @@ function LabConciliacao() {
 
   const exportCSV = () => {
     if (!filteredData.length) return;
-    const headers = ["Data", "Prontuário", "Paciente", "Profissional", "Procedimento", "Valor Tabela", "Valor Faturado", "Diferenca", "Status"];
+    const headers = ["Data", "Prontuário", "Paciente", "Profissional", "Procedimento", "Valor Tabela", "Valor Faturado", "Diferenca", "Formas Pagamento", "Status"];
     const rows = filteredData.map((item: any) => [
       item.data,
       item.prontuario,
@@ -110,6 +110,7 @@ function LabConciliacao() {
       item.valor_tabela,
       item.valor_faturado,
       item.diferenca,
+      (item.formas_pagamento || []).join(" | "),
       item.status
     ]);
 
