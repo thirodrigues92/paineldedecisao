@@ -925,19 +925,24 @@ export const labEnrichFaturamento = createServerFn({ method: "POST" })
     
     // 1. Identificar agendamento_id que estão no faturamento mas não no enriquecimento
     // Fazemos via query direta pois o RPC pode ser pesado ou não estar disponível
-    const { data: allFaturamentoIds } = await supabaseAdmin
-      .from('lab_faturamento')
-      .select('agendamento_id')
-      .not('agendamento_id', 'is', null);
-      
-    const uniqueFatIds = Array.from(new Set((allFaturamentoIds || []).map(f => Number(f.agendamento_id))));
-    
-    const { data: enriched } = await supabaseAdmin
-      .from('lab_agendamento_enriquecido')
-      .select('agendamento_id');
-      
-    const enrichedIds = new Set((enriched || []).map(e => Number(e.agendamento_id)));
+    // Paginação obrigatória: o Data API limita a 1000 linhas por select
+    const fetchAllIds = async (table: string) => {
+      const ids = new Set<number>();
+      const page = 1000;
+      for (let from = 0; from < 100000; from += page) {
+        let q = supabaseAdmin.from(table).select('agendamento_id').range(from, from + page - 1);
+        if (table === 'lab_faturamento') q = q.not('agendamento_id', 'is', null);
+        const { data: rows } = await q;
+        (rows || []).forEach((r: any) => { if (r.agendamento_id != null) ids.add(Number(r.agendamento_id)); });
+        if (!rows || rows.length < page) break;
+      }
+      return ids;
+    };
+
+    const uniqueFatIds = Array.from(await fetchAllIds('lab_faturamento'));
+    const enrichedIds = await fetchAllIds('lab_agendamento_enriquecido');
     const toProcess = uniqueFatIds.filter(id => !enrichedIds.has(id)).slice(0, limit);
+
 
     if (toProcess.length === 0) return { ok: true, processados: 0, mensagem: "Tudo enriquecido!" };
     
