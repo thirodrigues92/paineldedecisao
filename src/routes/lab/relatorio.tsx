@@ -543,17 +543,28 @@ function LabRelatorio() {
                           {item.desconto === 0 && item.acrescimo === 0 && <span>—</span>}
                         </TableCell>
                         <TableCell className="text-right font-mono text-sm font-bold">
-                          R$ {Number(item.valor_faturado || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          {item.valor_faturado === null ? (
+                            <span className="text-[10px] text-amber-600 font-bold uppercase italic bg-amber-50 px-2 py-0.5 rounded border border-amber-100">Pendente</span>
+                          ) : (
+                            <>R$ {Number(item.valor_faturado || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</>
+                          )}
                         </TableCell>
+
                         <TableCell className="text-center">
                           <Badge 
                             variant={item.categoria_final === 'particular' ? 'secondary' : 'default'} 
-                            className={`text-[9px] uppercase ${item.categoria_final === 'convenio' ? 'bg-indigo-600' : ''}`}
+                            className={`text-[9px] uppercase ${
+                              item.origem === 'convenio_tabela_manual' ? 'bg-emerald-600 hover:bg-emerald-700' : 
+                              item.origem === 'convenio_pendente_preco' ? 'bg-amber-500 hover:bg-amber-600' :
+                              item.origem === 'convenio_pendente_identificacao' ? 'bg-red-500 hover:bg-red-600' :
+                              item.categoria_final === 'convenio' ? 'bg-indigo-600' : ''
+                            }`}
                             title={item.convenio_nome || undefined}
                           >
                             {item.categoria_final === 'convenio' ? (item.convenio_nome || 'Convênio') : 'Particular'}
                           </Badge>
                         </TableCell>
+
 
                       </TableRow>
                       {expandedRow === item.id && (
@@ -578,9 +589,14 @@ function LabRelatorio() {
                                     <span className="font-medium">{item.data_atendimento ? new Date(item.data_atendimento).toLocaleDateString('pt-BR') : 'N/A'}</span>
                                   </div>
                                   <div className="p-2 bg-white rounded border">
-                                    <span className="text-muted-foreground block text-[10px]">Categoria Receita</span>
-                                    <span className="font-medium uppercase">{item.categoria_final} {item.convenio_nome ? `| ${item.convenio_nome}` : ''}</span>
+                                    <span className="text-muted-foreground block text-[10px]">Origem Dado / Status</span>
+                                    <span className="font-medium uppercase text-[10px] flex items-center gap-1">
+                                      {item.origem}
+                                      {item.origem === 'convenio_tabela_manual' && <CheckCircle2 className="w-3 h-3 text-emerald-500" />}
+                                      {item.origem.includes('pendente') && <AlertCircle className="w-3 h-3 text-amber-500" />}
+                                    </span>
                                   </div>
+
 
                                 </div>
                               </div>
