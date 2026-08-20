@@ -324,8 +324,30 @@ function LabRelatorio() {
                     </Button>
                   </div>
                 </div>
+                <div className="space-y-2 border-l pl-4">
+                  <label className="text-[10px] font-bold uppercase text-emerald-600 block">Enriquecimento (Convênios)</label>
+                  <div className="flex gap-2">
+                    <Button 
+                      className="bg-emerald-600 hover:bg-emerald-700 h-9" 
+                      onClick={() => syncConveniosMutation.mutate()}
+                      disabled={syncConveniosMutation.isPending}
+                    >
+                      <ListChecks className="w-4 h-4 mr-2" />
+                      Sync Catálogo
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      className="border-emerald-600 text-emerald-600 hover:bg-emerald-50 h-9" 
+                      onClick={() => enrichMutation.mutate()}
+                      disabled={enrichMutation.isPending}
+                    >
+                      {enrichMutation.isPending ? 'Processando...' : 'Enriquecer Lote (50)'}
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
+
             {isSyncing && (
               <div className="space-y-2">
                 <div className="flex justify-between text-[10px] font-bold uppercase">
