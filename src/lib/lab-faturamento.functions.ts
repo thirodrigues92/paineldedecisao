@@ -926,7 +926,7 @@ export const labEnrichFaturamento = createServerFn({ method: "POST" })
     // 1. Identificar agendamento_id que estão no faturamento mas não no enriquecimento
     // Fazemos via query direta pois o RPC pode ser pesado ou não estar disponível
     // Paginação obrigatória: o Data API limita a 1000 linhas por select
-    const fetchAllIds = async (table: string) => {
+    const fetchAllIds = async (table: 'lab_faturamento' | 'lab_agendamento_enriquecido') => {
       const ids = new Set<number>();
       const page = 1000;
       for (let from = 0; from < 100000; from += page) {
