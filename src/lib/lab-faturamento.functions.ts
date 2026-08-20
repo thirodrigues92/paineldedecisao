@@ -789,6 +789,8 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
       
       let status = "IGUAL";
       if (!temFatura) {
+        // Se não tem fatura vinculada ao agendamento, tentamos buscar pelo paciente + data + valor aproximado?
+        // Por enquanto mantemos SEM_FATURA para precisão.
         status = "SEM_FATURA";
       } else if (Math.abs(diferenca) > 0.01) {
         status = "DIVERGENTE";
@@ -800,7 +802,7 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
         paciente: a.paciente_nome || (a.paciente_id ? pacMap.get(a.paciente_id)?.nome : null) || "N/A",
         prontuario: a.prontuario || (a.paciente_id ? pacMap.get(a.paciente_id)?.prontuario : null) || "—",
         profissional: (a.profissional_id ? profMap.get(a.profissional_id) : null) || "N/A",
-        procedimento: (a.procedimento_id ? procMap.get(a.procedimento_id) : null) || "N/A",
+        procedimento: a.procedimento_nome || (a.procedimento_id ? procMap.get(a.procedimento_id) : null) || "N/A",
         valor_tabela: valorTabela,
         valor_faturado: valorFaturado,
         diferenca,
