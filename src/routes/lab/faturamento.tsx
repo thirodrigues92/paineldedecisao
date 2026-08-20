@@ -499,6 +499,8 @@ function LabFaturamento() {
           <button onClick={() => setTab("faturamento")} className={`px-4 py-2 whitespace-nowrap cursor-pointer ${tab === "faturamento" ? "border-b-2 border-primary font-bold" : ""}`}>Faturado x Recebido</button>
           <button onClick={() => setTab("sincronizacao")} className={`px-4 py-2 whitespace-nowrap cursor-pointer ${tab === "sincronizacao" ? "border-b-2 border-primary font-bold" : ""}`}>Sincronização</button>
           <button onClick={() => setTab("auditoria")} className={`px-4 py-2 whitespace-nowrap cursor-pointer ${tab === "auditoria" ? "border-b-2 border-primary font-bold" : ""}`}>Auditoria</button>
+          <button onClick={() => setTab("categorizacao")} className={`px-4 py-2 whitespace-nowrap cursor-pointer ${tab === "categorizacao" ? "border-b-2 border-primary font-bold" : ""}`}>Categorização de Convênio</button>
+
           <button onClick={() => setTab("diagnostico")} className={`px-4 py-2 whitespace-nowrap cursor-pointer ${tab === "diagnostico" ? "border-b-2 border-primary font-bold" : ""}`}>Debug API</button>
           <button onClick={() => window.location.href = '/lab/relatorio'} className="px-4 py-2 whitespace-nowrap cursor-pointer text-indigo-600 hover:font-bold">📋 Relatório Comparativo</button>
         </div>
