@@ -530,10 +530,15 @@ function LabRelatorio() {
                           R$ {Number(item.valor_faturado || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </TableCell>
                         <TableCell className="text-center">
-                          <Badge variant={item.origem === 'particular' ? 'secondary' : 'default'} className="text-[9px] uppercase">
-                            {item.origem}
+                          <Badge 
+                            variant={item.categoria_final === 'particular' ? 'secondary' : 'default'} 
+                            className={`text-[9px] uppercase ${item.categoria_final === 'convenio' ? 'bg-indigo-600' : ''}`}
+                            title={item.convenio_nome || undefined}
+                          >
+                            {item.categoria_final === 'convenio' ? (item.convenio_nome || 'Convênio') : 'Particular'}
                           </Badge>
                         </TableCell>
+
                       </TableRow>
                       {expandedRow === item.id && (
                         <TableRow className="bg-slate-50 border-x-2 border-indigo-200">
