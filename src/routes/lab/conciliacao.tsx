@@ -84,7 +84,7 @@ function LabConciliacao() {
     if (!conciliacaoData) return [];
     return conciliacaoData.filter((item: any) => {
       const searchMatch = `${item.paciente} ${item.procedimento} ${item.profissional} ${item.prontuario}`.toLowerCase().includes(searchTerm.toLowerCase());
-      const statusMatch = statusFilter === "ALL" || item.status === statusFilter;
+      const statusMatch = statusFilter === "ALL" || item.status === statusFilter || (statusFilter === "SEM_FATURA" && item.status === "PENDENTE_FATURA");
       return searchMatch && statusMatch;
     }).sort((a: any, b: any) => Math.abs(b.diferenca) - Math.abs(a.diferenca));
   }, [conciliacaoData, searchTerm, statusFilter]);
@@ -93,7 +93,7 @@ function LabConciliacao() {
     if (!conciliacaoData) return { total: 0, semFatura: 0, divergente: 0 };
     return {
       total: conciliacaoData.length,
-      semFatura: conciliacaoData.filter((i: any) => i.status === "SEM_FATURA").length,
+      semFatura: conciliacaoData.filter((i: any) => i.status === "SEM_FATURA" || i.status === "PENDENTE_FATURA").length,
       divergente: conciliacaoData.filter((i: any) => i.status === "DIVERGENTE").length,
     };
   }, [conciliacaoData]);
@@ -205,7 +205,7 @@ function LabConciliacao() {
             <div className="space-y-2">
               <label className="text-[10px] font-bold uppercase text-muted-foreground">Filtrar Status</label>
               <div className="flex gap-1">
-                {(["ALL", "SEM_FATURA", "DIVERGENTE", "IGUAL"] as const).map(s => (
+                {(["ALL", "SEM_FATURA", "PENDENTE_FATURA", "DIVERGENTE", "IGUAL"] as const).map(s => (
                   <Button 
                     key={s}
                     variant={statusFilter === s ? "default" : "outline"} 
@@ -252,7 +252,7 @@ function LabConciliacao() {
                     key={item.feegow_id}
                     className={`
                       cursor-pointer transition-colors
-                      ${item.status === 'SEM_FATURA' ? 'bg-red-50/50 hover:bg-red-100/50' : ''}
+                      ${(item.status === 'SEM_FATURA' || item.status === 'PENDENTE_FATURA') ? 'bg-red-50/50 hover:bg-red-100/50' : ''}
                       ${item.status === 'DIVERGENTE' ? 'bg-amber-50/50 hover:bg-amber-100/50' : 'hover:bg-muted/30'}
                     `}
                     onClick={() => setSelectedAgendamento(item.agendamento_id)}
@@ -265,22 +265,22 @@ function LabConciliacao() {
                     <TableCell className="text-xs text-muted-foreground">{item.profissional}</TableCell>
                     <TableCell className="text-xs">{item.procedimento}</TableCell>
                     <TableCell className="text-right font-mono text-xs text-muted-foreground">
-                      {item.status === 'SEM_FATURA' && item.valor_tabela === 30 ? (
+                      {item.status === 'PENDENTE_FATURA' || (item.status === 'SEM_FATURA' && item.valor_tabela === 30) ? (
                         <span className="text-[10px] italic opacity-50">Não faturado</span>
                       ) : (
                         brl(item.valor_tabela)
                       )}
                     </TableCell>
                     <TableCell className="text-right font-mono text-xs font-bold">
-                      {item.status === 'SEM_FATURA' ? (
+                      {item.status === 'SEM_FATURA' || item.status === 'PENDENTE_FATURA' ? (
                          <span className="text-red-500">R$ 0,00</span>
                       ) : (
                         brl(item.valor_faturado)
                       )}
                     </TableCell>
-                    <TableCell className={`text-right font-mono text-sm font-bold ${item.diferenca < 0 || (item.status === 'SEM_FATURA') ? 'text-red-600' : item.diferenca > 0 ? 'text-emerald-600' : ''}`}>
-                      {item.status === 'SEM_FATURA' ? (
-                        item.valor_tabela === 30 ? 'Pendente' : brl(-item.valor_tabela)
+                    <TableCell className={`text-right font-mono text-sm font-bold ${item.diferenca < 0 || (item.status === 'SEM_FATURA' || item.status === 'PENDENTE_FATURA') ? 'text-red-600' : item.diferenca > 0 ? 'text-emerald-600' : ''}`}>
+                      {item.status === 'SEM_FATURA' || item.status === 'PENDENTE_FATURA' ? (
+                        item.status === 'PENDENTE_FATURA' || item.valor_tabela === 30 ? 'Pendente' : brl(-item.valor_tabela)
                       ) : item.diferenca !== 0 ? brl(item.diferenca) : '—'}
                     </TableCell>
 
@@ -300,7 +300,7 @@ function LabConciliacao() {
                         variant="outline" 
                         className={`
                           text-[9px] uppercase font-bold
-                          ${item.status === 'SEM_FATURA' ? 'bg-red-100 text-red-700 border-red-200' : ''}
+                          ${(item.status === 'SEM_FATURA' || item.status === 'PENDENTE_FATURA') ? 'bg-red-100 text-red-700 border-red-200' : ''}
                           ${item.status === 'DIVERGENTE' ? 'bg-amber-100 text-amber-700 border-amber-200' : ''}
                           ${item.status === 'IGUAL' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : ''}
                         `}

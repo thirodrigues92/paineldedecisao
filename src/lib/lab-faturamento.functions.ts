@@ -789,12 +789,9 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
 
       // NOVO: Priorizamos o valor do Faturamento sobre o valor da Produção (valor_tabela)
       // O usuário diz que os 30 da produção estão errados e o valor real está no sistema (financeiro).
+      // Se não houver faturamento e o valor da produção for 30, tratamos como pendente.
       const valorFaturado = itemVinculado ? Number(itemVinculado.valor_faturado || 0) : 0;
       
-      // Se tiver faturamento, usamos o valor faturado como o "correto" e a diferença como 0 (ou baseada no faturamento)
-      // para não gerar alertas falsos de 30 vs 220.
-      // Se não tiver faturamento, mantemos o valor da tabela (produção) para sinalizar que falta faturar.
-      // AJUSTE: O usuário diz que os 30 da produção são fakes. Se for 30 e não tiver faturamento, marcamos como 0 ou realçamos.
       const valorReferencia = itemVinculado ? valorFaturado : valorTabela;
       const diferenca = valorFaturado - valorReferencia;
       
@@ -803,19 +800,18 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
       if (formasPagamento.length === 0 && itemVinculado) {
         // Se o faturamento é de convênio, mostramos "Convênio"
         const docId = Number(itemVinculado.documento_id);
-        if (docToOrigem.get(docId) === 'convenio') {
+        const origem = docToOrigem.get(docId);
+        if (origem === 'convenio' || origem === 'convenio_estimado') {
           formasPagamento = ["Convênio"];
         }
       }
       
       let status = "IGUAL";
       if (!itemVinculado) {
-        status = "SEM_FATURA";
+        status = (valorTabela === 30) ? "PENDENTE_FATURA" : "SEM_FATURA";
       } else if (Math.abs(diferenca) > 0.01) {
         status = "DIVERGENTE";
       }
-
-
 
       return {
         feegow_id: feegowId,
@@ -832,9 +828,6 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
         formas_pagamento: formasPagamento
       };
     });
-
-    return conciliado;
-
 
     return conciliado;
   });
