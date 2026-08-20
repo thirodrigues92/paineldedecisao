@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
-import { labDebugFeegow, labSyncParticular, labSyncConvenio, clearLabData } from "@/lib/lab-faturamento.functions";
+import { labDebugFeegow, labSyncParticular, labSyncConvenio, clearLabData, labSyncConvenioCatalog, labEnrichFaturamento, getLabEnrichmentStatus } from "@/lib/lab-faturamento.functions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
