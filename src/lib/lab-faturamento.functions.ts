@@ -672,6 +672,7 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
     const { data: agenda, error: aErr } = await supabaseAdmin
       .from("lab_producao_feegow")
       .select(`
+        feegow_id,
         agendamento_id,
         data_execucao,
         valor,
