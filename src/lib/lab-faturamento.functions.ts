@@ -737,7 +737,7 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
     if (allDocIds.length > 0) {
       const formaNomes: Record<number, string> = {
         1: "Dinheiro", 2: "Cheque", 3: "Cartão de Crédito", 4: "Cartão de Débito",
-        6: "Boleto", 7: "Depósito/Transferência", 8: "Pix", 15: "Faturamento"
+        6: "Boleto", 7: "Depósito/Transferência", 8: "Pix", 10: "Convênio", 15: "Faturamento"
       };
 
       const { data: pays } = await supabaseAdmin
