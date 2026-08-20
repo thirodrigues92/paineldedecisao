@@ -510,12 +510,14 @@ function LabRelatorio() {
                           {item.item_id && <span className="text-[10px] text-muted-foreground block">Item: {item.item_id}</span>}
                         </TableCell>
                         <TableCell className="text-sm font-medium">
-                          {item.paciente?.nome || item.paciente_nome || `ID: ${item.paciente_id}`}
+                          {item.paciente_nome || `ID: ${item.paciente_id}`}
+                          {item.prontuario && <span className="text-[10px] text-muted-foreground block">Pront: {item.prontuario}</span>}
                         </TableCell>
-                        <TableCell className="text-xs max-w-[200px] truncate" title={item.procedimento?.nome}>
-                          {item.procedimento?.nome || item.procedimento_nome || 'N/A'}
+                        <TableCell className="text-xs max-w-[200px] truncate" title={item.procedimento_nome}>
+                          {item.procedimento_nome || 'N/A'}
                           <Badge variant="outline" className="text-[8px] uppercase block w-fit mt-1">{item.grupo_nome || 'Outros'}</Badge>
                         </TableCell>
+
                         <TableCell className="text-right font-mono text-xs text-muted-foreground">
                           R$ {Number(item.valor_bruto || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </TableCell>
