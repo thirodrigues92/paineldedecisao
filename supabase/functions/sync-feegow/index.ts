@@ -1280,19 +1280,27 @@ Deno.serve(async (req) => {
       const guiasAlvo: any[] = [];
       const guias2025mais: any[] = [];
 
+      const datasPorMes: Record<string, number> = {};
       for (const ins of insurances) {
         for (const tipo of tipos) {
-          let achados = 0; let vazios = 0;
+          let achados = 0;
           const datas: string[] = [];
-          for (let b = 1; b <= maxLote && vazios < 15; b++) {
-            const rows = await get({ billing_type_id: tipo, insurance_id: ins, billing: String(b) });
-            if (!rows.length) { vazios++; continue; }
-            vazios = 0; achados += rows.length; totalGuias += rows.length;
-            for (const r of rows) {
-              if (r.DataAtendimento) datas.push(r.DataAtendimento);
-              if (!maisRecente || String(r.DataAtendimento) > String(maisRecente.DataAtendimento)) maisRecente = r;
-              if (Number(r.AgendamentoID) === alvoAg) guiasAlvo.push(r);
-              if (String(r.DataAtendimento ?? "") >= "2025-01-01" && guias2025mais.length < 10) guias2025mais.push(r);
+          for (let base = 1; base <= maxLote; base += 20) {
+            const lote = [];
+            for (let b = base; b < base + 20 && b <= maxLote; b++) {
+              lote.push(get({ billing_type_id: tipo, insurance_id: ins, billing: String(b) }));
+            }
+            const resps = await Promise.all(lote);
+            for (const rows of resps) {
+              if (!rows.length) continue;
+              achados += rows.length; totalGuias += rows.length;
+              for (const r of rows) {
+                const d = String(r.DataAtendimento ?? "");
+                if (d) { datas.push(d); datasPorMes[d.slice(0, 7)] = (datasPorMes[d.slice(0, 7)] ?? 0) + 1; }
+                if (!maisRecente || d > String(maisRecente.DataAtendimento)) maisRecente = r;
+                if (Number(r.AgendamentoID) === alvoAg) guiasAlvo.push(r);
+                if (d >= "2026-06-01" && guias2025mais.length < 10) guias2025mais.push(r);
+              }
             }
           }
           if (achados) {
@@ -1305,6 +1313,8 @@ Deno.serve(async (req) => {
           }
         }
       }
+      extra = { ...extra, porMes: datasPorMes };
+
 
       extra = { ...extra, probeLotes: { totalGuias, resumo, maisRecente, guiasAlvo, guias2025mais, alvoAgendamento: alvoAg } };
     }
