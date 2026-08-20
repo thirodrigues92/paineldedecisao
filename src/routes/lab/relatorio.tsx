@@ -334,10 +334,24 @@ function LabRelatorio() {
                     <Button 
                       variant="outline"
                       className="border-emerald-600 text-emerald-600 hover:bg-emerald-50 h-9" 
-                      onClick={() => enrichMutation.mutate()}
+                      onClick={async () => {
+                        const toastId = toast.loading("Reprocessando tudo...");
+                        let total = 0;
+                        try {
+                          while (true) {
+                            const res = await enrichMutation.mutateAsync();
+                            if (!res.processados || res.processados === 0) break;
+                            total += res.processados;
+                            toast.loading(`Processados: ${total}...`, { id: toastId });
+                          }
+                          toast.success(`Reprocessamento completo! Total: ${total}`, { id: toastId });
+                        } catch (e) {
+                          toast.error("Erro no reprocessamento: " + String(e), { id: toastId });
+                        }
+                      }}
                       disabled={enrichMutation.isPending}
                     >
-                      {enrichMutation.isPending ? 'Processando...' : 'Enriquecer Lote (50)'}
+                      {enrichMutation.isPending ? 'Processando...' : 'Reprocessar Tudo'}
                     </Button>
                   </div>
                 </div>

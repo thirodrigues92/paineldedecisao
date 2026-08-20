@@ -966,8 +966,8 @@ export const labEnrichFaturamento = createServerFn({ method: "POST" })
 
         } else {
           const a = content[0];
-          // Regra de negócio: convenio_id is not null e plano_id = 1 -> convenio
-          const isConvenio = a.convenio_id && Number(a.plano_id) === 1;
+          // Regra de negócio: basta ter convenio_id preenchido para ser convênio (plano_id costuma ser nulo)
+          const isConvenio = !!a.convenio_id;
           
           await supabaseAdmin.from('lab_agendamento_enriquecido').upsert({
             agendamento_id: Number(agId),
