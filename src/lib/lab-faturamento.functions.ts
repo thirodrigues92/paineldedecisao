@@ -796,15 +796,14 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
       // Se não tiver faturamento, mantemos o valor da tabela (produção) para sinalizar que falta faturar.
       // AJUSTE: O usuário diz que os 30 da produção são fakes. Se for 30 e não tiver faturamento, marcamos como 0 ou realçamos.
       const valorReferencia = itemVinculado ? valorFaturado : valorTabela;
-      
       const diferenca = valorFaturado - valorReferencia;
       
       // FORMA DE PAGAMENTO: Se não houver recebimento, tentamos inferir pela origem do faturamento (Convênio)
       let formasPagamento = itemVinculado ? (docToPay.get(Number(itemVinculado.documento_id)) || []) : [];
       if (formasPagamento.length === 0 && itemVinculado) {
-        // Se o faturamento é de convênio, mostramos "Convênio (Pendente)"
-        const { data: fatDetail } = await supabaseAdmin.from("lab_faturamento").select("origem").eq("item_id", itemVinculado.item_id).single();
-        if (fatDetail?.origem === 'convenio') {
+        // Se o faturamento é de convênio, mostramos "Convênio"
+        const docId = Number(itemVinculado.documento_id);
+        if (docToOrigem.get(docId) === 'convenio') {
           formasPagamento = ["Convênio"];
         }
       }
@@ -815,6 +814,7 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
       } else if (Math.abs(diferenca) > 0.01) {
         status = "DIVERGENTE";
       }
+
 
 
       return {
