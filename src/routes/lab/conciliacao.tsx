@@ -25,6 +25,9 @@ export const Route = createFileRoute("/lab/conciliacao")({
 function LabConciliacao() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [localFilter, setLocalFilter] = useState<string>("ALL");
+  const [unidadeFilter, setUnidadeFilter] = useState<string>("ALL");
+  const [convenioFilter, setConvenioFilter] = useState<string>("ALL");
   const [selectedAgendamento, setSelectedAgendamento] = useState<number | null>(null);
   const [dateRange, setDateRange] = useState<{ start: Date; end: Date }>({ 
     start: new Date(new Date().setDate(new Date().getDate() - 7)),
@@ -82,12 +85,26 @@ function LabConciliacao() {
 
   const filteredData = useMemo(() => {
     if (!conciliacaoData) return [];
-    return conciliacaoData.filter((item: any) => {
+    return (conciliacaoData as any[]).filter((item: any) => {
       const searchMatch = `${item.paciente} ${item.procedimento} ${item.profissional} ${item.prontuario}`.toLowerCase().includes(searchTerm.toLowerCase());
       const statusMatch = statusFilter === "ALL" || item.status === statusFilter || (statusFilter === "SEM_FATURA" && item.status === "PENDENTE_FATURA");
-      return searchMatch && statusMatch;
+      const localMatch = localFilter === "ALL" || item.local_nome === localFilter;
+      const unidadeMatch = unidadeFilter === "ALL" || item.unidade_nome === unidadeFilter;
+      const convenioMatch = convenioFilter === "ALL" || item.convenio_nome === convenioFilter;
+      
+      return searchMatch && statusMatch && localMatch && unidadeMatch && convenioMatch;
     }).sort((a: any, b: any) => Math.abs(b.diferenca) - Math.abs(a.diferenca));
-  }, [conciliacaoData, searchTerm, statusFilter]);
+  }, [conciliacaoData, searchTerm, statusFilter, localFilter, unidadeFilter, convenioFilter]);
+
+  const filterOptions = useMemo(() => {
+    if (!conciliacaoData) return { locals: [], unidades: [], convenios: [] };
+    const data = conciliacaoData as any[];
+    return {
+      locals: Array.from(new Set(data.map(i => i.local_nome).filter(Boolean))).sort(),
+      unidades: Array.from(new Set(data.map(i => i.unidade_nome).filter(Boolean))).sort(),
+      convenios: Array.from(new Set(data.map(i => i.convenio_nome).filter(Boolean))).sort(),
+    };
+  }, [conciliacaoData]);
 
   const stats = useMemo(() => {
     if (!conciliacaoData) return { total: 0, semFatura: 0, divergente: 0 };
@@ -190,7 +207,44 @@ function LabConciliacao() {
                 onRangeChange={(from, to) => setDateRange({ start: from, end: to })} 
               />
             </div>
-            <div className="space-y-2 flex-1 max-w-xs">
+            
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold uppercase text-muted-foreground">Local</label>
+              <select 
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                value={localFilter}
+                onChange={(e) => setLocalFilter(e.target.value)}
+              >
+                <option value="ALL">Todos os Locais</option>
+                {filterOptions.locals.map(loc => <option key={loc} value={loc}>{loc}</option>)}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold uppercase text-muted-foreground">Unidade</label>
+              <select 
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                value={unidadeFilter}
+                onChange={(e) => setUnidadeFilter(e.target.value)}
+              >
+                <option value="ALL">Todas as Unidades</option>
+                {filterOptions.unidades.map(un => <option key={un} value={un}>{un}</option>)}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold uppercase text-muted-foreground">Convênio / Origem</label>
+              <select 
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                value={convenioFilter}
+                onChange={(e) => setConvenioFilter(e.target.value)}
+              >
+                <option value="ALL">Todos os Convênios</option>
+                {filterOptions.convenios.map(conv => <option key={conv} value={conv}>{conv}</option>)}
+              </select>
+            </div>
+
+            <div className="space-y-2 flex-1 min-w-[200px]">
               <label className="text-[10px] font-bold uppercase text-muted-foreground">Busca Rápida</label>
               <div className="relative">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -202,10 +256,11 @@ function LabConciliacao() {
                 />
               </div>
             </div>
+            
             <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase text-muted-foreground">Filtrar Status</label>
+              <label className="text-[10px] font-bold uppercase text-muted-foreground">Status</label>
               <div className="flex gap-1">
-                {(["ALL", "SEM_FATURA", "PENDENTE_FATURA", "DIVERGENTE", "IGUAL"] as const).map(s => (
+                {(["ALL", "SEM_FATURA", "DIVERGENTE", "IGUAL"] as const).map(s => (
                   <Button 
                     key={s}
                     variant={statusFilter === s ? "default" : "outline"} 
@@ -213,7 +268,7 @@ function LabConciliacao() {
                     className="h-9 text-[10px] uppercase font-bold"
                     onClick={() => setStatusFilter(s)}
                   >
-                    {s.replace("_", " ")}
+                    {s === "ALL" ? "Todos" : s.replace("_", " ")}
                   </Button>
                 ))}
               </div>

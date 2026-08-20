@@ -404,6 +404,7 @@ export type Database = {
           centro_custo_id: number | null
           codigo_procedimento: string | null
           convenio_id: number | null
+          convenio_nome: string | null
           data_atendimento: string | null
           data_competencia: string | null
           data_vencimento: string | null
@@ -417,6 +418,7 @@ export type Database = {
           id: string
           is_cancelado: boolean | null
           item_id: number | null
+          local_nome: string | null
           lote_id: number | null
           motivo_glosa: string | null
           origem: string
@@ -432,6 +434,7 @@ export type Database = {
           tabela_id: number | null
           tipo_transacao: string | null
           unidade_id: number | null
+          unidade_nome: string | null
           valor_bruto: number | null
           valor_faturado: number | null
         }
@@ -443,6 +446,7 @@ export type Database = {
           centro_custo_id?: number | null
           codigo_procedimento?: string | null
           convenio_id?: number | null
+          convenio_nome?: string | null
           data_atendimento?: string | null
           data_competencia?: string | null
           data_vencimento?: string | null
@@ -456,6 +460,7 @@ export type Database = {
           id?: string
           is_cancelado?: boolean | null
           item_id?: number | null
+          local_nome?: string | null
           lote_id?: number | null
           motivo_glosa?: string | null
           origem: string
@@ -471,6 +476,7 @@ export type Database = {
           tabela_id?: number | null
           tipo_transacao?: string | null
           unidade_id?: number | null
+          unidade_nome?: string | null
           valor_bruto?: number | null
           valor_faturado?: number | null
         }
@@ -482,6 +488,7 @@ export type Database = {
           centro_custo_id?: number | null
           codigo_procedimento?: string | null
           convenio_id?: number | null
+          convenio_nome?: string | null
           data_atendimento?: string | null
           data_competencia?: string | null
           data_vencimento?: string | null
@@ -495,6 +502,7 @@ export type Database = {
           id?: string
           is_cancelado?: boolean | null
           item_id?: number | null
+          local_nome?: string | null
           lote_id?: number | null
           motivo_glosa?: string | null
           origem?: string
@@ -510,6 +518,7 @@ export type Database = {
           tabela_id?: number | null
           tipo_transacao?: string | null
           unidade_id?: number | null
+          unidade_nome?: string | null
           valor_bruto?: number | null
           valor_faturado?: number | null
         }
