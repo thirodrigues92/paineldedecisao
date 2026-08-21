@@ -523,21 +523,30 @@ export const getLabRelatorio = createServerFn({ method: "GET" })
     const { data_inicio, data_fim } = data;
     
     const { data: rows, error } = await supabaseAdmin
-      .from("lab_faturamento")
-      .select(`
-        *,
-        pacientes(nome),
-        procedimentos(nome),
-        profissionais(nome),
-        convenios(nome)
-      `)
-      .gte("data_competencia", data_inicio)
-      .lte("data_competencia", data_fim)
-      .order("data_competencia", { ascending: false })
-      .limit(1000);
+      .from("lab_producao_feegow")
+      .select("*")
+      .gte("data_execucao", data_inicio)
+      .lte("data_execucao", data_fim)
+      .order("data_execucao", { ascending: false })
+      .order("paciente_nome", { ascending: true })
+      .limit(2000);
 
     if (error) throw error;
-    return rows || [];
+    
+    // Mapear para o formato que a tela espera (compatibilidade com lab_faturamento)
+    return (rows || []).map(r => ({
+      ...r,
+      // Mapeamento de campos para compatibilidade UI
+      data_competencia: r.data_execucao,
+      valor_faturado: r.valor,
+      valor_recebido: r.valor_pago || 0,
+      is_cancelado: r.situacao === 'Cancelado',
+      // Mock objects para o componente que espera relações .pacientes.nome etc
+      pacientes: { nome: r.paciente_nome },
+      procedimentos: { nome: r.procedimento_nome },
+      profissionais: { nome: r.profissional_nome },
+      convenios: { nome: r.convenio_nome }
+    }));
   });
 
 export const labSyncProducao = createServerFn({ method: "POST" })
