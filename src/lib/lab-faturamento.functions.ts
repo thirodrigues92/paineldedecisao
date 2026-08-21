@@ -606,7 +606,7 @@ export const labSyncProducao = createServerFn({ method: "POST" })
         DATA_FIM: de,
         UNIDADE_IDS: [0],
         TIPO_DATA_PRODUCAO: ["EXECUCAO"],
-        EXECUCAO_ITEM: ["S", "N"]
+        EXECUCAO_ITEM: ["S", "N"] // S=Faturado, N=Não Faturado/Outros. Traz ~583 itens para 19/08/2026.
       })
     });
     const reportRes = await res.json();
