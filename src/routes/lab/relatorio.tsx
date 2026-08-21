@@ -163,21 +163,13 @@ function LabRelatorio() {
   const { data: reportData, isLoading } = useQuery({
     queryKey: ['lab-relatorio-comparativo', dateRange.start.toISOString().split('T')[0], dateRange.end.toISOString().split('T')[0]],
     queryFn: async () => {
-      // Buscamos dados da VIEW categorizada (vw_faturamento_categorizado)
-      const { data, error } = await supabase
-        .from('vw_faturamento_categorizado')
-        .select('*')
-        .gte("data_competencia", dateRange.start.toISOString().split('T')[0])
-        .lte("data_competencia", dateRange.end.toISOString().split('T')[0])
-        .order('data_competencia', { ascending: false })
-        .limit(2000);
-
-
-      if (error) {
-        console.error("Erro ao buscar relatório:", error);
-        throw error;
-      }
-      return data || [];
+      const { getLabRelatorio } = await import("@/lib/lab-faturamento.functions");
+      return getLabRelatorio({ 
+        data: {
+          data_inicio: dateRange.start.toISOString().split('T')[0],
+          data_fim: dateRange.end.toISOString().split('T')[0]
+        }
+      });
     }
   });
 
