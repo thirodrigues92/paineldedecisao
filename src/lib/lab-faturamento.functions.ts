@@ -606,10 +606,22 @@ export const labSyncProducao = createServerFn({ method: "POST" })
         DATA_FIM: de,
         UNIDADE_IDS: [0],
         TIPO_DATA_PRODUCAO: ["EXECUCAO"],
-        EXECUCAO_ITEM: ["S", "N"] // S=Faturado, N=Não Faturado/Outros. Traz ~583 itens para 19/08/2026.
+        EXECUCAO_ITEM: ["S", "N"],
+        TIPO_DATA_PRODUCAO: ["EXECUCAO"]
       })
     });
     const reportRes = await res.json();
+
+    // Verificação de paginação e extração de dados
+    let rows = [];
+    if (reportRes.success && Array.isArray(reportRes.data)) {
+      rows = reportRes.data;
+      
+      // Se a API retornar metadados de paginação, iteraríamos aqui. 
+      // O endpoint reports/generate geralmente não é paginado para o slug "production",
+      // mas devolve o set completo de uma vez. A discrepância de contagem (583 vs 621)
+      // sugere que alguns itens não estão no relatório "production" ou há filtros implícitos.
+    }
 
     if (reportRes.success && Array.isArray(reportRes.data)) {
       const rows = reportRes.data;
