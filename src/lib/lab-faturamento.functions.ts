@@ -706,6 +706,7 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
         valor,
         paciente_id,
         profissional_id,
+        profissional_nome,
         procedimento_id,
         paciente_nome,
         procedimento_nome,
