@@ -646,7 +646,9 @@ export const labSyncProducao = createServerFn({ method: "POST" })
           valor: parseValorBR(r.Valor),
           valor_pago: parseValorBR(r.ValorPago),
           convenio_id: r.ConvenioID != null ? Number(r.ConvenioID) : null,
-          convenio_nome: r.NomeConvenio || r.Origem || null,
+          convenio_nome: (r.ConvenioID && Number(r.ConvenioID) > 0)
+            ? (r.NomeConvenio || null)
+            : (r.TipoGuia === 'Particular' ? 'Particular' : (r.TipoGuia || null)),
           situacao: r.Situacao || null,
           situacao_conta: r.SituacaoConta || null,
           grupo_id: r.GrupoID != null ? Number(r.GrupoID) : null,
