@@ -1,0 +1,24 @@
+import { config } from "dotenv";
+config();
+const FEEGOW_TOKEN = process.env.FEEGOW_API_TOKEN;
+async function test() {
+  const c = {
+    report: "production",
+    DATA_INICIO: "19/08/2026",
+    DATA_FIM: "19/08/2026",
+    UNIDADE_IDS: [0],
+    TIPO_DATA_PRODUCAO: ["EXECUCAO"],
+    EXECUCAO_ITEM: ["S", "N"]
+  };
+  const res = await fetch("https://api.feegow.com/v1/api/reports/generate", {
+    method: "POST",
+    headers: { "x-access-token": FEEGOW_TOKEN!, "Content-Type": "application/json" },
+    body: JSON.stringify(c)
+  });
+  const data = await res.json();
+  const nf = data.data.filter((r: any) => r.Situacao !== "Faturado");
+  console.log("Non-faturado items count:", nf.length);
+  const sits = new Set(nf.map((r: any) => r.Situacao));
+  console.log("Non-faturado situations:", Array.from(sits));
+}
+test();
