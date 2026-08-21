@@ -628,8 +628,8 @@ export const labSyncProducao = createServerFn({ method: "POST" })
         const agId = String(r.AgendamentoID ?? "");
         const chaveNatural = `${idTransacao}|${nGuia}|${procId}|${agId}`;
 
-        return {
-          feegow_id: hashToBigInt(chaveNatural || `${Date.now()}-${Math.random()}`),
+        const item = {
+          feegow_id: hashToBigInt(chaveNatural),
           id_transacao: idTransacao || null,
           n_guia_prestador: nGuia || null,
           paciente_id: toBigInt(r.PacienteID),
@@ -656,6 +656,13 @@ export const labSyncProducao = createServerFn({ method: "POST" })
           unidade_id: toBigInt(r.UnidadeID),
           payload_raw: r
         };
+
+        // Correção de valores para itens "Não Faturado" (usar ValorPlano se disponível e valor for 0)
+        if (item.situacao === 'Não Faturado' && item.valor === 0 && r.ValorPlano > 0) {
+          item.valor = Number(r.ValorPlano);
+        }
+
+        return item;
       });
 
       if (!dry_run && records.length > 0) {
