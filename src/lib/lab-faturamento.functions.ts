@@ -818,7 +818,7 @@ export const labEnrichFaturamento = createServerFn({ method: "POST" })
           .select('agendamento_id')
           .order('agendamento_id', { ascending: true })
           .range(from, from + page - 1);
-        if (table === 'lab_faturamento') q = q.not('agendamento_id', 'is', null);
+        if (table === 'lab_faturamento_legado') q = q.not('agendamento_id', 'is', null);
         const { data: rows } = await q;
         (rows || []).forEach((r: any) => { if (r.agendamento_id != null) ids.add(Number(r.agendamento_id)); });
         if (!rows || rows.length < page) break;
