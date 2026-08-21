@@ -476,7 +476,7 @@ export type Database = {
         }
         Relationships: []
       }
-      lab_faturamento: {
+      lab_faturamento_legado: {
         Row: {
           acrescimo: number | null
           agendamento_id: number | null

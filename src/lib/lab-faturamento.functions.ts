@@ -75,7 +75,7 @@ export const labSyncConvenio = createServerFn({ method: "POST" }).handler(async 
 });
 
 export const clearLabData = createServerFn({ method: "POST" }).handler(async () => {
-  await supabaseAdmin.from("lab_faturamento").delete().neq("documento_id", 0);
+  await supabaseAdmin.from("lab_faturamento_legado").delete().neq("documento_id", 0);
   await supabaseAdmin.from("lab_invoice_header").delete().neq("invoice_id", 0);
   await supabaseAdmin.from("lab_recebimento").delete().neq("documento_id", 0);
   await supabaseAdmin.from("lab_sync_log").delete().neq("id", "00000000-0000-0000-0000-000000000000");
@@ -208,7 +208,7 @@ export const labSyncParticular = createServerFn({ method: "POST" })
     if (limpar_antes && !dry_run) {
       console.log(`[SYNC] Limpando dados de ${data_inicio} a ${data_fim}`);
       await supabaseAdmin.from("lab_invoice_header").delete().gte("data", data_inicio).lte("data", data_fim);
-      await supabaseAdmin.from("lab_faturamento").delete().gte("data_competencia", data_inicio).lte("data_competencia", data_fim).eq("tipo_transacao", tipo_transacao);
+      await supabaseAdmin.from("lab_faturamento_legado").delete().gte("data_competencia", data_inicio).lte("data_competencia", data_fim).eq("tipo_transacao", tipo_transacao);
     }
 
     if (!dry_run) {
@@ -429,7 +429,7 @@ export const labSyncParticular = createServerFn({ method: "POST" })
           
           if (faturamentos.length > 0) {
             for (const bloco of chunk(faturamentos, 50)) {
-              const { error: fErr } = await supabaseAdmin.from("lab_faturamento").upsert(bloco, { onConflict: "origem,documento_id,item_id" });
+              const { error: fErr } = await supabaseAdmin.from("lab_faturamento_legado").upsert(bloco, { onConflict: "origem,documento_id,item_id" });
               if (fErr) {
                 console.error("[SYNC] Erro detalhado faturamento:", JSON.stringify(fErr), "Amostra bloco:", JSON.stringify(bloco[0]));
                 throw new Error(`Erro DB Faturamento: ${fErr.message}`);
@@ -628,8 +628,8 @@ export const labSyncProducao = createServerFn({ method: "POST" })
         const agId = String(r.AgendamentoID ?? "");
         const chaveNatural = `${idTransacao}|${nGuia}|${procId}|${agId}`;
 
-        return {
-          feegow_id: hashToBigInt(chaveNatural || `${Date.now()}-${Math.random()}`),
+        const item = {
+          feegow_id: hashToBigInt(chaveNatural),
           id_transacao: idTransacao || null,
           n_guia_prestador: nGuia || null,
           paciente_id: toBigInt(r.PacienteID),
@@ -656,6 +656,13 @@ export const labSyncProducao = createServerFn({ method: "POST" })
           unidade_id: toBigInt(r.UnidadeID),
           payload_raw: r
         };
+
+        // Correção de valores para itens "Não Faturado" (usar ValorPlano se disponível e valor for 0)
+        if (item.situacao === 'Não Faturado' && item.valor === 0 && r.ValorPlano > 0) {
+          item.valor = Number(r.ValorPlano);
+        }
+
+        return item;
       });
 
       if (!dry_run && records.length > 0) {
@@ -809,7 +816,7 @@ export const labEnrichFaturamento = createServerFn({ method: "POST" })
     // 1. Identificar agendamento_id que estão no faturamento mas não no enriquecimento
     // Fazemos via query direta pois o RPC pode ser pesado ou não estar disponível
     // Paginação obrigatória: o Data API limita a 1000 linhas por select
-    const fetchAllIds = async (table: 'lab_faturamento' | 'lab_agendamento_enriquecido') => {
+    const fetchAllIds = async (table: 'lab_faturamento_legado' | 'lab_agendamento_enriquecido') => {
       const ids = new Set<number>();
       const page = 1000;
       for (let from = 0; from < 100000; from += page) {
@@ -818,7 +825,7 @@ export const labEnrichFaturamento = createServerFn({ method: "POST" })
           .select('agendamento_id')
           .order('agendamento_id', { ascending: true })
           .range(from, from + page - 1);
-        if (table === 'lab_faturamento') q = q.not('agendamento_id', 'is', null);
+        if (table === 'lab_faturamento_legado') q = q.not('agendamento_id', 'is', null);
         const { data: rows } = await q;
         (rows || []).forEach((r: any) => { if (r.agendamento_id != null) ids.add(Number(r.agendamento_id)); });
         if (!rows || rows.length < page) break;
@@ -826,7 +833,7 @@ export const labEnrichFaturamento = createServerFn({ method: "POST" })
       return ids;
     };
 
-    const uniqueFatIds = Array.from(await fetchAllIds('lab_faturamento'));
+    const uniqueFatIds = Array.from(await fetchAllIds('lab_faturamento_legado'));
     const enrichedIds = await fetchAllIds('lab_agendamento_enriquecido');
     const toProcess = uniqueFatIds.filter(id => !enrichedIds.has(id)).slice(0, limit);
 
@@ -895,7 +902,7 @@ export const getLabEnrichmentStatus = createServerFn({ method: "GET" }).handler(
   const idsUnicos = new Set<number>();
   for (let from = 0; from < 100000; from += 1000) {
     const { data: rows } = await supabaseAdmin
-      .from('lab_faturamento')
+      .from('lab_faturamento_legado')
       .select('agendamento_id')
       .not('agendamento_id', 'is', null)
       .order('agendamento_id', { ascending: true })
