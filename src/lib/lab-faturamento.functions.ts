@@ -606,7 +606,7 @@ export const labSyncProducao = createServerFn({ method: "POST" })
         DATA_FIM: de,
         UNIDADE_IDS: [0],
         TIPO_DATA_PRODUCAO: ["EXECUCAO"],
-        EXECUCAO_ITEM: ["S"]
+        EXECUCAO_ITEM: ["S", "N"]
       })
     });
     const reportRes = await res.json();
