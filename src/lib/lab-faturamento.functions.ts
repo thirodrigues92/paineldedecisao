@@ -138,7 +138,6 @@ async function syncAgendaPeriodo(start: string, end: string) {
     const res = await fetch(url.toString(), { headers });
     const body = await res.json();
     
-    // Feegow API can return content.appointments or just content
     const list = body.content?.appointments || body.content || [];
     
     if (!Array.isArray(list) || list.length === 0) {
@@ -177,6 +176,8 @@ async function syncAgendaPeriodo(start: string, end: string) {
   }
 
   if (agendamentos.length) {
+    // IMPORTANTE: A sincronização da agenda deve popular apenas lab_dim_agendamento.
+    // Nunca deve inserir linhas na lab_producao_feegow, que é exclusiva para produção real.
     const { error } = await supabaseAdmin.from("lab_dim_agendamento").upsert(agendamentos, { onConflict: "agendamento_id" });
     if (error) console.error("[SYNC-AGENDA] Erro DB:", error);
   }
@@ -605,7 +606,7 @@ export const labSyncProducao = createServerFn({ method: "POST" })
         DATA_FIM: de,
         UNIDADE_IDS: [0],
         TIPO_DATA_PRODUCAO: ["EXECUCAO"],
-        EXECUCAO_ITEM: ["S"]
+        EXECUCAO_ITEM: ["S", "N"] // S=Faturado, N=Não Faturado/Outros. Traz ~583 itens para 19/08/2026.
       })
     });
     const reportRes = await res.json();
