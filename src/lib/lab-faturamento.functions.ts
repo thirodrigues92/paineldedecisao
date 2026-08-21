@@ -746,8 +746,8 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
         situacao: r.situacao,
         situacao_conta: r.situacao_conta,
         convenio_nome: r.convenio_nome,
-        local_nome: r.payload_raw?.NomeLocal || r.payload_raw?.UnidadeNome || "—",
-        unidade_nome: r.payload_raw?.UnidadeNome || "—",
+        local_nome: (r.payload_raw as any)?.NomeLocal || (r.payload_raw as any)?.UnidadeNome || "—",
+        unidade_nome: (r.payload_raw as any)?.UnidadeNome || "—",
         formas_pagamento: r.forma_pagamento ? [r.forma_pagamento] : (r.convenio_id ? ["Convênio"] : ["Particular"])
       };
     });
@@ -759,18 +759,6 @@ export const getLabFaturamentoItems = createServerFn({ method: "GET" })
     // Mantemos este apenas para ver detalhes se necessário, mas a fonte agora é produção
     const { data: rows, error } = await supabaseAdmin
       .from("lab_producao_feegow")
-      .select("*")
-      .eq("agendamento_id", data.agendamento_id);
-    
-    if (error) throw error;
-    return rows || [];
-  });
-
-export const getLabFaturamentoItems = createServerFn({ method: "GET" })
-  .inputValidator((data: { agendamento_id: number }) => data)
-  .handler(async ({ data }) => {
-    const { data: rows, error } = await supabaseAdmin
-      .from("lab_faturamento")
       .select("*")
       .eq("agendamento_id", data.agendamento_id);
     
