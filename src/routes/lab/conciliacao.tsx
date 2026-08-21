@@ -389,12 +389,13 @@ function LabConciliacao() {
                         variant="outline" 
                         className={`
                           text-[9px] uppercase font-bold
-                          ${(item.status === 'SEM_FATURA' || item.status === 'PENDENTE_FATURA') ? 'bg-red-100 text-red-700 border-red-200' : ''}
-                          ${item.status === 'DIVERGENTE' ? 'bg-amber-100 text-amber-700 border-amber-200' : ''}
-                          ${item.status === 'IGUAL' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : ''}
+                          ${item.status === 'SEM_FATURA' ? 'bg-red-100 text-red-700 border-red-200' : ''}
+                          ${item.status === 'RECEBIDO_PARCIAL' ? 'bg-orange-100 text-orange-700 border-orange-200' : ''}
+                          ${item.status === 'AGUARDANDO_RECEBIMENTO' ? 'bg-slate-100 text-slate-600 border-slate-200' : ''}
+                          ${item.status === 'RECEBIDO' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : ''}
                         `}
                       >
-                        {item.status.replace("_", " ")}
+                        {item.status.replace(/_/g, " ")}
                       </Badge>
                     </TableCell>
                     <TableCell>
