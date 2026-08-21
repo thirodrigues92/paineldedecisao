@@ -721,14 +721,14 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
 
     if (aErr) throw aErr;
 
-    // 1.1 Buscar nomes em tabelas separadas para evitar problemas de join no TS/RPC
+    // 1.1 Buscar nomes e prontuários em tabelas separadas como fallback
     const { data: pacientes } = await supabaseAdmin.from("pacientes").select("paciente_id, nome, prontuario");
     const { data: profissionais } = await supabaseAdmin.from("profissionais").select("profissional_id, nome");
     const { data: procedimentos } = await supabaseAdmin.from("procedimentos").select("procedimento_id, nome");
 
-    const pacMap = new Map((pacientes || []).map(p => [p.paciente_id, { nome: p.nome, prontuario: p.prontuario }]));
-    const profMap = new Map((profissionais || []).map(p => [p.profissional_id, p.nome]));
-    const procMap = new Map((procedimentos || []).map(p => [p.procedimento_id, p.nome]));
+    const pacMap = new Map((pacientes || []).map(p => [Number(p.paciente_id), { nome: p.nome, prontuario: p.prontuario }]));
+    const profMap = new Map((profissionais || []).map(p => [Number(p.profissional_id), p.nome]));
+    const procMap = new Map((procedimentos || []).map(p => [Number(p.procedimento_id), p.nome]));
 
 
     // 2. Buscar faturamento experimental vinculado aos agendamentos
@@ -833,7 +833,7 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
       
       const itensFaturamento = faturamentoPorAgendamento.get(agId) || [];
       
-      // Tenta encontrar um item de faturamento que bata com o procedimento
+      // Tenta encontrar um item de faturamento que bata com o procedimento E agendamento_id
       let itemVinculado = itensFaturamento.find(f => 
         !faturamentosUsados.has(String(f.item_id)) && 
         (procId ? Number(f.procedimento_id) === procId : true)
@@ -878,10 +878,10 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
         feegow_id: feegowId,
         agendamento_id: agId,
         data: a.data_execucao,
-        paciente: a.paciente_nome || (a.paciente_id ? pacMap.get(a.paciente_id)?.nome : null) || "N/A",
-        prontuario: a.prontuario || (a.paciente_id ? pacMap.get(a.paciente_id)?.prontuario : null) || "—",
-        profissional: (a.profissional_id ? profMap.get(a.profissional_id) : null) || "N/A",
-        procedimento: a.procedimento_nome || (a.procedimento_id ? procMap.get(a.procedimento_id) : null) || "N/A",
+        paciente: a.paciente_nome || (a.paciente_id ? pacMap.get(Number(a.paciente_id))?.nome : null) || "N/A",
+        prontuario: a.prontuario || (a.paciente_id ? pacMap.get(Number(a.paciente_id))?.prontuario : null) || "—",
+        profissional: a.profissional_nome || (a.profissional_id ? profMap.get(Number(a.profissional_id)) : null) || "N/A",
+        procedimento: a.procedimento_nome || (a.procedimento_id ? procMap.get(Number(a.procedimento_id)) : null) || "N/A",
         valor_tabela: valorReferencia,
         valor_faturado: valorFaturado,
         diferenca,
