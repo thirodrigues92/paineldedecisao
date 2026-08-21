@@ -606,7 +606,7 @@ export const labSyncProducao = createServerFn({ method: "POST" })
         DATA_FIM: de,
         UNIDADE_IDS: [0],
         TIPO_DATA_PRODUCAO: ["EXECUCAO"],
-        EXECUCAO_ITEM: ["S", "N"] // S=Faturado, N=Não Faturado/Outros. Traz ~583 itens para 19/08/2026.
+        EXECUCAO_ITEM: ["S", "N"]
       })
     });
     const reportRes = await res.json();
@@ -615,6 +615,7 @@ export const labSyncProducao = createServerFn({ method: "POST" })
       const rows = reportRes.data;
       resumo.total = rows.length;
       resumo.logs.push(`Processando ${rows.length} itens de execução da API.`);
+
 
       const records = rows.map((r: any) => {
         const toBigInt = (val: any) => {
