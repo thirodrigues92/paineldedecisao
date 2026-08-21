@@ -28,6 +28,7 @@ function LabConciliacao() {
   const [localFilter, setLocalFilter] = useState<string>("ALL");
   const [unidadeFilter, setUnidadeFilter] = useState<string>("ALL");
   const [convenioFilter, setConvenioFilter] = useState<string>("ALL");
+  const [origemFilter, setOrigemFilter] = useState<string>("ALL");
   const [selectedAgendamento, setSelectedAgendamento] = useState<number | null>(null);
   const [dateRange, setDateRange] = useState<{ start: Date; end: Date }>({ 
     start: new Date(new Date().setDate(new Date().getDate() - 7)),
@@ -91,10 +92,12 @@ function LabConciliacao() {
       const localMatch = localFilter === "ALL" || item.local_nome === localFilter;
       const unidadeMatch = unidadeFilter === "ALL" || item.unidade_nome === unidadeFilter;
       const convenioMatch = convenioFilter === "ALL" || item.convenio_nome === convenioFilter;
+      const origemMatch = origemFilter === "ALL" || 
+        (origemFilter === "PARTICULAR" ? item.convenio_nome === "Particular" : item.convenio_nome !== "Particular");
       
-      return searchMatch && statusMatch && localMatch && unidadeMatch && convenioMatch;
+      return searchMatch && statusMatch && localMatch && unidadeMatch && convenioMatch && origemMatch;
     }).sort((a: any, b: any) => Math.abs(b.diferenca) - Math.abs(a.diferenca));
-  }, [conciliacaoData, searchTerm, statusFilter, localFilter, unidadeFilter, convenioFilter]);
+  }, [conciliacaoData, searchTerm, statusFilter, localFilter, unidadeFilter, convenioFilter, origemFilter]);
 
   const filterOptions = useMemo(() => {
     if (!conciliacaoData) return { locals: [], unidades: [], convenios: [] };
@@ -260,6 +263,19 @@ function LabConciliacao() {
               >
                 <option value="ALL">Todos os Convênios</option>
                 {filterOptions.convenios.map(conv => <option key={conv} value={conv}>{conv}</option>)}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold uppercase text-muted-foreground">Tipo (Origem)</label>
+              <select 
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                value={origemFilter}
+                onChange={(e) => setOrigemFilter(e.target.value)}
+              >
+                <option value="ALL">Todos (Part + Conv)</option>
+                <option value="PARTICULAR">Apenas Particular</option>
+                <option value="CONVENIO">Apenas Convênio</option>
               </select>
             </div>
 
