@@ -541,6 +541,8 @@ export const getLabRelatorio = createServerFn({ method: "GET" })
       valor_faturado: r.valor,
       valor_recebido: r.valor_pago || 0,
       is_cancelado: r.situacao === 'Cancelado',
+      origem: r.situacao_conta === 'Em aberto' && (r.valor_pago || 0) === 0 ? 'convenio_pendente_preco' : 'faturado',
+      categoria_final: r.convenio_id ? 'convenio' : 'particular',
       // Mock objects para o componente que espera relações .pacientes.nome etc
       pacientes: { nome: r.paciente_nome },
       procedimentos: { nome: r.procedimento_nome },
