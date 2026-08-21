@@ -163,21 +163,13 @@ function LabRelatorio() {
   const { data: reportData, isLoading } = useQuery({
     queryKey: ['lab-relatorio-comparativo', dateRange.start.toISOString().split('T')[0], dateRange.end.toISOString().split('T')[0]],
     queryFn: async () => {
-      // Buscamos dados da VIEW categorizada (vw_faturamento_categorizado)
-      const { data, error } = await supabase
-        .from('vw_faturamento_categorizado')
-        .select('*')
-        .gte("data_competencia", dateRange.start.toISOString().split('T')[0])
-        .lte("data_competencia", dateRange.end.toISOString().split('T')[0])
-        .order('data_competencia', { ascending: false })
-        .limit(2000);
-
-
-      if (error) {
-        console.error("Erro ao buscar relatório:", error);
-        throw error;
-      }
-      return data || [];
+      const { getLabRelatorio } = await import("@/lib/lab-faturamento.functions");
+      return getLabRelatorio({ 
+        data: {
+          data_inicio: dateRange.start.toISOString().split('T')[0],
+          data_fim: dateRange.end.toISOString().split('T')[0]
+        }
+      });
     }
   });
 
@@ -396,7 +388,7 @@ function LabRelatorio() {
             </CardHeader>
             <CardContent className="py-0 px-4 pb-4">
               <div className="text-2xl font-bold">
-                {filteredData.filter(i => i.origem === 'convenio_tabela_manual').length}
+                {filteredData.filter((i: any) => i.origem === 'convenio_tabela_manual').length}
               </div>
               <p className="text-[10px] text-muted-foreground">Preços validados por planilha</p>
             </CardContent>
@@ -410,7 +402,7 @@ function LabRelatorio() {
             </CardHeader>
             <CardContent className="py-0 px-4 pb-4">
               <div className="text-2xl font-bold">
-                {filteredData.filter(i => i.origem === 'convenio_pendente_preco').length}
+                {filteredData.filter((i: any) => i.origem === 'convenio_pendente_preco').length}
               </div>
               <p className="text-[10px] text-muted-foreground">Falta cadastrar o valor do TUSS</p>
             </CardContent>
@@ -424,7 +416,7 @@ function LabRelatorio() {
             </CardHeader>
             <CardContent className="py-0 px-4 pb-4">
               <div className="text-2xl font-bold">
-                {filteredData.filter(i => i.origem === 'convenio_pendente_identificacao').length}
+                {filteredData.filter((i: any) => i.origem === 'convenio_pendente_identificacao').length}
               </div>
               <p className="text-[10px] text-muted-foreground">Agenda sem convênio vinculado</p>
             </CardContent>

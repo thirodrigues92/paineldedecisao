@@ -523,21 +523,32 @@ export const getLabRelatorio = createServerFn({ method: "GET" })
     const { data_inicio, data_fim } = data;
     
     const { data: rows, error } = await supabaseAdmin
-      .from("lab_faturamento")
-      .select(`
-        *,
-        pacientes(nome),
-        procedimentos(nome),
-        profissionais(nome),
-        convenios(nome)
-      `)
-      .gte("data_competencia", data_inicio)
-      .lte("data_competencia", data_fim)
-      .order("data_competencia", { ascending: false })
-      .limit(1000);
+      .from("lab_producao_feegow")
+      .select("*")
+      .gte("data_execucao", data_inicio)
+      .lte("data_execucao", data_fim)
+      .order("data_execucao", { ascending: false })
+      .order("paciente_nome", { ascending: true })
+      .limit(2000);
 
     if (error) throw error;
-    return rows || [];
+    
+    // Mapear para o formato que a tela espera (compatibilidade com lab_faturamento)
+    return (rows || []).map(r => ({
+      ...r,
+      // Mapeamento de campos para compatibilidade UI
+      data_competencia: r.data_execucao,
+      valor_faturado: r.valor,
+      valor_recebido: r.valor_pago || 0,
+      is_cancelado: r.situacao === 'Cancelado',
+      origem: r.situacao_conta === 'Em aberto' && (r.valor_pago || 0) === 0 ? 'convenio_pendente_preco' : 'faturado',
+      categoria_final: r.convenio_id ? 'convenio' : 'particular',
+      // Mock objects para o componente que espera relações .pacientes.nome etc
+      pacientes: { nome: r.paciente_nome },
+      procedimentos: { nome: r.procedimento_nome },
+      profissionais: { nome: r.profissional_nome },
+      convenios: { nome: r.convenio_nome }
+    }));
   });
 
 export const labSyncProducao = createServerFn({ method: "POST" })
@@ -690,228 +701,66 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const { data_inicio, data_fim } = data;
     
-    // Antes de buscar a conciliação, garantimos que a agenda base do período está sincronizada
-    // na lab_dim_agendamento para possíveis enriquecimentos futuros
-    await syncAgendaPeriodo(data_inicio, data_fim);
-    
-
-    
     // 1. Buscar atendimentos realizados na produção
     const { data: agenda, error: aErr } = await supabaseAdmin
       .from("lab_producao_feegow")
-      .select(`
-        feegow_id,
-        agendamento_id,
-        data_execucao,
-        valor,
-        paciente_id,
-        profissional_id,
-        profissional_nome,
-        procedimento_id,
-        paciente_nome,
-        procedimento_nome,
-        prontuario,
-        convenio_nome,
-        unidade_id,
-        payload_raw
-      `)
+      .select("*")
       .gte("data_execucao", data_inicio)
       .lte("data_execucao", data_fim)
-      .order("data_execucao", { ascending: false });
-
+      .order("data_execucao", { ascending: false })
+      .order("paciente_nome", { ascending: true });
 
     if (aErr) throw aErr;
 
-    // 1.1 Buscar nomes e prontuários em tabelas separadas como fallback
-    const { data: pacientes } = await supabaseAdmin.from("pacientes").select("paciente_id, nome, prontuario");
-    const { data: profissionais } = await supabaseAdmin.from("profissionais").select("profissional_id, nome");
-    const { data: procedimentos } = await supabaseAdmin.from("procedimentos").select("procedimento_id, nome");
-
-    const pacMap = new Map((pacientes || []).map(p => [Number(p.paciente_id), { nome: p.nome, prontuario: p.prontuario }]));
-    const profMap = new Map((profissionais || []).map(p => [Number(p.profissional_id), p.nome]));
-    const procMap = new Map((procedimentos || []).map(p => [Number(p.procedimento_id), p.nome]));
-
-
-    // 2. Buscar faturamento experimental vinculado aos agendamentos
-    const ids = Array.from(new Set(agenda?.map(a => a.agendamento_id).filter(Boolean).map(id => Number(id))));
-    
-    // Mapeamento granular: agendamento_id -> lista de itens de faturamento
-    const faturamentoPorAgendamento = new Map<number, any[]>();
-    
-    if (ids.length > 0) {
-      const chunk = 1000;
-      for (let i = 0; i < ids.length; i += chunk) {
-        const slice = ids.slice(i, i + chunk);
-        const { data: fats, error: fErr } = await supabaseAdmin
-          .from("lab_faturamento")
-          .select("agendamento_id, item_id, valor_faturado, procedimento_id, documento_id, local_nome, unidade_nome, convenio_nome")
-          .in("agendamento_id", slice);
-        
-        if (fErr) throw fErr;
-        
-        for (const f of fats || []) {
-          if (f.agendamento_id) {
-            const id = Number(f.agendamento_id);
-            const list = faturamentoPorAgendamento.get(id) || [];
-            list.push(f);
-            faturamentoPorAgendamento.set(id, list);
-          }
-        }
-      }
-    }
-
-    // 2.2 Buscar enriquecimento e catálogo de convênios
-    let enriquecidoMap = new Map<number, any>();
-    let convenioNomeMap = new Map<number, string>();
-
-    if (ids.length > 0) {
-      const { data: enriched } = await supabaseAdmin
-        .from("lab_agendamento_enriquecido")
-        .select("agendamento_id, convenio_id, categoria_receita")
-        .in("agendamento_id", ids);
+    // 2. Mapear para o formato de conciliação esperado pela UI
+    return (agenda || []).map(r => {
+      const valorFaturado = r.valor || 0;
+      const valorRecebido = r.valor_pago || 0;
+      const saldoAReceber = valorFaturado - valorRecebido;
       
-      if (enriched) {
-        enriquecidoMap = new Map(enriched.map(e => [Number(e.agendamento_id), e]));
-        
-        const convenioIds = Array.from(new Set(
-          enriched.map(e => e.convenio_id).filter(Boolean).map(id => Number(id))
-        ));
-
-        if (convenioIds.length > 0) {
-          const { data: convs } = await supabaseAdmin
-            .from("lab_convenios")
-            .select("convenio_id, nome")
-            .in("convenio_id", convenioIds);
-          
-          if (convs) {
-            convenioNomeMap = new Map(convs.map(c => [Number(c.convenio_id), c.nome]));
-          }
-        }
-      }
-    }
-
-    // 2.5 Buscar formas de pagamento e origens vinculadas aos documentos
-    const allDocIds = Array.from(new Set(
-      Array.from(faturamentoPorAgendamento.values()).flat().map(f => Number(f.documento_id)).filter(Boolean)
-    ));
-    const docToPay = new Map<number, string[]>();
-    const docToOrigem = new Map<number, string>();
-    
-    if (allDocIds.length > 0) {
-      const formaNomes: Record<number, string> = {
-        1: "Dinheiro", 2: "Cheque", 3: "Cartão de Crédito", 4: "Cartão de Débito",
-        6: "Boleto", 7: "Depósito/Transferência", 8: "Pix", 9: "Convênio", 10: "Convênio", 15: "Faturamento"
-      };
-
-      const [pays, fats] = await Promise.all([
-        supabaseAdmin.from("lab_recebimento").select("documento_id, forma_pagamento").in("documento_id", allDocIds),
-        supabaseAdmin.from("lab_faturamento").select("documento_id, origem").in("documento_id", allDocIds)
-      ]);
-        
-      for (const p of pays.data || []) {
-        const doc = Number(p.documento_id);
-        const fPag = p.forma_pagamento as number;
-        const desc = (fPag != null ? formaNomes[fPag] : null) || `Forma ${fPag}`;
-        const existing = docToPay.get(doc) || [];
-        if (!existing.includes(desc)) docToPay.set(doc, [...existing, desc]);
-      }
-
-      for (const f of fats.data || []) {
-        docToOrigem.set(Number(f.documento_id), f.origem);
-      }
-    }
-
-
-    // 3. Cruzar dados sem agrupar por agendamento (cada linha da produção é um item)
-    // Controle de quais itens de faturamento já foram "consumidos" para evitar duplicidade
-    const faturamentosUsados = new Set<string>();
-
-    const conciliado = (agenda || []).map(a => {
-      const agId = Number(a.agendamento_id);
-      const feegowId = a.feegow_id ? String(a.feegow_id) : `temp-${Math.random()}`;
-      const valorTabela = Number(a.valor || 0);
-      const procId = a.procedimento_id ? Number(a.procedimento_id) : null;
-      
-      const itensFaturamento = faturamentoPorAgendamento.get(agId) || [];
-      
-      // Tenta encontrar um item de faturamento que bata com o procedimento E agendamento_id
-      let itemVinculado = itensFaturamento.find(f => 
-        !faturamentosUsados.has(String(f.item_id)) && 
-        (procId ? Number(f.procedimento_id) === procId : true)
-      );
-
-      // Se não achou pelo procedimento, pega qualquer um disponível para este agendamento que ainda não foi usado
-      if (!itemVinculado) {
-        itemVinculado = itensFaturamento.find(f => !faturamentosUsados.has(String(f.item_id)));
-      }
-
-      if (itemVinculado) {
-        faturamentosUsados.add(String(itemVinculado.item_id));
-      }
-
-      // NOVO: Priorizamos o valor do Faturamento sobre o valor da Produção (valor_tabela)
-      // O usuário diz que os 30 da produção estão errados e o valor real está no sistema (financeiro).
-      // Se não houver faturamento e o valor da produção for 30, tratamos como pendente.
-      const valorFaturado = itemVinculado ? Number(itemVinculado.valor_faturado || 0) : 0;
-      
-      const valorReferencia = itemVinculado ? valorFaturado : valorTabela;
-      const diferenca = valorFaturado - valorReferencia;
-      
-      // FORMA DE PAGAMENTO: Se não houver recebimento, tentamos inferir pela origem do faturamento (Convênio)
-      let formasPagamento = itemVinculado ? (docToPay.get(Number(itemVinculado.documento_id)) || []) : [];
-      if (formasPagamento.length === 0 && itemVinculado) {
-        // Se o faturamento é de convênio, mostramos "Convênio"
-        const docId = Number(itemVinculado.documento_id);
-        const origem = docToOrigem.get(docId);
-        if (origem === 'convenio' || origem === 'convenio_estimado') {
-          formasPagamento = ["Convênio"];
-        }
-      }
-      
-      let status = "IGUAL";
-      if (!itemVinculado) {
-        status = (valorTabela === 30) ? "PENDENTE_FATURA" : "SEM_FATURA";
-      } else if (Math.abs(diferenca) > 0.01) {
+      // Lógica de status solicitada:
+      // situacao_conta = 'Em aberto' e valor_pago = 0 → status "AGUARDANDO_RECEBIMENTO"
+      // valor_pago >= valor → status "RECEBIDO"
+      // valor_pago > 0 e valor_pago < valor → status "RECEBIDO_PARCIAL"
+      let status = "IGUAL"; // Fallback
+      if (r.situacao_conta === 'Em aberto' && valorRecebido === 0) {
+        status = "SEM_FATURA"; // Usando SEM_FATURA para destacar visualmente (vermelho na UI)
+      } else if (valorRecebido >= valorFaturado && valorFaturado > 0) {
+        status = "IGUAL";
+      } else if (valorRecebido > 0 && valorRecebido < valorFaturado) {
         status = "DIVERGENTE";
       }
 
       return {
-        feegow_id: feegowId,
-        agendamento_id: agId,
-        data: a.data_execucao,
-        paciente: a.paciente_nome || (a.paciente_id ? pacMap.get(Number(a.paciente_id))?.nome : null) || "N/A",
-        prontuario: a.prontuario || (a.paciente_id ? pacMap.get(Number(a.paciente_id))?.prontuario : null) || "—",
-        profissional: a.profissional_nome || (a.profissional_id ? profMap.get(Number(a.profissional_id)) : null) || "N/A",
-        procedimento: a.procedimento_nome || (a.procedimento_id ? procMap.get(Number(a.procedimento_id)) : null) || "N/A",
-        valor_tabela: valorReferencia,
+        feegow_id: r.feegow_id?.toString(),
+        agendamento_id: Number(r.agendamento_id),
+        data: r.data_execucao,
+        prontuario: r.prontuario || "—",
+        paciente: r.paciente_nome,
+        profissional: r.profissional_nome,
+        procedimento: r.procedimento_nome,
+        valor_tabela: valorFaturado, // Na produção detalhada, o valor do item é o valor esperado
         valor_faturado: valorFaturado,
-        diferenca,
-        status,
-        formas_pagamento: formasPagamento,
-        local_nome: itemVinculado?.local_nome || (a.payload_raw as any)?.NomeLocal || null,
-        unidade_nome: itemVinculado?.unidade_nome || (a.payload_raw as any)?.NomeUnidade || null,
-        convenio_nome: (() => {
-          const enr = enriquecidoMap.get(agId);
-          if (enr?.categoria_receita === 'convenio' && enr.convenio_id) {
-            return convenioNomeMap.get(Number(enr.convenio_id)) || `Convênio ID ${enr.convenio_id}`;
-          }
-          if (enr?.categoria_receita === 'particular') return null;
-          
-          // Fallback para agendamentos não enriquecidos
-          if (a.convenio_nome === 'CONVÊNIOS') return 'Convênio (aguardando categorização)';
-          return itemVinculado?.convenio_nome || a.convenio_nome || null;
-        })()
+        valor_recebido: valorRecebido,
+        diferenca: valorRecebido - valorFaturado,
+        saldo_a_receber: saldoAReceber,
+        status: status,
+        situacao: r.situacao,
+        situacao_conta: r.situacao_conta,
+        convenio_nome: r.convenio_nome,
+        local_nome: (r.payload_raw as any)?.NomeLocal || (r.payload_raw as any)?.UnidadeNome || "—",
+        unidade_nome: (r.payload_raw as any)?.UnidadeNome || "—",
+        formas_pagamento: r.forma_pagamento ? [r.forma_pagamento] : (r.convenio_id ? ["Convênio"] : ["Particular"])
       };
     });
-
-    return conciliado;
   });
 
 export const getLabFaturamentoItems = createServerFn({ method: "GET" })
   .inputValidator((data: { agendamento_id: number }) => data)
   .handler(async ({ data }) => {
+    // Mantemos este apenas para ver detalhes se necessário, mas a fonte agora é produção
     const { data: rows, error } = await supabaseAdmin
-      .from("lab_faturamento")
+      .from("lab_producao_feegow")
       .select("*")
       .eq("agendamento_id", data.agendamento_id);
     
