@@ -719,16 +719,20 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
       const saldoAReceber = valorFaturado - valorRecebido;
       
       // Lógica de status solicitada:
-      // situacao_conta = 'Em aberto' e valor_pago = 0 → status "AGUARDANDO_RECEBIMENTO"
-      // valor_pago >= valor → status "RECEBIDO"
-      // valor_pago > 0 e valor_pago < valor → status "RECEBIDO_PARCIAL"
-      let status = "IGUAL"; // Fallback
-      if (r.situacao_conta === 'Em aberto' && valorRecebido === 0) {
-        status = "SEM_FATURA"; // Usando SEM_FATURA para destacar visualmente (vermelho na UI)
+      // 1. SEM_FATURA: só quando o item realmente não tem fatura associada (situacao nulo ou diferente de 'Faturado')
+      // 2. RECEBIDO: valor pago é igual ou maior que o valor faturado
+      // 3. RECEBIDO_PARCIAL: valor pago é maior que zero mas menor que o valor faturado
+      // 4. AGUARDANDO_RECEBIMENTO: item faturado, valor_pago = 0 ou nulo
+      let status = "AGUARDANDO_RECEBIMENTO"; 
+      
+      if (!r.situacao || r.situacao !== 'Faturado') {
+        status = "SEM_FATURA";
       } else if (valorRecebido >= valorFaturado && valorFaturado > 0) {
-        status = "IGUAL";
+        status = "RECEBIDO";
       } else if (valorRecebido > 0 && valorRecebido < valorFaturado) {
-        status = "DIVERGENTE";
+        status = "RECEBIDO_PARCIAL";
+      } else {
+        status = "AGUARDANDO_RECEBIMENTO";
       }
 
       return {

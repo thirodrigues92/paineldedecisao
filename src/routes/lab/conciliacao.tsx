@@ -87,7 +87,7 @@ function LabConciliacao() {
     if (!conciliacaoData) return [];
     return (conciliacaoData as any[]).filter((item: any) => {
       const searchMatch = `${item.paciente} ${item.procedimento} ${item.profissional} ${item.prontuario}`.toLowerCase().includes(searchTerm.toLowerCase());
-      const statusMatch = statusFilter === "ALL" || item.status === statusFilter || (statusFilter === "SEM_FATURA" && item.status === "PENDENTE_FATURA");
+      const statusMatch = statusFilter === "ALL" || item.status === statusFilter;
       const localMatch = localFilter === "ALL" || item.local_nome === localFilter;
       const unidadeMatch = unidadeFilter === "ALL" || item.unidade_nome === unidadeFilter;
       const convenioMatch = convenioFilter === "ALL" || item.convenio_nome === convenioFilter;
@@ -107,11 +107,14 @@ function LabConciliacao() {
   }, [conciliacaoData]);
 
   const stats = useMemo(() => {
-    if (!conciliacaoData) return { total: 0, semFatura: 0, divergente: 0 };
+    if (!conciliacaoData) return { total: 0, semFatura: 0, aguardando: 0, recebidoParcial: 0, recebido: 0 };
+    const data = conciliacaoData as any[];
     return {
-      total: conciliacaoData.length,
-      semFatura: conciliacaoData.filter((i: any) => i.status === "SEM_FATURA" || i.status === "PENDENTE_FATURA").length,
-      divergente: conciliacaoData.filter((i: any) => i.status === "DIVERGENTE").length,
+      total: data.length,
+      semFatura: data.filter((i: any) => i.status === "SEM_FATURA").length,
+      aguardando: data.filter((i: any) => i.status === "AGUARDANDO_RECEBIMENTO").length,
+      recebidoParcial: data.filter((i: any) => i.status === "RECEBIDO_PARCIAL").length,
+      recebido: data.filter((i: any) => i.status === "RECEBIDO").length,
     };
   }, [conciliacaoData]);
 
@@ -169,29 +172,45 @@ function LabConciliacao() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card className="bg-white border-indigo-100 shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-bold uppercase text-muted-foreground">Total Agendamentos</CardTitle>
+          <CardHeader className="pb-2 p-3">
+            <CardTitle className="text-[10px] font-bold uppercase text-muted-foreground">Total Itens</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{isLoading ? "..." : stats.total}</div>
+          <CardContent className="p-3 pt-0">
+            <div className="text-xl font-bold">{isLoading ? "..." : stats.total}</div>
           </CardContent>
         </Card>
         <Card className="bg-red-50 border-red-100 shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-bold uppercase text-red-600">Sem Faturamento (Crítico)</CardTitle>
+          <CardHeader className="pb-2 p-3">
+            <CardTitle className="text-[10px] font-bold uppercase text-red-600">Sem Faturamento</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-700">{isLoading ? "..." : stats.semFatura}</div>
+          <CardContent className="p-3 pt-0">
+            <div className="text-xl font-bold text-red-700">{isLoading ? "..." : stats.semFatura}</div>
           </CardContent>
         </Card>
         <Card className="bg-amber-50 border-amber-100 shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-bold uppercase text-amber-600">Divergência de Valores</CardTitle>
+          <CardHeader className="pb-2 p-3">
+            <CardTitle className="text-[10px] font-bold uppercase text-amber-600">Aguardando Pagto</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-amber-700">{isLoading ? "..." : stats.divergente}</div>
+          <CardContent className="p-3 pt-0">
+            <div className="text-xl font-bold text-amber-700">{isLoading ? "..." : stats.aguardando}</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-orange-50 border-orange-100 shadow-sm">
+          <CardHeader className="pb-2 p-3">
+            <CardTitle className="text-[10px] font-bold uppercase text-orange-600">Recebido Parcial</CardTitle>
+          </CardHeader>
+          <CardContent className="p-3 pt-0">
+            <div className="text-xl font-bold text-orange-700">{isLoading ? "..." : stats.recebidoParcial}</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-emerald-50 border-emerald-100 shadow-sm">
+          <CardHeader className="pb-2 p-3">
+            <CardTitle className="text-[10px] font-bold uppercase text-emerald-600">Recebido</CardTitle>
+          </CardHeader>
+          <CardContent className="p-3 pt-0">
+            <div className="text-xl font-bold text-emerald-700">{isLoading ? "..." : stats.recebido}</div>
           </CardContent>
         </Card>
       </div>
@@ -260,15 +279,15 @@ function LabConciliacao() {
             <div className="space-y-2">
               <label className="text-[10px] font-bold uppercase text-muted-foreground">Status</label>
               <div className="flex gap-1">
-                {(["ALL", "SEM_FATURA", "DIVERGENTE", "IGUAL"] as const).map(s => (
+                {(["ALL", "SEM_FATURA", "AGUARDANDO_RECEBIMENTO", "RECEBIDO_PARCIAL", "RECEBIDO"] as const).map(s => (
                   <Button 
                     key={s}
                     variant={statusFilter === s ? "default" : "outline"} 
                     size="sm" 
-                    className="h-9 text-[10px] uppercase font-bold"
+                    className="h-9 text-[9px] uppercase font-bold"
                     onClick={() => setStatusFilter(s)}
                   >
-                    {s === "ALL" ? "Todos" : s.replace("_", " ")}
+                    {s === "ALL" ? "Todos" : s.replace(/_/g, " ")}
                   </Button>
                 ))}
               </div>
@@ -307,8 +326,9 @@ function LabConciliacao() {
                     key={item.feegow_id}
                     className={`
                       cursor-pointer transition-colors
-                      ${(item.status === 'SEM_FATURA' || item.status === 'PENDENTE_FATURA') ? 'bg-red-50/50 hover:bg-red-100/50' : ''}
-                      ${item.status === 'DIVERGENTE' ? 'bg-amber-50/50 hover:bg-amber-100/50' : 'hover:bg-muted/30'}
+                      ${item.status === 'SEM_FATURA' ? 'bg-red-50/50 hover:bg-red-100/50' : ''}
+                      ${item.status === 'RECEBIDO_PARCIAL' ? 'bg-orange-50/50 hover:bg-orange-100/50' : ''}
+                      ${item.status === 'AGUARDANDO_RECEBIMENTO' ? 'bg-amber-50/30 hover:bg-amber-100/30' : 'hover:bg-muted/30'}
                     `}
                     onClick={() => setSelectedAgendamento(item.agendamento_id)}
                   >
@@ -320,22 +340,22 @@ function LabConciliacao() {
                     <TableCell className="text-xs text-muted-foreground">{item.profissional}</TableCell>
                     <TableCell className="text-xs">{item.procedimento}</TableCell>
                     <TableCell className="text-right font-mono text-xs text-muted-foreground">
-                      {item.status === 'PENDENTE_FATURA' || (item.status === 'SEM_FATURA' && item.valor_tabela === 30) ? (
+                      {item.status === 'SEM_FATURA' ? (
                         <span className="text-[10px] italic opacity-50">Não faturado</span>
                       ) : (
                         brl(item.valor_tabela)
                       )}
                     </TableCell>
                     <TableCell className="text-right font-mono text-xs font-bold">
-                      {item.status === 'SEM_FATURA' || item.status === 'PENDENTE_FATURA' ? (
+                      {item.status === 'SEM_FATURA' ? (
                          <span className="text-red-500">R$ 0,00</span>
                       ) : (
                         brl(item.valor_faturado)
                       )}
                     </TableCell>
-                    <TableCell className={`text-right font-mono text-sm font-bold ${item.diferenca < 0 || (item.status === 'SEM_FATURA' || item.status === 'PENDENTE_FATURA') ? 'text-red-600' : item.diferenca > 0 ? 'text-emerald-600' : ''}`}>
-                      {item.status === 'SEM_FATURA' || item.status === 'PENDENTE_FATURA' ? (
-                        item.status === 'PENDENTE_FATURA' || item.valor_tabela === 30 ? 'Pendente' : brl(-item.valor_tabela)
+                    <TableCell className={`text-right font-mono text-sm font-bold ${item.diferenca < 0 || item.status === 'SEM_FATURA' ? 'text-red-600' : item.diferenca > 0 ? 'text-emerald-600' : ''}`}>
+                      {item.status === 'SEM_FATURA' ? (
+                        brl(-item.valor_tabela)
                       ) : item.diferenca !== 0 ? brl(item.diferenca) : '—'}
                     </TableCell>
 
