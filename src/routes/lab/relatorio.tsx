@@ -388,7 +388,7 @@ function LabRelatorio() {
             </CardHeader>
             <CardContent className="py-0 px-4 pb-4">
               <div className="text-2xl font-bold">
-                {filteredData.filter(i => i.origem === 'convenio_tabela_manual').length}
+                {filteredData.filter((i: any) => i.origem === 'convenio_tabela_manual').length}
               </div>
               <p className="text-[10px] text-muted-foreground">Preços validados por planilha</p>
             </CardContent>
@@ -402,7 +402,7 @@ function LabRelatorio() {
             </CardHeader>
             <CardContent className="py-0 px-4 pb-4">
               <div className="text-2xl font-bold">
-                {filteredData.filter(i => i.origem === 'convenio_pendente_preco').length}
+                {filteredData.filter((i: any) => i.origem === 'convenio_pendente_preco').length}
               </div>
               <p className="text-[10px] text-muted-foreground">Falta cadastrar o valor do TUSS</p>
             </CardContent>
@@ -416,7 +416,7 @@ function LabRelatorio() {
             </CardHeader>
             <CardContent className="py-0 px-4 pb-4">
               <div className="text-2xl font-bold">
-                {filteredData.filter(i => i.origem === 'convenio_pendente_identificacao').length}
+                {filteredData.filter((i: any) => i.origem === 'convenio_pendente_identificacao').length}
               </div>
               <p className="text-[10px] text-muted-foreground">Agenda sem convênio vinculado</p>
             </CardContent>
