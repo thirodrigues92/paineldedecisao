@@ -110,16 +110,29 @@ function LabConciliacao() {
   }, [conciliacaoData]);
 
   const stats = useMemo(() => {
-    if (!conciliacaoData) return { total: 0, semFatura: 0, aguardando: 0, recebidoParcial: 0, recebido: 0 };
-    const data = conciliacaoData as any[];
+    if (!filteredData) return { total: 0, semFatura: 0, aguardando: 0, recebidoParcial: 0, recebido: 0 };
     return {
-      total: data.length,
-      semFatura: data.filter((i: any) => i.status === "SEM_FATURA").length,
-      aguardando: data.filter((i: any) => i.status === "AGUARDANDO_RECEBIMENTO").length,
-      recebidoParcial: data.filter((i: any) => i.status === "RECEBIDO_PARCIAL").length,
-      recebido: data.filter((i: any) => i.status === "RECEBIDO").length,
+      total: filteredData.length,
+      semFatura: filteredData.filter((i: any) => i.status === "SEM_FATURA").length,
+      aguardando: filteredData.filter((i: any) => i.status === "AGUARDANDO_RECEBIMENTO").length,
+      recebidoParcial: filteredData.filter((i: any) => i.status === "RECEBIDO_PARCIAL").length,
+      recebido: filteredData.filter((i: any) => i.status === "RECEBIDO").length,
     };
-  }, [conciliacaoData]);
+  }, [filteredData]);
+
+  const totaisFiltrados = useMemo(() => {
+    return filteredData.reduce((acc: any, item: any) => {
+      const tabela = item.status === 'SEM_FATURA' ? 0 : Number(item.valor_tabela || 0);
+      const faturado = item.status === 'SEM_FATURA' ? 0 : Number(item.valor_faturado || 0);
+      const diferenca = item.status === 'SEM_FATURA' ? -Number(item.valor_tabela || 0) : Number(item.diferenca || 0);
+      return {
+        totalTabela: acc.totalTabela + tabela,
+        totalFaturado: acc.totalFaturado + faturado,
+        totalDiferenca: acc.totalDiferenca + diferenca,
+        qtdItens: acc.qtdItens + 1,
+      };
+    }, { totalTabela: 0, totalFaturado: 0, totalDiferenca: 0, qtdItens: 0 });
+  }, [filteredData]);
 
   const exportCSV = () => {
     if (!filteredData.length) return;
@@ -217,6 +230,31 @@ function LabConciliacao() {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="bg-indigo-900 text-white shadow-lg">
+        <CardContent className="p-4">
+          <div className="flex flex-wrap justify-between items-center gap-4">
+            <div>
+              <div className="text-[10px] font-bold uppercase opacity-70">Itens no filtro atual</div>
+              <div className="text-lg font-bold">{totaisFiltrados.qtdItens}</div>
+            </div>
+            <div>
+              <div className="text-[10px] font-bold uppercase opacity-70">Total Tabela (Agenda)</div>
+              <div className="text-lg font-bold">{brl(totaisFiltrados.totalTabela)}</div>
+            </div>
+            <div>
+              <div className="text-[10px] font-bold uppercase opacity-70">Total Real (Financeiro)</div>
+              <div className="text-xl font-bold">{brl(totaisFiltrados.totalFaturado)}</div>
+            </div>
+            <div>
+              <div className="text-[10px] font-bold uppercase opacity-70">Diferença Total</div>
+              <div className={`text-lg font-bold ${totaisFiltrados.totalDiferenca < 0 ? 'text-red-300' : 'text-emerald-300'}`}>
+                {brl(totaisFiltrados.totalDiferenca)}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader className="pb-3 border-b">
