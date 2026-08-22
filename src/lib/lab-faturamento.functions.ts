@@ -523,16 +523,24 @@ export const getLabRelatorio = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const { data_inicio, data_fim } = data;
     
-    const { data: rows, error } = await supabaseAdmin
-      .from("lab_producao_feegow")
-      .select("*")
-      .gte("data_execucao", data_inicio)
-      .lte("data_execucao", data_fim)
-      .order("data_execucao", { ascending: false })
-      .order("paciente_nome", { ascending: true })
-      .limit(2000);
+    const rows: any[] = [];
+    const pageSize = 1000;
+    for (let from = 0; ; from += pageSize) {
+      const { data: pageRows, error } = await supabaseAdmin
+        .from("lab_producao_feegow")
+        .select("*")
+        .gte("data_execucao", data_inicio)
+        .lte("data_execucao", data_fim)
+        .order("data_execucao", { ascending: false })
+        .order("paciente_nome", { ascending: true })
+        .range(from, from + pageSize - 1);
 
-    if (error) throw error;
+      if (error) throw error;
+      if (!pageRows || pageRows.length === 0) break;
+
+      rows.push(...pageRows);
+      if (pageRows.length < pageSize) break;
+    }
     
     // Mapear para o formato que a tela espera (compatibilidade com lab_faturamento)
     return (rows || []).map(r => ({
@@ -713,15 +721,24 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
     const { data_inicio, data_fim } = data;
     
     // 1. Buscar atendimentos realizados na produção
-    const { data: agenda, error: aErr } = await supabaseAdmin
-      .from("lab_producao_feegow")
-      .select("*")
-      .gte("data_execucao", data_inicio)
-      .lte("data_execucao", data_fim)
-      .order("data_execucao", { ascending: false })
-      .order("paciente_nome", { ascending: true });
+    const agenda: any[] = [];
+    const pageSize = 1000;
+    for (let from = 0; ; from += pageSize) {
+      const { data: pageRows, error: aErr } = await supabaseAdmin
+        .from("lab_producao_feegow")
+        .select("*")
+        .gte("data_execucao", data_inicio)
+        .lte("data_execucao", data_fim)
+        .order("data_execucao", { ascending: false })
+        .order("paciente_nome", { ascending: true })
+        .range(from, from + pageSize - 1);
 
-    if (aErr) throw aErr;
+      if (aErr) throw aErr;
+      if (!pageRows || pageRows.length === 0) break;
+
+      agenda.push(...pageRows);
+      if (pageRows.length < pageSize) break;
+    }
 
     // 2. Mapear para o formato de conciliação esperado pela UI
     return (agenda || []).map(r => {
