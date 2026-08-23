@@ -718,14 +718,10 @@ export const labSyncSafetyNet = createServerFn({ method: "POST" })
     const { start_date, end_date, dry_run = false } = data;
     const resumo = { dias_verificados: 0, buracos_encontrados: 0, buracos_preenchidos: 0, erros: [] as string[] };
 
-    const parseValorBR = (v: any): number => {
+    const parseValorAppoints = (v: any): number => {
       if (v === null || v === undefined || v === "") return 0;
-      if (typeof v === "number") return v;
-      const s = String(v).trim();
-      if (s.includes(",")) {
-        return Number(s.replace(/\./g, "").replace(",", ".")) || 0;
-      }
-      return Number(s) || 0;
+      const limpo = String(v).replace(/[R$\s]/g, "").replace(",", ".");
+      return Number(limpo) || 0;
     };
 
     const hashToBigInt = (s: string): bigint => {
@@ -774,6 +770,22 @@ export const labSyncSafetyNet = createServerFn({ method: "POST" })
         resumo.buracos_encontrados += buracos.length;
 
         if (!dry_run && buracos.length > 0) {
+          // Lookup de nomes localmente
+          const pacienteIds = [...new Set(buracos.map(b => Number(b.paciente_id)))];
+          const procedimentoIds = [...new Set(buracos.map(b => Number(b.procedimento_id)))];
+
+          const { data: pacientesData } = await supabaseAdmin
+            .from("pacientes")
+            .select("paciente_id, nome")
+            .in("paciente_id", pacienteIds);
+          const pacienteNomeMap = new Map((pacientesData || []).map(p => [Number(p.paciente_id), p.nome]));
+
+          const { data: procedimentosData } = await supabaseAdmin
+            .from("procedimentos")
+            .select("procedimento_id, nome")
+            .in("procedimento_id", procedimentoIds);
+          const procedimentoNomeMap = new Map((procedimentosData || []).map(p => [Number(p.procedimento_id), p.nome]));
+
           const toInsert = buracos.map(b => {
             const agId = String(b.agendamento_id);
             const chaveNatural = `FALLBACK-${agId}`;
@@ -781,11 +793,13 @@ export const labSyncSafetyNet = createServerFn({ method: "POST" })
               feegow_id: hashToBigInt(chaveNatural),
               agendamento_id: BigInt(agId),
               paciente_id: b.paciente_id ? BigInt(b.paciente_id) : null,
+              paciente_nome: pacienteNomeMap.get(Number(b.paciente_id)) || null,
               procedimento_id: b.procedimento_id ? BigInt(b.procedimento_id) : null,
+              procedimento_nome: procedimentoNomeMap.get(Number(b.procedimento_id)) || null,
               profissional_id: b.profissional_id ? BigInt(b.profissional_id) : null,
               data_execucao: dia,
               hora_inicio: b.horario || null,
-              valor: parseValorBR(b.valor_total_agendamento || b.valor),
+              valor: parseValorAppoints(b.valor_total_agendamento || b.valor),
               situacao: "Faturado",
               convenio_id: b.convenio_id ? Number(b.convenio_id) : null,
               unidade_id: b.unidade_id ? BigInt(b.unidade_id) : null,
