@@ -712,6 +712,110 @@ export const labSyncProducao = createServerFn({ method: "POST" })
     return resumo;
   });
 
+export const labSyncSafetyNet = createServerFn({ method: "POST" })
+  .inputValidator((data: { start_date: string; end_date: string; dry_run?: boolean }) => data)
+  .handler(async ({ data }) => {
+    const { start_date, end_date, dry_run = false } = data;
+    const resumo = { dias_verificados: 0, buracos_encontrados: 0, buracos_preenchidos: 0, erros: [] as string[] };
+
+    const parseValorBR = (v: any): number => {
+      if (v === null || v === undefined || v === "") return 0;
+      if (typeof v === "number") return v;
+      const s = String(v).trim();
+      if (s.includes(",")) {
+        return Number(s.replace(/\./g, "").replace(",", ".")) || 0;
+      }
+      return Number(s) || 0;
+    };
+
+    const hashToBigInt = (s: string): bigint => {
+      let h = 5381n;
+      for (let i = 0; i < s.length; i++) {
+        h = ((h * 33n) + BigInt(s.charCodeAt(i))) & 0xFFFFFFFFFFFFn;
+      }
+      return h;
+    };
+
+    const dIni = new Date(start_date);
+    const dFim = new Date(end_date);
+    const datas: string[] = [];
+    for (let d = new Date(dIni); d <= dFim; d.setDate(d.getDate() + 1)) {
+      datas.push(d.toISOString().split('T')[0]);
+    }
+
+    for (const dia of datas) {
+      const diaFeegow = toFeegowDate(dia, "-"); // DD-MM-YYYY
+      resumo.dias_verificados++;
+
+      try {
+        const url = new URL(`${FEEGOW_BASE}/appoints/search`);
+        url.searchParams.set("data_start", diaFeegow);
+        url.searchParams.set("data_end", diaFeegow);
+        
+        const res = await fetch(url.toString(), {
+          headers: { "x-access-token": FEEGOW_TOKEN() }
+        });
+        const body = await res.json();
+        const agendamentos = body.content?.appointments || body.content || [];
+
+        if (!Array.isArray(agendamentos)) continue;
+
+        const { data: existentes } = await supabaseAdmin
+          .from("lab_producao_feegow")
+          .select("agendamento_id")
+          .eq("data_execucao", dia);
+        const existentesSet = new Set((existentes || []).map(e => Number(e.agendamento_id)));
+
+        const buracos = agendamentos.filter(a => 
+          !existentesSet.has(Number(a.agendamento_id)) && 
+          Number(a.status_id) === 3
+        );
+
+        resumo.buracos_encontrados += buracos.length;
+
+        if (!dry_run && buracos.length > 0) {
+          const toInsert = buracos.map(b => {
+            const agId = String(b.agendamento_id);
+            const chaveNatural = `FALLBACK-${agId}`;
+            return {
+              feegow_id: hashToBigInt(chaveNatural),
+              agendamento_id: BigInt(agId),
+              paciente_id: b.paciente_id ? BigInt(b.paciente_id) : null,
+              procedimento_id: b.procedimento_id ? BigInt(b.procedimento_id) : null,
+              profissional_id: b.profissional_id ? BigInt(b.profissional_id) : null,
+              data_execucao: dia,
+              hora_inicio: b.horario || null,
+              valor: parseValorBR(b.valor_total_agendamento || b.valor),
+              situacao: "Faturado",
+              convenio_id: b.convenio_id ? Number(b.convenio_id) : null,
+              unidade_id: b.unidade_id ? BigInt(b.unidade_id) : null,
+              tipo_procedimento: "Fallback appoints/search",
+              payload_raw: { ...b, _fonte: "appoints_search_fallback" }
+            };
+          });
+
+          const { error: insErr } = await supabaseAdmin
+            .from("lab_producao_feegow")
+            .upsert(toInsert, { onConflict: "id_transacao,n_guia_prestador,procedimento_id,agendamento_id" });
+
+          if (insErr) {
+            resumo.erros.push(`Erro ao inserir buracos do dia ${dia}: ${insErr.message}`);
+          } else {
+            resumo.buracos_preenchidos += toInsert.length;
+          }
+        }
+      } catch (err: any) {
+        resumo.erros.push(`Erro no dia ${dia}: ${err.message}`);
+      }
+    }
+
+    if (resumo.buracos_preenchidos > 0 && !dry_run) {
+      await supabaseAdmin.rpc('lab_enriquecer_faturamento');
+    }
+
+    return resumo;
+  });
+
 export const getLabConciliacao = createServerFn({ method: "GET" })
   .inputValidator((data: { 
     data_inicio: string; 
