@@ -57,7 +57,15 @@ function LabConciliacao() {
         } 
       });
 
-      // 2. Sincroniza Convênios (Transação C - Financeiro)
+      // 2. Sincroniza Rede de Segurança (Preenche buracos)
+      await labSyncSafetyNet({
+        data: {
+          start_date: startStr,
+          end_date: endStr
+        }
+      });
+
+      // 3. Sincroniza Convênios (Transação C - Financeiro)
       await labSyncParticular({ 
         data: { 
           data_inicio: startStr, 
@@ -178,6 +186,27 @@ function LabConciliacao() {
           >
             <RefreshCw className={`w-4 h-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
             {isSyncing ? "Sincronizando..." : "Sincronizar Período"}
+          </Button>
+          <Button 
+            variant="outline" 
+            className="border-amber-200 text-amber-700 hover:bg-amber-50"
+            onClick={async () => {
+              setIsSyncing(true);
+              toast.info("Verificando lacunas na produção...");
+              try {
+                const res = await labSyncSafetyNet({ data: { start_date: startStr, end_date: endStr } });
+                toast.success(`Rede de Segurança: ${res.buracos_preenchidos} itens recuperados.`);
+                refetch();
+              } catch (e) {
+                toast.error("Erro ao verificar lacunas.");
+              } finally {
+                setIsSyncing(false);
+              }
+            }}
+            disabled={isSyncing || isLoading}
+          >
+            <AlertCircle className="w-4 h-4 mr-2" />
+            Verificar Buracos
           </Button>
           <Button variant="outline" onClick={exportCSV} disabled={filteredData.length === 0}>
             <Download className="w-4 h-4 mr-2" /> Exportar CSV
