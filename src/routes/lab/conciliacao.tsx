@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DatePickerWithRange } from "@/components/ui/date-picker-with-range";
-import { getLabConciliacao, getLabFaturamentoItems, labSyncParticular, labSyncProducao } from "@/lib/lab-faturamento.functions";
+import { getLabConciliacao, getLabFaturamentoItems, labSyncParticular, labSyncProducao, labSyncSafetyNet } from "@/lib/lab-faturamento.functions";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { brl } from "@/lib/format";
 import { toast } from "sonner";
