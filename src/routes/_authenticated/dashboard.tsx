@@ -50,6 +50,8 @@ type LancamentoDetalhe = {
   convenio: boolean;
   pacienteId: number | null;
   pacienteNome: string | null;
+  profissionalNome?: string | null;
+  isNovo?: boolean;
 };
 type ItemServico = { nome: string; valor: number; qtd: number; lancamentos: LancamentoDetalhe[] };
 type ServicoBucket = { nome: string; valor: number; qtd: number; itens: Map<string, ItemServico> };
