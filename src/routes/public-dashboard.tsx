@@ -333,6 +333,59 @@ function PublicDashboardContent() {
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
+            {donut.find((d: any) => d.name === "Particular")?.value! > 0 && (
+              <div className="mt-4 pt-4 border-t border-border">
+                <p className="text-[10px] text-muted-foreground uppercase font-semibold mb-2">Formas de Pagamento (Particular)</p>
+                <div className="h-[120px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={Array.from(
+                        labRows
+                          .filter((r: any) => r.convenio_nome === "Particular")
+                          .reduce((acc: Map<string, number>, r: any) => {
+                            const f = (r.forma_pagamento as string) || "Não informado";
+                            acc.set(f, (acc.get(f) ?? 0) + Number(r.valor || 0));
+                            return acc;
+                          }, new Map<string, number>())
+                      )
+                        .sort((a, b) => b[1] - a[1])
+                        .map(([name, value]) => ({ name, value }))}
+                      layout="vertical"
+                      margin={{ top: 0, right: 30, left: 40, bottom: 0 }}
+                    >
+                      <XAxis type="number" hide />
+                      <YAxis 
+                        dataKey="name" 
+                        type="category" 
+                        width={80} 
+                        fontSize={10}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <Tooltip 
+                        cursor={{ fill: 'transparent' }}
+                        content={({ active, payload }: any) => {
+                          if (active && payload && payload.length) {
+                            return (
+                              <div className="rounded-lg border border-border bg-background p-2 shadow-sm text-[10px]">
+                                <div className="font-medium">{payload[0].payload.name}</div>
+                                <div className="font-bold text-primary">{brl(payload[0].value as number)}</div>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                      <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                        {Array.from({ length: 10 }).map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={`hsl(var(--primary) / ${1 - index * 0.15})`} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
         
@@ -480,56 +533,6 @@ function PublicDashboardContent() {
                       <div className="text-sm font-bold text-foreground">{brl(valor)}</div>
                     </div>
                   ))}
-              </div>
-            )}
-            {activeBucket && (detalheOrigem || detalheNovos || detalheProfissional || detalheEspecialidade) && (
-              <div className="mt-4 h-[120px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={Array.from(
-                      Array.from(activeBucket.itens.values()).reduce((acc: Map<string, number>, it: any) => {
-                        it.lancamentos.forEach((l: any) => {
-                          const f = (l.formaPagamento as string) || "Não informado";
-                          acc.set(f, (acc.get(f) ?? 0) + Number(l.valor));
-                        });
-                        return acc;
-                      }, new Map<string, number>())
-                    )
-                      .sort((a, b) => b[1] - a[1])
-                      .map(([name, value]) => ({ name, value }))}
-                    layout="vertical"
-                    margin={{ top: 0, right: 30, left: 40, bottom: 0 }}
-                  >
-                    <XAxis type="number" hide />
-                    <YAxis 
-                      dataKey="name" 
-                      type="category" 
-                      width={80} 
-                      fontSize={10}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <Tooltip 
-                      cursor={{ fill: 'transparent' }}
-                      content={({ active, payload }: any) => {
-                        if (active && payload && payload.length) {
-                          return (
-                            <div className="rounded-lg border border-border bg-background p-2 shadow-sm text-[10px]">
-                              <div className="font-medium">{payload[0].payload.name}</div>
-                              <div className="font-bold text-primary">{brl(payload[0].value as number)}</div>
-                            </div>
-                          );
-                        }
-                        return null;
-                      }}
-                    />
-                    <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                      {Array.from({ length: 10 }).map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={`hsl(var(--primary) / ${1 - index * 0.15})`} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
               </div>
             )}
           </SheetHeader>
