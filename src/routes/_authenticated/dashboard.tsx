@@ -314,11 +314,41 @@ function DashboardPage() {
     byOrigem.set(activeLabel, bucket);
   }
 
-  const activeBucket = detalheNovos 
-    ? byOrigem.get("Pacientes Novos") 
-    : (detalhePagamento ? byOrigem.get(detalhePagamento) : (detalheOrigem ? byOrigem.get(detalheOrigem) : (detalheProfissional ? byOrigem.get(detalheProfissional) : (detalheEspecialidade ? byOrigem.get(detalheEspecialidade) : (detalhe ? byServico.get(detalhe) : null)))));
+  const byNoShow = new Map<string, ServicoBucket>();
+  if (detalheNoShow) {
+    const bucket: ServicoBucket = { nome: "Pacientes No-show", valor: 0, qtd: 0, itens: new Map<string, ItemServico>() };
+    const noShowRows = rows.filter((r: any) => r.status_agendamento?.categoria === "no_show");
+    
+    for (const r of noShowRows) {
+      bucket.qtd += 1;
+      const itemNome = (r.procedimento_nome ?? "").trim() || "Sem descrição";
+      const it: ItemServico = bucket.itens.get(itemNome) ?? { nome: itemNome, valor: 0, qtd: 0, lancamentos: [] };
+      it.qtd += 1;
+      it.lancamentos.push({
+        pacienteId: r.paciente_id ? Number(r.paciente_id) : null,
+        pacienteNome: r.paciente_nome || null,
+        nome: itemNome,
+        valor: 0,
+        data: r.data,
+        status: r.status_agendamento?.nome || "No-show",
+        categoria: r.especialidade_nome || null,
+        convenio: r.convenio_nome !== "Particular",
+        profissionalNome: r.profissional_nome,
+        formaPagamento: null,
+        isNovo: r.primeiro_agendamento,
+      });
+      bucket.itens.set(itemNome, it);
+    }
+    byNoShow.set("Pacientes No-show", bucket);
+  }
+
+  const activeBucket = detalheNoShow
+    ? byNoShow.get("Pacientes No-show")
+    : (detalheNovos 
+      ? byOrigem.get("Pacientes Novos") 
+      : (detalhePagamento ? byOrigem.get(detalhePagamento) : (detalheOrigem ? byOrigem.get(detalheOrigem) : (detalheProfissional ? byOrigem.get(detalheProfissional) : (detalheEspecialidade ? byOrigem.get(detalheEspecialidade) : (detalhe ? byServico.get(detalhe) : null))))));
   const detalheItens: ItemServico[] = activeBucket
-    ? Array.from(activeBucket.itens.values()).sort((a, b) => b.valor - a.valor).slice(0, 80)
+    ? Array.from(activeBucket.itens.values()).sort((a, b) => b.qtd - a.qtd).slice(0, 80)
     : [];
   const coberturaServico = faturadoReal > 0 ? (classificado * 100) / faturadoReal : 0;
 
