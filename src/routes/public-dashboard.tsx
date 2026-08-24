@@ -467,8 +467,8 @@ function PublicDashboardContent() {
                 {Array.from(
                   Array.from(activeBucket.itens.values()).reduce((acc: Map<string, number>, it: any) => {
                     it.lancamentos.forEach((l: any) => {
-                      const f = l.formaPagamento || "Não informado";
-                      acc.set(f, (acc.get(f) ?? 0) + l.valor);
+                      const f = (l.formaPagamento as string) || "Não informado";
+                      acc.set(f, (acc.get(f) ?? 0) + Number(l.valor));
                     });
                     return acc;
                   }, new Map<string, number>())
