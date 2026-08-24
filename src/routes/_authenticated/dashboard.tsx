@@ -50,6 +50,8 @@ type LancamentoDetalhe = {
   convenio: boolean;
   pacienteId: number | null;
   pacienteNome: string | null;
+  profissionalNome?: string | null;
+  isNovo?: boolean;
 };
 type ItemServico = { nome: string; valor: number; qtd: number; lancamentos: LancamentoDetalhe[] };
 type ServicoBucket = { nome: string; valor: number; qtd: number; itens: Map<string, ItemServico> };
@@ -63,6 +65,7 @@ function DashboardPage() {
   const [detalheOrigem, setDetalheOrigem] = useState<string | null>(null);
   const [itemAberto, setItemAberto] = useState<string | null>(null);
   const [detalheProfissional, setDetalheProfissional] = useState<string | null>(null);
+  const [detalheNovos, setDetalheNovos] = useState<boolean>(false);
 
   const diff = differenceInDays(f.to, f.from) + 1;
   const prevFrom = subDays(f.from, diff);
@@ -238,6 +241,8 @@ function DashboardPage() {
       status: r.situacao || null,
       categoria: r.grupo_nome || null,
       convenio: r.convenio_nome !== "Particular",
+      profissionalNome: r.profissional_nome,
+      isNovo: r.is_novo_paciente,
     });
     
     cur.itens.set(itemNome, it);
@@ -252,11 +257,12 @@ function DashboardPage() {
   const detalheBucket = detalhe ? byServico.get(detalhe) ?? null : null;
   
   const byOrigem = new Map<string, ServicoBucket>();
-  if (detalheOrigem || detalheProfissional) {
-    const activeLabel = detalheOrigem || detalheProfissional || "";
+  if (detalheOrigem || detalheProfissional || detalheNovos) {
+    const activeLabel = detalheNovos ? "Pacientes Novos" : (detalheOrigem || detalheProfissional || "");
     const bucket: ServicoBucket = { nome: activeLabel, valor: 0, qtd: 0, itens: new Map<string, ItemServico>() };
     
     const filteredRows = labRows.filter((r: any) => {
+      if (detalheNovos) return !!r.is_novo_paciente;
       if (detalheProfissional) return (r.profissional_nome || "Não informado") === detalheProfissional;
       if (detalheOrigem === "Particular") return r.convenio_nome === "Particular";
       if (detalheOrigem === "Convênio") return r.convenio_nome !== "Particular";
@@ -283,13 +289,15 @@ function DashboardPage() {
         status: r.situacao || null,
         categoria: r.grupo_nome || null,
         convenio: r.convenio_nome !== "Particular",
+        profissionalNome: r.profissional_nome,
+        isNovo: r.is_novo_paciente,
       });
       bucket.itens.set(itemNome, it);
     }
     byOrigem.set(activeLabel, bucket);
   }
 
-  const activeBucket = detalheOrigem ? byOrigem.get(detalheOrigem) : (detalheProfissional ? byOrigem.get(detalheProfissional) : (detalhe ? byServico.get(detalhe) : null));
+  const activeBucket = detalheNovos ? byOrigem.get("Pacientes Novos") : (detalheOrigem ? byOrigem.get(detalheOrigem) : (detalheProfissional ? byOrigem.get(detalheProfissional) : (detalhe ? byServico.get(detalhe) : null)));
   const detalheItens: ItemServico[] = activeBucket
     ? Array.from(activeBucket.itens.values()).sort((a, b) => b.valor - a.valor).slice(0, 80)
     : [];
@@ -322,10 +330,19 @@ function DashboardPage() {
           const isGood = k.invertTrend ? (k.trend ?? 0) < 0 : (k.trend ?? 0) > 0;
           
           return (
-            <Card key={k.label}>
+            <Card 
+              key={k.label} 
+              className={cn(k.label === "Pacientes novos" && "cursor-pointer hover:bg-muted/50 transition-colors ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2")}
+              onClick={() => k.label === "Pacientes novos" && setDetalheNovos(true)}
+            >
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 text-muted-foreground text-xs">
                   <k.icon className="h-3.5 w-3.5" /> {k.label}
+                  {k.label === "Pacientes novos" && !query.isLoading && (
+                    <span className="ml-auto inline-flex items-center rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                      Ver detalhes
+                    </span>
+                  )}
                 </div>
                 <div className={`mt-2 text-xl font-semibold ${k.warn ? "text-warning" : ""}`}>
                   {query.isLoading ? <Skeleton className="h-6 w-20" /> : k.value}
@@ -529,16 +546,17 @@ function DashboardPage() {
         </Card>
       </div>
 
-      <Sheet open={detalhe !== null || detalheOrigem !== null || detalheProfissional !== null} onOpenChange={(o) => {
+      <Sheet open={detalhe !== null || detalheOrigem !== null || detalheProfissional !== null || detalheNovos} onOpenChange={(o) => {
         if (!o) {
           setDetalhe(null);
           setDetalheOrigem(null);
           setDetalheProfissional(null);
+          setDetalheNovos(false);
         }
       }}>
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>{detalheProfissional || detalheOrigem || detalhe || ""}</SheetTitle>
+            <SheetTitle>{detalheNovos ? "Pacientes Novos" : (detalheProfissional || detalheOrigem || detalhe || "")}</SheetTitle>
             <SheetDescription>
               {activeBucket
                 ? `${brl(activeBucket.valor)} · ${num(activeBucket.qtd)} lançamentos · ${num(detalheItens.length)} itens distintos`
@@ -582,6 +600,7 @@ function DashboardPage() {
                               <div className="truncate text-muted-foreground" title={l.categoria ?? ""}>
                                 {(l.categoria ?? "Sem categoria")} · {l.convenio ? "Convênio" : "Particular"}
                                 {l.status ? ` · ${l.status}` : ""}
+                                {l.profissionalNome ? ` · ${l.profissionalNome}` : ""}
                               </div>
                             </div>
                             <span className="shrink-0 font-medium text-foreground">{brl(l.valor)}</span>
