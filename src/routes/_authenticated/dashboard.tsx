@@ -170,6 +170,17 @@ function DashboardPage() {
     { name: "Convênio",   value: labRows.filter((r: any) => r.convenio_nome !== "Particular").reduce((s, r) => s + Number(r.valor || 0), 0) },
   ];
 
+  // Faturamento por convênio específico
+  const byConvenio = new Map<string, { nome: string; valor: number; qtd: number }>();
+  for (const r of labRows) {
+    const nome = (r.convenio_nome ?? "").trim() || "Particular";
+    const cur = byConvenio.get(nome) ?? { nome, valor: 0, qtd: 0 };
+    cur.valor += Number(r.valor || 0);
+    cur.qtd += 1;
+    byConvenio.set(nome, cur);
+  }
+  const conveniosBreakdown = Array.from(byConvenio.values()).filter((c) => c.valor > 0).sort((a, b) => b.valor - a.valor);
+
   // Faturamento por categoria (receitas)
   const byCategoria = new Map<string, { nome: string; valor: number; qtd: number }>();
   for (const r of labRows) {
