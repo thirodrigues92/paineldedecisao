@@ -376,8 +376,10 @@ function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2">
-          <CardHeader><CardTitle>Particular vs. Convênio (receita)</CardTitle></CardHeader>
-          <CardContent className="h-72">
+          <CardHeader>
+            <CardTitle>Particular vs. Convênio (receita)</CardTitle>
+          </CardHeader>
+          <CardContent className="h-[450px]">
             {donut.every((d) => d.value === 0) ? <EmptyState /> : (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -385,15 +387,23 @@ function DashboardPage() {
                     data={donut} 
                     dataKey="value" 
                     nameKey="name" 
-                    innerRadius={55} 
-                    outerRadius={90}
+                    innerRadius={80} 
+                    outerRadius={140}
+                    paddingAngle={5}
+                    stroke="none"
                     cursor="pointer"
                     onClick={(d: any) => setDetalheOrigem(d?.name ?? null)}
                   >
-                    {donut.map((_, i) => <Cell key={i} fill={i === 0 ? "var(--chart-1)" : "var(--chart-2)"} />)}
+                    <Cell fill="hsl(var(--chart-1))" className="drop-shadow-sm transition-opacity hover:opacity-80" />
+                    <Cell fill="hsl(var(--chart-2))" className="drop-shadow-sm transition-opacity hover:opacity-80" />
                   </Pie>
                   <Tooltip {...tooltipProps} formatter={(v: any) => brl(Number(v))} />
-                  <Legend wrapperStyle={{ fontSize: 12, color: "var(--muted-foreground)" }} />
+                  <Legend 
+                    verticalAlign="bottom" 
+                    height={36}
+                    iconType="circle"
+                    formatter={(value) => <span className="text-sm font-medium text-foreground">{value}</span>}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             )}
