@@ -241,6 +241,8 @@ function DashboardPage() {
       status: r.situacao || null,
       categoria: r.grupo_nome || null,
       convenio: r.convenio_nome !== "Particular",
+      profissionalNome: r.profissional_nome,
+      isNovo: r.is_novo_paciente,
     });
     
     cur.itens.set(itemNome, it);
