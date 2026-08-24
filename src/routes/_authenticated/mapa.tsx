@@ -140,7 +140,7 @@ function MapaPage() {
         topEspecialidade: top, distanciaKm: dist,
         noShowPct: e.demanda ? (e.noShow / e.demanda) * 100 : 0,
       };
-    }).sort((a, b) => b.pacientes - a.pacientes);
+    }).sort((a, b) => (metric === "faturamento" ? b.faturamento - a.faturamento : b.pacientes - a.pacientes));
 
     return { bairros: list, semGeo: semCoord, totalPacientes: contados.size };
   }, [ags.data, pacientes.data, producao.data, especialidade, faixa, convenio, somenteObesos, unidadePoints]);
