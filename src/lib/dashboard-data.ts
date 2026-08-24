@@ -251,13 +251,15 @@ export type LabProducaoRow = {
   valor: number | string | null;
   data_execucao: string | null;
   paciente_id: number | null;
+  paciente_nome: string | null;
   procedimento_id: number | null;
+  procedimento_nome: string | null;
   profissional_id: number | null;
   unidade_id: number | null;
   convenio_id: number | null;
+  convenio_nome: string | null;
   situacao: string | null;
   grupo_nome: string | null;
-  categoria?: string | null;
 };
 
 export async function fetchLabProducaoRows(f: DashboardFilters, limit = 30_000): Promise<LabProducaoRow[]> {
@@ -267,7 +269,7 @@ export async function fetchLabProducaoRows(f: DashboardFilters, limit = 30_000):
   for (let from = 0; from < limit; from += pageSize) {
     let q = supabase
       .from("lab_producao_feegow")
-      .select("id, valor, data_execucao, paciente_id, procedimento_id, profissional_id, unidade_id, convenio_id, situacao, grupo_nome")
+      .select("id, valor, data_execucao, paciente_id, paciente_nome, procedimento_id, procedimento_nome, profissional_id, unidade_id, convenio_id, convenio_nome, situacao, grupo_nome")
       .gte("data_execucao", toISO(f.from))
       .lte("data_execucao", toISO(f.to))
       .order("data_execucao", { ascending: true })
@@ -275,8 +277,12 @@ export async function fetchLabProducaoRows(f: DashboardFilters, limit = 30_000):
 
     if (f.unidadeIds.length) q = q.in("unidade_id", f.unidadeIds);
     if (f.profissionalIds.length) q = q.in("profissional_id", f.profissionalIds);
-    if (f.convenioTipo === "particular") q = q.or("convenio_id.is.null,convenio_id.eq.0");
-    if (f.convenioTipo === "convenio") q = q.gt("convenio_id", 0);
+    
+    if (f.convenioTipo === "particular") {
+      q = q.or("convenio_id.is.null,convenio_id.eq.0,convenio_nome.eq.Particular");
+    } else if (f.convenioTipo === "convenio") {
+      q = q.and(`convenio_id.gt.0,convenio_nome.neq.Particular`);
+    }
 
     const { data, error } = await q;
     if (error) throw error;
@@ -286,4 +292,5 @@ export async function fetchLabProducaoRows(f: DashboardFilters, limit = 30_000):
 
   return all;
 }
+
 
