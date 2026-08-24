@@ -720,7 +720,7 @@ function DashboardPage() {
                 ? `${detalheNoShow ? "" : brl(activeBucket.valor) + " · "}${num(activeBucket.qtd)} ${detalheNoShow ? "faltas" : "lançamentos"} · ${num(detalheItens.length)} itens distintos`
                 : "Sem itens."}
             </SheetDescription>
-            {activeBucket && (detalheOrigem || detalheNovos || detalheProfissional || detalheEspecialidade || detalhePagamento) && (
+            {activeBucket && (detalheOrigem || detalheNovos || detalheProfissional || detalheEspecialidade || detalhePagamento) && !detalheNoShow && (
               <div className="mt-4 grid grid-cols-2 gap-2 pb-2">
                 {Array.from(
                   Array.from(activeBucket.itens.values()).reduce((acc, it) => {
@@ -753,8 +753,8 @@ function DashboardPage() {
                   >
                     <div className="text-sm font-medium break-words">{it.nome}</div>
                     <div className="mt-1 flex items-baseline justify-between text-xs text-muted-foreground">
-                      <span className="text-sm font-semibold text-foreground">{brl(it.valor)}</span>
-                      <span>{num(it.qtd)} lanç. · ticket {brl(it.qtd > 0 ? it.valor / it.qtd : 0)}</span>
+                      {!detalheNoShow && <span className="text-sm font-semibold text-foreground">{brl(it.valor)}</span>}
+                      <span>{num(it.qtd)} {detalheNoShow ? "faltas" : "lanç."} {!detalheNoShow && `· ticket ${brl(it.qtd > 0 ? it.valor / it.qtd : 0)}`}</span>
                     </div>
                     <div className="mt-1 text-[11px] text-primary">
                       {aberto ? "Ocultar lançamentos" : "Ver cada lançamento"}
@@ -782,7 +782,7 @@ function DashboardPage() {
                                 {l.formaPagamento ? ` · ${l.formaPagamento}` : ""}
                               </div>
                             </div>
-                            <span className="shrink-0 font-medium text-foreground">{brl(l.valor)}</span>
+                            <span className="shrink-0 font-medium text-foreground">{detalheNoShow ? "" : brl(l.valor)}</span>
                           </div>
                         ))}
                     </div>
