@@ -273,7 +273,7 @@ export async function fetchLabProducaoRows(f: DashboardFilters, limit = 30_000):
   for (let from = 0; from < limit; from += pageSize) {
     let q = supabase
       .from("lab_producao_feegow")
-      .select("id, valor, data_execucao, paciente_id, paciente_nome, procedimento_id, procedimento_nome, profissional_id, profissional_nome, unidade_id, convenio_id, convenio_nome, situacao, grupo_nome, agendamento_id")
+      .select("id, valor, data_execucao, paciente_id, paciente_nome, procedimento_id, procedimento_nome, profissional_id, profissional_nome, unidade_id, convenio_id, convenio_nome, situacao, grupo_nome, agendamento_id, forma_pagamento")
       .gte("data_execucao", toISO(f.from))
       .lte("data_execucao", toISO(f.to))
       .order("data_execucao", { ascending: true })
