@@ -239,13 +239,16 @@ function DashboardPage() {
   const semDetalhe = byServico.get("Sem detalhamento da Feegow")?.valor ?? 0;
   const detalheBucket = detalhe ? byServico.get(detalhe) ?? null : null;
   
-  // Detalhe por Origem (Donut)
+  // Detalhe por Origem ou Convênio Específico
   const byOrigem = new Map<string, ServicoBucket>();
   if (detalheOrigem) {
     const bucket: ServicoBucket = { nome: detalheOrigem, valor: 0, qtd: 0, itens: new Map<string, ItemServico>() };
-    const filteredRows = labRows.filter((r: any) => 
-      detalheOrigem === "Particular" ? r.convenio_nome === "Particular" : r.convenio_nome !== "Particular"
-    );
+    const filteredRows = labRows.filter((r: any) => {
+      if (detalheOrigem === "Particular") return r.convenio_nome === "Particular";
+      if (detalheOrigem === "Convênio") return r.convenio_nome !== "Particular";
+      // Caso seja um convênio específico clicado na tabela
+      return r.convenio_nome === detalheOrigem;
+    });
     
     for (const r of filteredRows) {
       const valor = Number(r.valor || 0);
