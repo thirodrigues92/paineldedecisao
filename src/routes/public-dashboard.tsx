@@ -27,6 +27,13 @@ import { GlobalFilters } from "@/components/GlobalFilters";
 
 function PublicDashboardContent() {
   const f = useFilters();
+  const [detalhe, setDetalhe] = useState<string | null>(null);
+  const [detalheOrigem, setDetalheOrigem] = useState<string | null>(null);
+  const [itemAberto, setItemAberto] = useState<string | null>(null);
+  const [detalheProfissional, setDetalheProfissional] = useState<string | null>(null);
+  const [detalheNovos, setDetalheNovos] = useState<boolean>(false);
+  const [detalheEspecialidade, setDetalheEspecialidade] = useState<string | null>(null);
+
   const diff = differenceInDays(f.to, f.from) + 1;
   const prevFrom = subDays(f.from, diff);
   const prevTo = subDays(f.to, diff);
@@ -113,6 +120,128 @@ function PublicDashboardContent() {
     { name: "Convênio",   value: labRows.filter((r: any) => r.convenio_nome !== "Particular").reduce((s, r) => s + Number(r.valor || 0), 0) },
   ];
 
+  const byConvenio = new Map<string, { nome: string; valor: number; qtd: number }>();
+  for (const r of labRows) {
+    const nome = (r.convenio_nome ?? "").trim() || "Particular";
+    const cur = byConvenio.get(nome) ?? { nome, valor: 0, qtd: 0 };
+    cur.valor += Number(r.valor || 0);
+    cur.qtd += 1;
+    byConvenio.set(nome, cur);
+  }
+  const conveniosBreakdown = Array.from(byConvenio.values()).filter((c) => c.valor > 0).sort((a, b) => b.valor - a.valor);
+
+  const byProfissional = new Map<string, { nome: string; valor: number; qtd: number }>();
+  for (const r of labRows) {
+    const nome = (r.profissional_nome ?? "").trim() || "Não informado";
+    const cur = byProfissional.get(nome) ?? { nome, valor: 0, qtd: 0 };
+    cur.valor += Number(r.valor || 0);
+    cur.qtd += 1;
+    byProfissional.set(nome, cur);
+  }
+  const profissionaisBreakdown = Array.from(byProfissional.values()).filter((c) => c.valor > 0).sort((a, b) => b.valor - a.valor);
+
+  const byCategoria = new Map<string, { nome: string; valor: number; qtd: number }>();
+  for (const r of labRows) {
+    const nome = (r.grupo_nome ?? "").trim() || "Não classificado";
+    const cur = byCategoria.get(nome) ?? { nome, valor: 0, qtd: 0 };
+    cur.valor += Number(r.valor || 0);
+    cur.qtd += 1;
+    byCategoria.set(nome, cur);
+  }
+  const categorias = Array.from(byCategoria.values()).filter((c) => c.valor > 0).sort((a, b) => b.valor - a.valor);
+  const totalCategorias = categorias.reduce((s, c) => s + c.valor, 0);
+  const topCategorias = categorias.slice(0, 12).map((c) => ({
+    ...c,
+    share: totalCategorias > 0 ? (c.valor * 100) / totalCategorias : 0,
+  }));
+
+  const byServico = new Map<string, any>();
+  for (const r of labRows) {
+    const valor = Number(r.valor || 0);
+    const nomeProc = r.procedimento_nome ?? "Sem descrição";
+    const nome = categoriaServico(nomeProc);
+    
+    const cur = byServico.get(nome) ?? { nome, valor: 0, qtd: 0, itens: new Map() };
+    cur.valor += valor;
+    cur.qtd += 1;
+    
+    const itemNome = (nomeProc ?? "").trim() || "Sem descrição";
+    const it = cur.itens.get(itemNome) ?? { nome: itemNome, valor: 0, qtd: 0, lancamentos: [] };
+    it.valor += valor;
+    it.qtd += 1;
+    
+    it.lancamentos.push({
+      pacienteId: r.paciente_id ? Number(r.paciente_id) : null,
+      pacienteNome: r.paciente_nome || null,
+      nome: itemNome,
+      valor,
+      data: r.data_execucao,
+      status: r.situacao || null,
+      categoria: r.grupo_nome || null,
+      convenio: r.convenio_nome !== "Particular",
+      profissionalNome: r.profissional_nome,
+      isNovo: r.is_novo_paciente,
+    });
+    
+    cur.itens.set(itemNome, it);
+    byServico.set(nome, cur);
+  }
+
+  const servicos = Array.from(byServico.values())
+    .filter((c) => c.valor > 0)
+    .sort((a, b) => b.valor - a.valor)
+    .map(c => ({ ...c, share: faturadoReal > 0 ? (c.valor * 100) / faturadoReal : 0 }));
+
+  const byOrigem = new Map<string, any>();
+  if (detalheOrigem || detalheProfissional || detalheNovos || detalheEspecialidade) {
+    const activeLabel = detalheNovos ? "Pacientes Novos" : (detalheOrigem || detalheProfissional || detalheEspecialidade || "");
+    const bucket = { nome: activeLabel, valor: 0, qtd: 0, itens: new Map() };
+    
+    const filteredRows = labRows.filter((r: any) => {
+      if (detalheNovos) return !!r.is_novo_paciente;
+      if (detalheProfissional) return (r.profissional_nome || "Não informado") === detalheProfissional;
+      if (detalheEspecialidade) return (r.grupo_nome || "Sem especialidade") === detalheEspecialidade;
+      if (detalheOrigem === "Particular") return r.convenio_nome === "Particular";
+      if (detalheOrigem === "Convênio") return r.convenio_nome !== "Particular";
+      return r.convenio_nome === detalheOrigem;
+    });
+    
+    for (const r of filteredRows) {
+      const valor = Number(r.valor || 0);
+      const nomeProc = r.procedimento_nome ?? "Sem descrição";
+      bucket.valor += valor;
+      bucket.qtd += 1;
+      
+      const itemNome = (nomeProc ?? "").trim() || "Sem descrição";
+      const it = bucket.itens.get(itemNome) ?? { nome: itemNome, valor: 0, qtd: 0, lancamentos: [] };
+      it.valor += valor;
+      it.qtd += 1;
+      
+      it.lancamentos.push({
+        pacienteId: r.paciente_id ? Number(r.paciente_id) : null,
+        pacienteNome: r.paciente_nome || null,
+        nome: itemNome,
+        valor,
+        data: r.data_execucao,
+        status: r.situacao || null,
+        categoria: r.grupo_nome || null,
+        convenio: r.convenio_nome !== "Particular",
+        profissionalNome: r.profissional_nome,
+        isNovo: r.is_novo_paciente,
+      });
+      bucket.itens.set(itemNome, it);
+    }
+    byOrigem.set(activeLabel, bucket);
+  }
+
+  const activeBucket = detalheNovos 
+    ? byOrigem.get("Pacientes Novos") 
+    : (detalheOrigem ? byOrigem.get(detalheOrigem) : (detalheProfissional ? byOrigem.get(detalheProfissional) : (detalheEspecialidade ? byOrigem.get(detalheEspecialidade) : (detalhe ? byServico.get(detalhe) : null))));
+  
+  const detalheItens = activeBucket
+    ? Array.from(activeBucket.itens.values()).sort((a: any, b: any) => b.valor - a.valor).slice(0, 80)
+    : [];
+
   const kpis = [
     { label: "Agendamentos", value: num(total), icon: Calendar, trend: getDiff(total, prevTotal) },
     { label: "Ocupação", value: pct(ocupacao), icon: Activity, trend: getDiff(ocupacao, prevOcupacao) },
@@ -124,6 +253,7 @@ function PublicDashboardContent() {
 
   const compactBrl = (n: number) =>
     Math.abs(n) >= 1000 ? `R$ ${(n / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 0 })}k` : brl(n);
+
 
   return (
     <div className="space-y-6">
