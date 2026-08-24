@@ -68,6 +68,7 @@ function DashboardPage() {
   const [itemAberto, setItemAberto] = useState<string | null>(null);
   const [detalheProfissional, setDetalheProfissional] = useState<string | null>(null);
   const [detalheNovos, setDetalheNovos] = useState<boolean>(false);
+  const [detalheNoShow, setDetalheNoShow] = useState<boolean>(false);
   const [detalheEspecialidade, setDetalheEspecialidade] = useState<string | null>(null);
 
   const diff = differenceInDays(f.to, f.from) + 1;
@@ -313,11 +314,42 @@ function DashboardPage() {
     byOrigem.set(activeLabel, bucket);
   }
 
-  const activeBucket = detalheNovos 
-    ? byOrigem.get("Pacientes Novos") 
-    : (detalhePagamento ? byOrigem.get(detalhePagamento) : (detalheOrigem ? byOrigem.get(detalheOrigem) : (detalheProfissional ? byOrigem.get(detalheProfissional) : (detalheEspecialidade ? byOrigem.get(detalheEspecialidade) : (detalhe ? byServico.get(detalhe) : null)))));
+  const byNoShow = new Map<string, ServicoBucket>();
+  if (detalheNoShow) {
+    const bucket: ServicoBucket = { nome: "Pacientes No-show", valor: 0, qtd: 0, itens: new Map<string, ItemServico>() };
+    const noShowRows = rows.filter((r: any) => r.status_agendamento?.categoria === "no_show");
+    const pacienteNomes = query.data?.pacienteNomes ?? new Map<number, string>();
+    
+    for (const r of noShowRows) {
+      bucket.qtd += 1;
+      const itemNome = r.procedimentos?.nome || "Sem descrição";
+      const it: ItemServico = bucket.itens.get(itemNome) ?? { nome: itemNome, valor: 0, qtd: 0, lancamentos: [] };
+      it.qtd += 1;
+      it.lancamentos.push({
+        pacienteId: r.paciente_id ? Number(r.paciente_id) : null,
+        pacienteNome: (r.paciente_id ? pacienteNomes.get(r.paciente_id) : null) || "Paciente não vinculado",
+        nome: itemNome,
+        valor: 0,
+        data: r.data,
+        status: r.status_agendamento?.descricao || "No-show",
+        categoria: r.especialidades?.nome || null,
+        convenio: r.convenio_id !== null && r.convenio_id !== 0,
+        profissionalNome: r.profissionais?.nome || null,
+        formaPagamento: null,
+        isNovo: !!r.primeiro_agendamento,
+      });
+      bucket.itens.set(itemNome, it);
+    }
+    byNoShow.set("Pacientes No-show", bucket);
+  }
+
+  const activeBucket = detalheNoShow
+    ? byNoShow.get("Pacientes No-show")
+    : (detalheNovos 
+      ? byOrigem.get("Pacientes Novos") 
+      : (detalhePagamento ? byOrigem.get(detalhePagamento) : (detalheOrigem ? byOrigem.get(detalheOrigem) : (detalheProfissional ? byOrigem.get(detalheProfissional) : (detalheEspecialidade ? byOrigem.get(detalheEspecialidade) : (detalhe ? byServico.get(detalhe) : null))))));
   const detalheItens: ItemServico[] = activeBucket
-    ? Array.from(activeBucket.itens.values()).sort((a, b) => b.valor - a.valor).slice(0, 80)
+    ? Array.from(activeBucket.itens.values()).sort((a, b) => b.qtd - a.qtd).slice(0, 80)
     : [];
   const coberturaServico = faturadoReal > 0 ? (classificado * 100) / faturadoReal : 0;
 
@@ -344,12 +376,16 @@ function DashboardPage() {
         {kpis.map((k) => {
           const TrendIcon = k.trend && k.trend > 0 ? ArrowUpRight : ArrowDownRight;
           const isGood = k.invertTrend ? (k.trend ?? 0) < 0 : (k.trend ?? 0) > 0;
+          const isClickable = k.label === "Pacientes novos" || k.label === "Taxa de no-show";
           
           return (
             <Card 
               key={k.label} 
-              className={cn(k.label === "Pacientes novos" && "cursor-pointer hover:bg-muted/50 transition-colors ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2")}
-              onClick={() => k.label === "Pacientes novos" && setDetalheNovos(true)}
+              className={cn(isClickable && "cursor-pointer hover:bg-muted/50 transition-colors ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2")}
+              onClick={() => {
+                if (k.label === "Pacientes novos") setDetalheNovos(true);
+                if (k.label === "Taxa de no-show") setDetalheNoShow(true);
+              }}
             >
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 text-muted-foreground text-xs">
@@ -662,12 +698,13 @@ function DashboardPage() {
         </Card>
       </div>
 
-      <Sheet open={detalhe !== null || detalheOrigem !== null || detalheProfissional !== null || detalheNovos || detalheEspecialidade !== null || detalhePagamento !== null} onOpenChange={(o) => {
+      <Sheet open={detalhe !== null || detalheOrigem !== null || detalheProfissional !== null || detalheNovos || detalheNoShow || detalheEspecialidade !== null || detalhePagamento !== null} onOpenChange={(o) => {
         if (!o) {
           setDetalhe(null);
           setDetalheOrigem(null);
           setDetalheProfissional(null);
           setDetalheNovos(false);
+          setDetalheNoShow(false);
           setDetalheEspecialidade(null);
           setDetalhePagamento(null);
           setItemAberto(null);
@@ -675,13 +712,15 @@ function DashboardPage() {
       }}>
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>{detalheNovos ? "Pacientes Novos" : (detalhePagamento || detalheEspecialidade || detalheProfissional || detalheOrigem || detalhe || "")}</SheetTitle>
+            <SheetTitle>
+              {detalheNoShow ? "Pacientes No-show" : (detalheNovos ? "Pacientes Novos" : (detalhePagamento || detalheEspecialidade || detalheProfissional || detalheOrigem || detalhe || ""))}
+            </SheetTitle>
             <SheetDescription>
               {activeBucket
-                ? `${brl(activeBucket.valor)} · ${num(activeBucket.qtd)} lançamentos · ${num(detalheItens.length)} itens distintos`
+                ? `${detalheNoShow ? "" : brl(activeBucket.valor) + " · "}${num(activeBucket.qtd)} ${detalheNoShow ? "faltas" : "lançamentos"} · ${num(detalheItens.length)} itens distintos`
                 : "Sem itens."}
             </SheetDescription>
-            {activeBucket && (detalheOrigem || detalheNovos || detalheProfissional || detalheEspecialidade || detalhePagamento) && (
+            {activeBucket && (detalheOrigem || detalheNovos || detalheProfissional || detalheEspecialidade || detalhePagamento) && !detalheNoShow && (
               <div className="mt-4 grid grid-cols-2 gap-2 pb-2">
                 {Array.from(
                   Array.from(activeBucket.itens.values()).reduce((acc, it) => {
@@ -714,8 +753,8 @@ function DashboardPage() {
                   >
                     <div className="text-sm font-medium break-words">{it.nome}</div>
                     <div className="mt-1 flex items-baseline justify-between text-xs text-muted-foreground">
-                      <span className="text-sm font-semibold text-foreground">{brl(it.valor)}</span>
-                      <span>{num(it.qtd)} lanç. · ticket {brl(it.qtd > 0 ? it.valor / it.qtd : 0)}</span>
+                      {!detalheNoShow && <span className="text-sm font-semibold text-foreground">{brl(it.valor)}</span>}
+                      <span>{num(it.qtd)} {detalheNoShow ? "faltas" : "lanç."} {!detalheNoShow && `· ticket ${brl(it.qtd > 0 ? it.valor / it.qtd : 0)}`}</span>
                     </div>
                     <div className="mt-1 text-[11px] text-primary">
                       {aberto ? "Ocultar lançamentos" : "Ver cada lançamento"}
@@ -743,7 +782,7 @@ function DashboardPage() {
                                 {l.formaPagamento ? ` · ${l.formaPagamento}` : ""}
                               </div>
                             </div>
-                            <span className="shrink-0 font-medium text-foreground">{brl(l.valor)}</span>
+                            <span className="shrink-0 font-medium text-foreground">{detalheNoShow ? "" : brl(l.valor)}</span>
                           </div>
                         ))}
                     </div>

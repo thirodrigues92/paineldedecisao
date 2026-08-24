@@ -36,6 +36,7 @@ function PublicDashboardContent() {
   const [itemAberto, setItemAberto] = useState<string | null>(null);
   const [detalheProfissional, setDetalheProfissional] = useState<string | null>(null);
   const [detalheNovos, setDetalheNovos] = useState<boolean>(false);
+  const [detalheNoShow, setDetalheNoShow] = useState<boolean>(false);
   const [detalheEspecialidade, setDetalheEspecialidade] = useState<string | null>(null);
 
   const diff = differenceInDays(f.to, f.from) + 1;
@@ -282,12 +283,16 @@ function PublicDashboardContent() {
         {kpis.map((k) => {
           const TrendIcon = k.trend && k.trend > 0 ? ArrowUpRight : ArrowDownRight;
           const isGood = k.invertTrend ? (k.trend ?? 0) < 0 : (k.trend ?? 0) > 0;
+          const isClickable = k.label === "Pacientes novos" || k.label === "Taxa de no-show";
           
           return (
             <Card 
               key={k.label} 
-              className={cn(k.label === "Pacientes novos" && "cursor-pointer hover:bg-muted/50 transition-colors ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2")}
-              onClick={() => k.label === "Pacientes novos" && setDetalheNovos(true)}
+              className={cn(isClickable && "cursor-pointer hover:bg-muted/50 transition-colors ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2")}
+              onClick={() => {
+                if (k.label === "Pacientes novos") setDetalheNovos(true);
+                if (k.label === "Taxa de no-show") setDetalheNoShow(true);
+              }}
             >
 
               <CardContent className="p-4">
@@ -550,25 +555,28 @@ function PublicDashboardContent() {
         <LastSyncCard />
       </div>
 
-      <Sheet open={detalhe !== null || detalheOrigem !== null || detalheProfissional !== null || detalheNovos || detalheEspecialidade !== null || detalhePagamento !== null} onOpenChange={(o) => {
+      <Sheet open={detalhe !== null || detalheOrigem !== null || detalheProfissional !== null || detalheNovos || detalheNoShow || detalheEspecialidade !== null || detalhePagamento !== null} onOpenChange={(o) => {
         if (!o) {
           setDetalhe(null);
           setDetalheOrigem(null);
           setDetalheProfissional(null);
           setDetalheNovos(false);
+          setDetalheNoShow(false);
           setDetalheEspecialidade(null);
           setDetalhePagamento(null);
         }
       }}>
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>{detalheNovos ? "Pacientes Novos" : (detalhePagamento || detalheEspecialidade || detalheProfissional || detalheOrigem || detalhe || "")}</SheetTitle>
+            <SheetTitle>
+              {detalheNoShow ? "Pacientes No-show" : (detalheNovos ? "Pacientes Novos" : (detalhePagamento || detalheEspecialidade || detalheProfissional || detalheOrigem || detalhe || ""))}
+            </SheetTitle>
             <SheetDescription>
               {activeBucket
-                ? `${brl(activeBucket.valor)} · ${num(activeBucket.qtd)} lançamentos · ${num(detalheItens.length)} itens distintos`
+                ? `${detalheNoShow ? "" : brl(activeBucket.valor) + " · "}${num(activeBucket.qtd)} ${detalheNoShow ? "faltas" : "lançamentos"} · ${num(detalheItens.length)} itens distintos`
                 : "Sem itens."}
             </SheetDescription>
-            {activeBucket && (detalheOrigem || detalheNovos || detalheProfissional || detalheEspecialidade || detalhePagamento) && (
+            {activeBucket && (detalheOrigem || detalheNovos || detalheProfissional || detalheEspecialidade || detalhePagamento) && !detalheNoShow && (
               <div className="mt-4 grid grid-cols-2 gap-2 pb-2">
                 {Array.from(
                   Array.from(activeBucket.itens.values()).reduce((acc: Map<string, number>, it: any) => {
@@ -601,8 +609,8 @@ function PublicDashboardContent() {
                   >
                     <div className="text-sm font-medium break-words">{it.nome}</div>
                     <div className="mt-1 flex items-baseline justify-between text-xs text-muted-foreground">
-                      <span className="text-sm font-semibold text-foreground">{brl(it.valor)}</span>
-                      <span>{num(it.qtd)} lanç. · ticket {brl(it.qtd > 0 ? it.valor / it.qtd : 0)}</span>
+                      {!detalheNoShow && <span className="text-sm font-semibold text-foreground">{brl(it.valor)}</span>}
+                      <span>{num(it.qtd)} {detalheNoShow ? "faltas" : "lanç."} {!detalheNoShow && `· ticket ${brl(it.qtd > 0 ? it.valor / it.qtd : 0)}`}</span>
                     </div>
                     <div className="mt-1 text-[11px] text-primary">
                       {aberto ? "Ocultar lançamentos" : "Ver cada lançamento"}
@@ -630,7 +638,7 @@ function PublicDashboardContent() {
                                 {l.formaPagamento ? ` · ${l.formaPagamento}` : ""}
                               </div>
                             </div>
-                            <span className="shrink-0 font-medium text-foreground">{brl(l.valor)}</span>
+                            <span className="shrink-0 font-medium text-foreground">{detalheNoShow ? "" : brl(l.valor)}</span>
                           </div>
                         ))}
                     </div>
