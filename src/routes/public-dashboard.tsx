@@ -285,6 +285,12 @@ function PublicDashboardContent() {
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 text-muted-foreground text-xs">
                   <k.icon className="h-3.5 w-3.5" /> {k.label}
+                  {k.label === "Pacientes novos" && !query.isLoading && (
+                    <span className="ml-auto inline-flex items-center rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                      Ver detalhes
+                    </span>
+                  )}
+
                 </div>
                 <div className={`mt-2 text-xl font-semibold ${k.warn ? "text-warning" : ""}`}>
                   {query.isLoading ? <Skeleton className="h-6 w-20" /> : k.value}
