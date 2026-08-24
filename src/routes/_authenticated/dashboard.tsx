@@ -68,6 +68,7 @@ function DashboardPage() {
   const [itemAberto, setItemAberto] = useState<string | null>(null);
   const [detalheProfissional, setDetalheProfissional] = useState<string | null>(null);
   const [detalheNovos, setDetalheNovos] = useState<boolean>(false);
+  const [detalheNoShow, setDetalheNoShow] = useState<boolean>(false);
   const [detalheEspecialidade, setDetalheEspecialidade] = useState<string | null>(null);
 
   const diff = differenceInDays(f.to, f.from) + 1;
