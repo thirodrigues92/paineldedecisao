@@ -1,10 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useFilters } from "@/lib/filters-context";
-import { dashboardQueryKey, fetchDashboardAppointments, fetchFinancialRows, fetchPacienteNomes, fetchProcedimentoNomes } from "@/lib/dashboard-data";
+import { 
+  dashboardQueryKey, 
+  fetchDashboardAppointments, 
+  fetchFinancialRows, 
+  fetchPacienteNomes, 
+  fetchProcedimentoNomes,
+  fetchLabProducaoRows
+} from "@/lib/dashboard-data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { brl, num, pct } from "@/lib/format";
-import { Calendar, DollarSign, UserPlus, UserX, Activity, TrendingUp } from "lucide-react";
+import { Calendar, DollarSign, UserPlus, UserX, Activity, TrendingUp, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid,
   BarChart, Bar, PieChart, Pie, Cell, Legend,
@@ -15,6 +22,8 @@ import { LastSyncCard } from "@/components/LastSyncCard";
 import { categoriaServico } from "@/lib/service-categories";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { differenceInDays, subDays, eachDayOfInterval, format } from "date-fns";
+
 
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
