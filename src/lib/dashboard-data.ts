@@ -245,3 +245,45 @@ export async function fetchFaturadoPorAgendamento(ids: number[]): Promise<Map<nu
   }
   return map;
 }
+
+export type LabProducaoRow = {
+  id: string;
+  valor: number | string | null;
+  data_execucao: string | null;
+  paciente_id: number | null;
+  procedimento_id: number | null;
+  profissional_id: number | null;
+  unidade_id: number | null;
+  convenio_id: number | null;
+  situacao: string | null;
+  grupo_nome: string | null;
+  categoria?: string | null;
+};
+
+export async function fetchLabProducaoRows(f: DashboardFilters, limit = 30_000): Promise<LabProducaoRow[]> {
+  const pageSize = 1_000;
+  const all: LabProducaoRow[] = [];
+
+  for (let from = 0; from < limit; from += pageSize) {
+    let q = supabase
+      .from("lab_producao_feegow")
+      .select("id, valor, data_execucao, paciente_id, procedimento_id, profissional_id, unidade_id, convenio_id, situacao, grupo_nome")
+      .gte("data_execucao", toISO(f.from))
+      .lte("data_execucao", toISO(f.to))
+      .order("data_execucao", { ascending: true })
+      .range(from, Math.min(from + pageSize - 1, limit - 1));
+
+    if (f.unidadeIds.length) q = q.in("unidade_id", f.unidadeIds);
+    if (f.profissionalIds.length) q = q.in("profissional_id", f.profissionalIds);
+    if (f.convenioTipo === "particular") q = q.or("convenio_id.is.null,convenio_id.eq.0");
+    if (f.convenioTipo === "convenio") q = q.gt("convenio_id", 0);
+
+    const { data, error } = await q;
+    if (error) throw error;
+    all.push(...((data ?? []) as LabProducaoRow[]));
+    if (!data || data.length < pageSize) break;
+  }
+
+  return all;
+}
+
