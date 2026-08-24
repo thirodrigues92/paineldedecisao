@@ -417,7 +417,8 @@ function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2">
           <CardHeader><CardTitle>Particular vs. Convênio (receita)</CardTitle></CardHeader>
-          <CardContent className="h-72">
+          <CardContent>
+            <div className="h-72 w-full">
             {donut.every((d) => d.value === 0) ? <EmptyState /> : (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -437,7 +438,7 @@ function DashboardPage() {
                 </PieChart>
               </ResponsiveContainer>
             )}
-            
+            </div>
             {donut.find(d => d.name === "Particular")?.value! > 0 && (
               <div className="mt-8 pt-6 border-t border-border">
                 <p className="text-[10px] text-muted-foreground uppercase font-semibold mb-4 text-center">Formas de Pagamento (Particular)</p>
