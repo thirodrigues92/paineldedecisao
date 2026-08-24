@@ -417,7 +417,7 @@ function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2">
           <CardHeader><CardTitle>Particular vs. Convênio (receita)</CardTitle></CardHeader>
-          <CardContent className="h-72">
+          <CardContent>
             {donut.every((d) => d.value === 0) ? <EmptyState /> : (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
