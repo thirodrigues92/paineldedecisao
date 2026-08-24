@@ -65,6 +65,7 @@ function DashboardPage() {
   const [detalheOrigem, setDetalheOrigem] = useState<string | null>(null);
   const [itemAberto, setItemAberto] = useState<string | null>(null);
   const [detalheProfissional, setDetalheProfissional] = useState<string | null>(null);
+  const [detalheNovos, setDetalheNovos] = useState<boolean>(false);
 
   const diff = differenceInDays(f.to, f.from) + 1;
   const prevFrom = subDays(f.from, diff);
