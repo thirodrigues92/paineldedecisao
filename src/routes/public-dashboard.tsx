@@ -21,9 +21,12 @@ import {
 import { axisProps, gridProps, tooltipProps } from "@/lib/chart-theme";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LastSyncCard } from "@/components/LastSyncCard";
+import { categoriaServico } from "@/lib/service-categories";
 import { differenceInDays, subDays, eachDayOfInterval, format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { GlobalFilters } from "@/components/GlobalFilters";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+
 
 function PublicDashboardContent() {
   const f = useFilters();
