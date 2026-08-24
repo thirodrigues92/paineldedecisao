@@ -401,53 +401,100 @@ function DashboardPage() {
             {donut.find(d => d.name === "Particular")?.value! > 0 && (
               <div className="mt-4 pt-4 border-t border-border">
                 <p className="text-[10px] text-muted-foreground uppercase font-semibold mb-2">Formas de Pagamento (Particular)</p>
-                <div className="h-[250px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={Array.from(
-                        labRows
-                          .filter((r: any) => r.convenio_nome === "Particular")
-                          .reduce((acc, r) => {
-                            const f = (r.forma_pagamento as string) || "Não informado";
-                            acc.set(f, (acc.get(f) ?? 0) + Number(r.valor || 0));
-                            return acc;
-                          }, new Map<string, number>())
-                      )
-                        .sort((a, b) => b[1] - a[1])
-                        .map(([name, value]) => ({ name, value }))}
-                      layout="vertical"
-                      margin={{ top: 0, right: 30, left: 40, bottom: 0 }}
-                    >
-                      <XAxis type="number" hide />
-                      <YAxis 
-                        dataKey="name" 
-                        type="category" 
-                        width={90} 
-                        fontSize={11}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <Tooltip 
-                        cursor={{ fill: 'transparent' }}
-                        content={({ active, payload }) => {
-                          if (active && payload && payload.length) {
-                            return (
-                              <div className="rounded-lg border border-border bg-background p-2 shadow-sm text-[10px]">
-                                <div className="font-medium">{payload[0].payload.name}</div>
-                                <div className="font-bold text-primary">{brl(payload[0].value as number)}</div>
-                              </div>
-                            );
-                          }
-                          return null;
-                        }}
-                      />
-                      <Bar dataKey="value" radius={[0, 6, 6, 0]}>
-                        {Array.from({ length: 10 }).map((_, index) => (
-                          <Cell key={`cell-${index}`} fill={`var(--chart-${(index % 5) + 1})`} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
+                <div className="w-full">
+                  {(() => {
+                    const paymentData = Array.from(
+                      labRows
+                        .filter((r: any) => r.convenio_nome === "Particular")
+                        .reduce((acc, r) => {
+                          const raw = (r.forma_pagamento as string) || "Não informado";
+                          const category = raw.includes(",") ? "Múltiplas Formas" : raw;
+                          
+                          const cur = acc.get(category) ?? { value: 0, qtd: 0 };
+                          cur.value += Number(r.valor || 0);
+                          cur.qtd += 1;
+                          acc.set(category, cur);
+                          return acc;
+                        }, new Map<string, { value: number; qtd: number }>())
+                    )
+                      .sort((a, b) => b[1].value - a[1].value)
+                      .map(([name, d]) => ({ 
+                        name, 
+                        value: d.value, 
+                        qtd: d.qtd,
+                        percent: faturadoReal > 0 ? (d.value * 100) / faturadoReal : 0
+                      }));
+
+                    const containerHeight = Math.max(150, paymentData.length * 45 + 40);
+
+                    return (
+                      <div style={{ height: `${containerHeight}px` }} className="w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
+                            data={paymentData}
+                            layout="vertical"
+                            margin={{ top: 5, right: 80, left: 40, bottom: 5 }}
+                            barSize={25}
+                            barGap={10}
+                          >
+                            <XAxis type="number" hide />
+                            <YAxis 
+                              dataKey="name" 
+                              type="category" 
+                              width={120} 
+                              fontSize={11}
+                              axisLine={false}
+                              tickLine={false}
+                            />
+                            <Tooltip 
+                              cursor={{ fill: 'var(--muted)', opacity: 0.1 }}
+                              content={({ active, payload }) => {
+                                if (active && payload && payload.length) {
+                                  const d = payload[0].payload;
+                                  return (
+                                    <div className="rounded-lg border border-border bg-background p-3 shadow-md text-xs space-y-1">
+                                      <div className="font-bold border-b pb-1 mb-1">{d.name}</div>
+                                      <div className="flex justify-between gap-4">
+                                        <span className="text-muted-foreground">Valor Total:</span>
+                                        <span className="font-semibold text-primary">{brl(d.value)}</span>
+                                      </div>
+                                      <div className="flex justify-between gap-4">
+                                        <span className="text-muted-foreground">Transações:</span>
+                                        <span className="font-semibold">{num(d.qtd)}</span>
+                                      </div>
+                                      <div className="flex justify-between gap-4">
+                                        <span className="text-muted-foreground">Percentual:</span>
+                                        <span className="font-semibold">{pct(d.percent)}</span>
+                                      </div>
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              }}
+                            />
+                            <Bar 
+                              dataKey="value" 
+                              radius={[0, 4, 4, 0]}
+                              cursor="pointer"
+                              onClick={(d) => setDetalheOrigem(d.name === "Múltiplas Formas" ? "Particular" : d.name)} // Ajuste simples para o drilldown
+                            >
+                              {paymentData.map((_, index) => (
+                                <Cell key={`cell-${index}`} fill={`var(--chart-${(index % 5) + 1})`} className="hover:opacity-80 transition-opacity" />
+                              ))}
+                              <label dataKey="value" position="right" />
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+                        <div className="absolute top-0 right-0 h-full flex flex-col justify-around py-[30px] pointer-events-none">
+                          {paymentData.map((d, i) => (
+                            <div key={i} className="text-[10px] font-medium text-muted-foreground pr-2 text-right whitespace-nowrap" style={{ height: '45px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                              {brl(d.value)} · {pct(d.percent)}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             )}
