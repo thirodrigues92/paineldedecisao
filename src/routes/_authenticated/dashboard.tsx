@@ -19,6 +19,7 @@ import {
 import { axisProps, gridProps, tooltipProps } from "@/lib/chart-theme";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LastSyncCard } from "@/components/LastSyncCard";
+import { HojePanel } from "@/components/HojePanel";
 import { categoriaServico } from "@/lib/service-categories";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -371,6 +372,10 @@ function DashboardPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Visão Executiva</h1>
       </div>
+
+      <HojePanel />
+
+
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {kpis.map((k) => {

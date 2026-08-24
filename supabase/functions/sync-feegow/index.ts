@@ -437,6 +437,13 @@ async function syncAgendamentos(supabase: any, from: Date, to: Date) {
           notas: r.notas ?? r.observacoes ?? null,
           // Duração: Feegow devolve 0 na maioria dos slots → cai no default de 30 min.
           duracao_min: (() => { const d = Number(r.duracao ?? r.duration ?? 0); return d > 0 ? d : 30; })(),
+          // Tempo real de atendimento (quando a Feegow enviar): chegada/saída e permanência.
+          hora_inicio_real: r.hora_inicio ?? r.HoraInicio ?? r.hora_chegada ?? null,
+          hora_fim_real: r.hora_fim ?? r.HoraFim ?? r.hora_saida ?? null,
+          tempo_permanencia_min: (() => {
+            const t = Number(r.tempo_permanencia ?? r.TempoPermanencia ?? 0);
+            return Number.isFinite(t) && t > 0 ? Math.round(t) : null;
+          })(),
         });
       }
       {
