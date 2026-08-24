@@ -181,6 +181,17 @@ function DashboardPage() {
   }
   const conveniosBreakdown = Array.from(byConvenio.values()).filter((c) => c.valor > 0).sort((a, b) => b.valor - a.valor);
 
+  // Faturamento por Profissional (Médico)
+  const byProfissional = new Map<string, { nome: string; valor: number; qtd: number }>();
+  for (const r of labRows) {
+    const nome = (r.profissional_nome ?? "").trim() || "Não informado";
+    const cur = byProfissional.get(nome) ?? { nome, valor: 0, qtd: 0 };
+    cur.valor += Number(r.valor || 0);
+    cur.qtd += 1;
+    byProfissional.set(nome, cur);
+  }
+  const profissionaisBreakdown = Array.from(byProfissional.values()).filter((c) => c.valor > 0).sort((a, b) => b.valor - a.valor);
+
   // Faturamento por categoria (receitas)
   const byCategoria = new Map<string, { nome: string; valor: number; qtd: number }>();
   for (const r of labRows) {
