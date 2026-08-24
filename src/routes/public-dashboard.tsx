@@ -311,6 +311,8 @@ function PublicDashboardContent() {
                   nameKey="name" 
                   innerRadius={55} 
                   outerRadius={90}
+                  cursor="pointer"
+                  onClick={(d: any) => setDetalheOrigem(d?.name ?? null)}
                 >
                   {donut.map((_, i) => <Cell key={i} fill={i === 0 ? "var(--chart-1)" : "var(--chart-2)"} />)}
                 </Pie>
@@ -322,42 +324,185 @@ function PublicDashboardContent() {
         </Card>
         
         <Card>
-          <CardHeader><CardTitle>Resumo Rápido</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Volume total faturado</p>
-              <p className="text-2xl font-bold text-primary">{brl(faturadoReal)}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Pacientes atendidos</p>
-              <p className="text-2xl font-bold">{num(realizados)}</p>
-            </div>
+          <CardHeader><CardTitle>Resumo por Convênio</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            {query.isLoading ? <Skeleton className="h-40 w-full" /> : conveniosBreakdown.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Sem dados.</p>
+            ) : conveniosBreakdown.slice(0, 5).map((c) => (
+              <button
+                key={c.nome}
+                type="button"
+                onClick={() => setDetalheOrigem(c.nome)}
+                className="w-full rounded-lg border border-border p-3 text-left hover:bg-muted/50 transition-colors"
+              >
+                <div className="text-sm font-medium truncate" title={c.nome}>{c.nome}</div>
+                <div className="mt-1 flex items-baseline justify-between text-xs text-muted-foreground">
+                  <span className="text-base font-semibold text-foreground">{brl(c.valor)}</span>
+                  <span>{num(c.qtd)} lanç.</span>
+                </div>
+              </button>
+            ))}
           </CardContent>
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Especialidades por Faturamento</CardTitle>
-        </CardHeader>
-        <CardContent className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={topEsp} layout="vertical" margin={{ left: 8, right: 24 }}>
-              <CartesianGrid {...gridProps} />
-              <XAxis {...axisProps} type="number" tickFormatter={(v) => compactBrl(Number(v))} />
-              <YAxis {...axisProps} dataKey="nome" type="category" width={150} interval={0} />
-              <Tooltip 
-                {...tooltipProps}
-                formatter={(v: any) => [brl(Number(v)), "Faturado"]}
-              />
-              <Bar dataKey="valor" fill="var(--chart-4)" radius={[0, 6, 6, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
-      
-      <LastSyncCard />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Faturamento por Profissional</CardTitle>
+          </CardHeader>
+          <CardContent className="h-80">
+            {query.isLoading ? <Skeleton className="h-full w-full" /> : profissionaisBreakdown.length === 0 ? <p className="grid place-items-center h-full text-sm text-muted-foreground">Sem dados.</p> : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={profissionaisBreakdown.slice(0, 10)} layout="vertical" margin={{ left: 8, right: 24 }}>
+                  <CartesianGrid {...gridProps} />
+                  <XAxis {...axisProps} type="number" tickFormatter={(v) => compactBrl(Number(v))} />
+                  <YAxis {...axisProps} dataKey="nome" type="category" width={150} interval={0} />
+                  <Tooltip
+                    {...tooltipProps}
+                    formatter={(v: any) => [brl(Number(v)), "Faturado"]}
+                  />
+                  <Bar 
+                    dataKey="valor" 
+                    fill="var(--chart-3)" 
+                    radius={[0, 6, 6, 0]}
+                    cursor="pointer"
+                    onClick={(d: any) => setDetalheProfissional(d?.payload?.nome ?? null)}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader><CardTitle>Top Profissionais</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            {query.isLoading ? <Skeleton className="h-40 w-full" /> : profissionaisBreakdown.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Sem dados.</p>
+            ) : profissionaisBreakdown.slice(0, 5).map((p) => (
+              <button
+                key={p.nome}
+                type="button"
+                onClick={() => setDetalheProfissional(p.nome)}
+                className="w-full rounded-lg border border-border p-3 text-left hover:bg-muted/50 transition-colors"
+              >
+                <div className="text-sm font-medium truncate">{p.nome}</div>
+                <div className="mt-1 flex items-baseline justify-between text-xs text-muted-foreground">
+                  <span className="text-base font-semibold text-foreground">{brl(p.valor)}</span>
+                  <span>{num(p.qtd)} atend.</span>
+                </div>
+              </button>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Especialidades por Faturamento</CardTitle>
+          </CardHeader>
+          <CardContent className="h-80">
+            {query.isLoading ? <Skeleton className="h-full w-full" /> : topEsp.length === 0 ? <p className="grid place-items-center h-full text-sm text-muted-foreground">Sem dados.</p> : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={topEsp} layout="vertical" margin={{ left: 8, right: 24 }}>
+                  <CartesianGrid {...gridProps} />
+                  <XAxis {...axisProps} type="number" tickFormatter={(v) => compactBrl(Number(v))} />
+                  <YAxis {...axisProps} dataKey="nome" type="category" width={150} interval={0} />
+                  <Tooltip 
+                    {...tooltipProps}
+                    formatter={(v: any, _n: any, p: any) => [
+                      `${brl(Number(v))} · ${num(p?.payload?.total ?? 0)} atend.`, 
+                      "Faturado"
+                    ]}
+                  />
+                  <Bar 
+                    dataKey="valor" 
+                    fill="var(--chart-4)" 
+                    radius={[0, 6, 6, 0]}
+                    cursor="pointer"
+                    onClick={(d: any) => setDetalheEspecialidade(d?.payload?.nome ?? null)}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+        <LastSyncCard />
+      </div>
+
+      <Sheet open={detalhe !== null || detalheOrigem !== null || detalheProfissional !== null || detalheNovos || detalheEspecialidade !== null} onOpenChange={(o) => {
+        if (!o) {
+          setDetalhe(null);
+          setDetalheOrigem(null);
+          setDetalheProfissional(null);
+          setDetalheNovos(false);
+          setDetalheEspecialidade(null);
+        }
+      }}>
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>{detalheNovos ? "Pacientes Novos" : (detalheEspecialidade || detalheProfissional || detalheOrigem || detalhe || "")}</SheetTitle>
+            <SheetDescription>
+              {activeBucket
+                ? `${brl(activeBucket.valor)} · ${num(activeBucket.qtd)} lançamentos · ${num(detalheItens.length)} itens distintos`
+                : "Sem itens."}
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-4 space-y-2">
+            {detalheItens.map((it: any) => {
+              const aberto = itemAberto === it.nome;
+              return (
+                <div key={it.nome} className="rounded-lg border border-border p-3">
+                  <button
+                    type="button"
+                    className="w-full text-left"
+                    onClick={() => setItemAberto(aberto ? null : it.nome)}
+                  >
+                    <div className="text-sm font-medium break-words">{it.nome}</div>
+                    <div className="mt-1 flex items-baseline justify-between text-xs text-muted-foreground">
+                      <span className="text-sm font-semibold text-foreground">{brl(it.valor)}</span>
+                      <span>{num(it.qtd)} lanç. · ticket {brl(it.qtd > 0 ? it.valor / it.qtd : 0)}</span>
+                    </div>
+                    <div className="mt-1 text-[11px] text-primary">
+                      {aberto ? "Ocultar lançamentos" : "Ver cada lançamento"}
+                    </div>
+                  </button>
+
+                  {aberto && (
+                    <div className="mt-2 space-y-1 border-t border-border pt-2">
+                      {[...it.lancamentos]
+                        .sort((a, b) => (b.data ?? "").localeCompare(a.data ?? ""))
+                        .map((l, idx) => (
+                          <div key={idx} className="flex items-baseline justify-between gap-2 text-xs">
+                            <div className="min-w-0">
+                              <div className="truncate text-foreground" title={l.pacienteNome ?? ""}>
+                                {l.pacienteNome
+                                  ?? (l.pacienteId ? `Paciente #${l.pacienteId}` : "Paciente não vinculado")}
+                              </div>
+                              <div className="text-muted-foreground">
+                                {l.data ? new Date(`${l.data}T12:00:00`).toLocaleDateString("pt-BR") : "Sem data"}
+                              </div>
+                              <div className="truncate text-muted-foreground" title={l.categoria ?? ""}>
+                                {(l.categoria ?? "Sem categoria")} · {l.convenio ? "Convênio" : "Particular"}
+                                {l.status ? ` · ${l.status}` : ""}
+                                {l.profissionalNome ? ` · ${l.profissionalNome}` : ""}
+                              </div>
+                            </div>
+                            <span className="shrink-0 font-medium text-foreground">{brl(l.valor)}</span>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
+
   );
 }
 
