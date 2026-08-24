@@ -436,7 +436,7 @@ function DashboardPage() {
                   <Legend wrapperStyle={{ fontSize: 12, color: "var(--muted-foreground)" }} />
                 </PieChart>
               </ResponsiveContainer>
-            </div>
+            )}
             
             {donut.find(d => d.name === "Particular")?.value! > 0 && (
               <div className="mt-8 pt-6 border-t border-border">
