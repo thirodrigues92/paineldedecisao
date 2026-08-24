@@ -1,34 +1,37 @@
-# Plan - Drill-down Enhancements for Dashboard
+# Plano — Mapa de calor regional em duas camadas
 
-The objective is to implement a detailed drill-down for the "Formas de Pagamento (Particular)" chart. When a user clicks on a payment method bar (like "Cartão de Crédito"), the application will open a side panel (`Sheet`) showing the grouped procedures for that specific payment method. Clicking on a procedure will then reveal the individual transactions (patients).
+## Objetivo
+Transformar a visão geográfica em um mapa regional baseado em dados reais, com alternância entre quantidade de pacientes e faturamento, detalhamento específico de Rio Verde e drill-down para pacientes/atendimentos.
 
-## Proposed Changes
+## Entregas
+1. **Normalização de localidades**
+   - Criar uma origem normalizada para cidade, removendo acentos e consolidando grafias equivalentes.
+   - Aplicar de-para para casos conhecidos, incluindo Acreúna e Santa Helena de Goiás.
+   - Tratar cidade e bairro ausentes como “Não informado”, mantendo-os visíveis nas contagens.
 
-### 1. State Management
-- Add `detalhePagamento` state in both `src/routes/_authenticated/dashboard.tsx` and `src/routes/public-dashboard.tsx` to track the selected payment method for drill-down.
+2. **Camada 1 — mapa por cidade**
+   - Usar pacientes com coordenadas e calcular latitude/longitude médias por cidade.
+   - Exibir uma bolha por cidade, com tamanho/intensidade proporcional à métrica selecionada.
+   - Adicionar toggle entre “Por quantidade de pacientes” e “Por faturamento”.
+   - Calcular faturamento por paciente a partir de `lab_producao_feegow`, respeitando o período global e os filtros atuais.
 
-### 2. Logic Update
-- Modify the `filteredRows` logic within the `byOrigem` bucket generation to support filtering by `forma_pagamento`.
-- Ensure "Múltiplas Formas" logic is consistent (it will show all "Particular" transactions that have multiple payment methods concatenated).
+3. **Camada 2 — Rio Verde**
+   - Exibir ranking de bairros de Rio Verde com pacientes e faturamento.
+   - Permitir alternância da mesma métrica da camada 1.
+   - Manter “Não informado” como categoria própria.
 
-### 3. UI Components
-- Update the `Bar` click handler in the "Formas de Pagamento" chart to set `detalhePagamento`.
-- Update the `Sheet` component to render when `detalhePagamento` is set, showing the correct procedures and their drill-down into transactions.
+4. **Drill-down unificado**
+   - Ao selecionar cidade ou bairro, abrir o drawer padrão do dashboard.
+   - Listar Data, Paciente, Procedimento, Profissional, Valor e Situação dos atendimentos no período filtrado.
+   - Garantir que a seleção da região preserve os filtros globais existentes.
 
-### 4. Code Consistency
-- Apply identical logic to both the administrative (`_authenticated/dashboard.tsx`) and public (`public-dashboard.tsx`) dashboards.
+5. **Validação**
+   - Conferir a origem e o período dos números exibidos.
+   - Verificar estados vazios, localidades sem coordenadas e dados faltantes.
+   - Validar a rota em desktop e mobile, sem alterar o restante do dashboard.
 
-## Detailed Implementation Steps
-
-### Step 1: `src/routes/_authenticated/dashboard.tsx`
-- Add `const [detalhePagamento, setDetalhePagamento] = useState<string | null>(null);`
-- Update `byOrigem` calculation to include `detalhePagamento` in its dependencies and filtering logic.
-- Update the `onClick` handler of the `Bar` in the "Formas de Pagamento" chart.
-- Ensure the `Sheet` for `activeBucket` correctly identifies and displays data when `detalhePagamento` is active.
-- Close `detalhePagamento` when the sheet is dismissed.
-
-### Step 2: `src/routes/public-dashboard.tsx`
-- Mirror the changes from Step 1.
-
-### Step 3: `src/lib/dashboard-data.ts` (if needed)
-- No changes expected here as `fetchLabProducaoRows` already returns `forma_pagamento`.
+## Detalhes técnicos
+- Reaproveitar o contexto de filtros e os componentes visuais já existentes.
+- Centralizar a normalização em função/utilitário compartilhado, evitando agregações divergentes entre mapa e ranking.
+- Expandir as consultas e tipos de dados necessários sem modificar tabelas protegidas/geradas automaticamente.
+- Preservar a rota TanStack Start existente e adicionar metadata própria à rota do mapa, se necessário.
