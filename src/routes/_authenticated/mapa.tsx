@@ -3,7 +3,7 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useFilters } from "@/lib/filters-context";
-import { dashboardQueryKey, fetchDashboardAppointments } from "@/lib/dashboard-data";
+import { dashboardQueryKey, fetchDashboardAppointments, fetchLabProducaoRows } from "@/lib/dashboard-data";
 import {
   fetchPacientesGeo, fetchUnidadesGeo, distanceKm, idadeDe, imcDe,
   type PacienteGeo,
