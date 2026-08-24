@@ -595,6 +595,7 @@ function DashboardPage() {
                               <div className="truncate text-muted-foreground" title={l.categoria ?? ""}>
                                 {(l.categoria ?? "Sem categoria")} · {l.convenio ? "Convênio" : "Particular"}
                                 {l.status ? ` · ${l.status}` : ""}
+                                {l.profissionalNome ? ` · ${l.profissionalNome}` : ""}
                               </div>
                             </div>
                             <span className="shrink-0 font-medium text-foreground">{brl(l.valor)}</span>
