@@ -336,10 +336,8 @@ function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-baseline justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Visão Executiva</h1>
-        </div>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold tracking-tight">Visão Executiva</h1>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
