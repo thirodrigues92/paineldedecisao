@@ -34,6 +34,7 @@ const navAnalytics = [
 const navFooter = [
   { title: "Auditoria de Dados", url: "/auditoria", icon: ShieldCheck },
   { title: "Configurações", url: "/config", icon: Settings },
+  { title: "Link Admin (Visão Executiva)", url: "/public-login", icon: LayoutDashboard },
 ];
 
 const navLab = [
