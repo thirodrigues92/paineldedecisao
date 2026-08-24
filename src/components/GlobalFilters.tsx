@@ -1,22 +1,13 @@
 import { useEffect, useState } from "react";
-import { useFilters, type PresetPeriod } from "@/lib/filters-context";
+import { useFilters } from "@/lib/filters-context";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, X, Calendar as CalendarIcon } from "lucide-react";
-import { DatePickerWithRange } from "@/components/ui/date-picker-with-range";
-
-const presets: { value: PresetPeriod; label: string }[] = [
-  { value: "today", label: "Hoje" },
-  { value: "7d", label: "7 dias" },
-  { value: "30d", label: "30 dias" },
-  { value: "month", label: "Mês atual" },
-  { value: "year", label: "Ano atual" },
-  { value: "custom", label: "Personalizado" },
-];
+import { RefreshCw, X } from "lucide-react";
+import { DashboardDateFilter } from "./DashboardDateFilter";
 
 export function GlobalFilters() {
   const f = useFilters();
@@ -46,21 +37,10 @@ export function GlobalFilters() {
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-2 border-b border-border bg-card/40 px-4 py-3">
-      <Select value={f.preset} onValueChange={(v) => f.setPreset(v as PresetPeriod)}>
-        <SelectTrigger className="w-[140px] h-9"><SelectValue /></SelectTrigger>
-        <SelectContent>
-          {presets.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
-        </SelectContent>
-      </Select>
+    <div className="flex flex-wrap items-center gap-3 border-b border-border bg-card/40 px-4 py-3">
+      <DashboardDateFilter />
 
-      {f.preset === "custom" && (
-        <DatePickerWithRange
-          from={f.from}
-          to={f.to}
-          onRangeChange={f.setRange}
-        />
-      )}
+      <div className="h-8 w-px bg-border mx-1 hidden sm:block" />
 
       <MultiPicker
         label="Unidade" all={unidades} selected={f.unidadeIds} onChange={f.setUnidades}
@@ -73,7 +53,7 @@ export function GlobalFilters() {
       />
 
       <Select value={f.convenioTipo} onValueChange={(v) => f.setConvenioTipo(v as "todos" | "particular" | "convenio")}>
-        <SelectTrigger className="w-[140px] h-9"><SelectValue /></SelectTrigger>
+        <SelectTrigger className="w-[130px] h-9"><SelectValue /></SelectTrigger>
         <SelectContent>
           <SelectItem value="todos">Todos</SelectItem>
           <SelectItem value="particular">Particular</SelectItem>
@@ -90,6 +70,7 @@ export function GlobalFilters() {
     </div>
   );
 }
+
 
 function MultiPicker({
   label, all, selected, onChange,

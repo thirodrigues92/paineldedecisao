@@ -194,9 +194,7 @@ function DashboardPage() {
       <div className="flex items-baseline justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Visão Executiva</h1>
-          <p className="text-sm text-muted-foreground">
-            {f.from.toLocaleDateString("pt-BR")} — {f.to.toLocaleDateString("pt-BR")}
-          </p>
+
         </div>
       </div>
 
