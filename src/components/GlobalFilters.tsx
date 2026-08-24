@@ -82,7 +82,7 @@ function MultiPicker({
 }) {
   const value = selected.length === 0 ? "__all__" : String(selected[0]);
   const displayValue = selected.length === 0
-    ? `Todas as ${label.toLowerCase()}s`
+    ? `Todas as ${label.toLowerCase()}is`
     : selected.length === 1
       ? all.find((a) => a.id === selected[0])?.nome ?? label
       : `${selected.length} ${label.toLowerCase()}s`;
