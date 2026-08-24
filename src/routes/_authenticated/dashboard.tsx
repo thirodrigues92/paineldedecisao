@@ -376,12 +376,16 @@ function DashboardPage() {
         {kpis.map((k) => {
           const TrendIcon = k.trend && k.trend > 0 ? ArrowUpRight : ArrowDownRight;
           const isGood = k.invertTrend ? (k.trend ?? 0) < 0 : (k.trend ?? 0) > 0;
+          const isClickable = k.label === "Pacientes novos" || k.label === "Taxa de no-show";
           
           return (
             <Card 
               key={k.label} 
-              className={cn(k.label === "Pacientes novos" && "cursor-pointer hover:bg-muted/50 transition-colors ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2")}
-              onClick={() => k.label === "Pacientes novos" && setDetalheNovos(true)}
+              className={cn(isClickable && "cursor-pointer hover:bg-muted/50 transition-colors ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2")}
+              onClick={() => {
+                if (k.label === "Pacientes novos") setDetalheNovos(true);
+                if (k.label === "Taxa de no-show") setDetalheNoShow(true);
+              }}
             >
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 text-muted-foreground text-xs">
