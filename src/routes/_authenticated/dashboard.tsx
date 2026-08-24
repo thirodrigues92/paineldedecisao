@@ -289,13 +289,15 @@ function DashboardPage() {
         status: r.situacao || null,
         categoria: r.grupo_nome || null,
         convenio: r.convenio_nome !== "Particular",
+        profissionalNome: r.profissional_nome,
+        isNovo: r.is_novo_paciente,
       });
       bucket.itens.set(itemNome, it);
     }
     byOrigem.set(activeLabel, bucket);
   }
 
-  const activeBucket = detalheOrigem ? byOrigem.get(detalheOrigem) : (detalheProfissional ? byOrigem.get(detalheProfissional) : (detalhe ? byServico.get(detalhe) : null));
+  const activeBucket = detalheNovos ? byOrigem.get("Pacientes Novos") : (detalheOrigem ? byOrigem.get(detalheOrigem) : (detalheProfissional ? byOrigem.get(detalheProfissional) : (detalhe ? byServico.get(detalhe) : null)));
   const detalheItens: ItemServico[] = activeBucket
     ? Array.from(activeBucket.itens.values()).sort((a, b) => b.valor - a.valor).slice(0, 80)
     : [];
