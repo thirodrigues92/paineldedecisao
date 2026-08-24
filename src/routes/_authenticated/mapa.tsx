@@ -131,7 +131,7 @@ function MapaPage() {
         : null;
       return {
         key, bairro: e.bairro, cidade: e.cidade, lat: e.lat, lng: e.lng,
-        pacientes: e.pacientes.size, demanda: e.demanda,
+        pacientes: e.pacientes.size, demanda: e.demanda, faturamento: 0,
         topEspecialidade: top, distanciaKm: dist,
         noShowPct: e.demanda ? (e.noShow / e.demanda) * 100 : 0,
       };
