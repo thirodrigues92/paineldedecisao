@@ -51,6 +51,7 @@ type LancamentoDetalhe = {
   pacienteId: number | null;
   pacienteNome: string | null;
   profissionalNome?: string | null;
+  formaPagamento?: string | null;
   isNovo?: boolean;
 };
 type ItemServico = { nome: string; valor: number; qtd: number; lancamentos: LancamentoDetalhe[] };
