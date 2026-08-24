@@ -54,9 +54,12 @@ function AuthPage() {
   return (
     <div className="min-h-screen grid place-items-center px-4 bg-background">
       <Card className="w-full max-w-md">
-        <CardHeader>
+        <CardHeader className="text-center">
+          <div className="mx-auto mb-4 h-16 w-16 rounded-lg overflow-hidden bg-white shadow-sm border p-2">
+            <img src="/logo.png" alt="Logo" className="h-full w-full object-contain" />
+          </div>
           <CardTitle>
-            <h1 className="text-2xl">Painel de Decisão Clínica</h1>
+            <h1 className="text-2xl font-bold text-primary">Painel de Decisão Clínica</h1>
           </CardTitle>
           <p className="text-sm text-muted-foreground">
             {mode === "signin" ? "Entre com seu e-mail e senha." : "Crie sua conta de gestor."}

@@ -70,12 +70,12 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border px-3 py-4">
         <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-md bg-primary/20 grid place-items-center">
-            <span className="text-primary font-bold">P</span>
+          <div className="h-8 w-8 rounded-md overflow-hidden bg-white grid place-items-center">
+            <img src="/logo.png" alt="Logo" className="h-full w-full object-contain p-1" />
           </div>
           <div className="min-w-0">
-            <div className="text-sm font-semibold truncate">Painel de Decisão</div>
-            <div className="text-[11px] text-muted-foreground truncate">Clínica</div>
+            <div className="text-sm font-semibold truncate text-sidebar-foreground">Painel de Decisão</div>
+            <div className="text-[11px] text-muted-foreground truncate italic">Gestão Inteligente</div>
           </div>
         </div>
       </SidebarHeader>
