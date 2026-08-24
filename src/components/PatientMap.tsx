@@ -12,9 +12,12 @@ export type BairroPoint = {
   lng: number;
   pacientes: number;
   demanda: number;
+  faturamento: number;
   topEspecialidade: string;
   distanciaKm: number | null;
 };
+
+export type CityPoint = BairroPoint;
 
 export type UnidadePoint = { nome: string; lat: number; lng: number };
 
@@ -54,6 +57,7 @@ const unitIcon = L.divIcon({
 export default function PatientMap({
   mode,
   bairros,
+  metric,
   unidades,
   showUnits,
   selectedKey,
@@ -61,17 +65,18 @@ export default function PatientMap({
 }: {
   mode: "heat" | "bubbles";
   bairros: BairroPoint[];
+  metric: "pacientes" | "faturamento";
   unidades: UnidadePoint[];
   showUnits: boolean;
   selectedKey: string | null;
   onSelect: (key: string) => void;
 }) {
   const heatPoints = useMemo<Array<[number, number, number]>>(() => {
-    const max = Math.max(1, ...bairros.map((b) => b.pacientes));
-    return bairros.map((b) => [b.lat, b.lng, b.pacientes / max]);
-  }, [bairros]);
+    const max = Math.max(1, ...bairros.map((b) => metric === "faturamento" ? b.faturamento : b.pacientes));
+    return bairros.map((b) => [b.lat, b.lng, (metric === "faturamento" ? b.faturamento : b.pacientes) / max]);
+  }, [bairros, metric]);
 
-  const maxPac = Math.max(1, ...bairros.map((b) => b.pacientes));
+  const maxPac = Math.max(1, ...bairros.map((b) => metric === "faturamento" ? b.faturamento : b.pacientes));
   const center: [number, number] = bairros.length
     ? [bairros[0].lat, bairros[0].lng]
     : unidades.length ? [unidades[0].lat, unidades[0].lng] : [-17.79, -50.92];
@@ -93,7 +98,7 @@ export default function PatientMap({
         <CircleMarker
           key={b.key}
           center={[b.lat, b.lng]}
-          radius={6 + Math.sqrt(b.pacientes / maxPac) * 24}
+           radius={6 + Math.sqrt((metric === "faturamento" ? b.faturamento : b.pacientes) / maxPac) * 24}
           pathOptions={{
             color: selectedKey === b.key ? "#f59e0b" : "#22d3ee",
             weight: selectedKey === b.key ? 3 : 1,
@@ -105,7 +110,8 @@ export default function PatientMap({
           <Tooltip direction="top" opacity={1}>
             <div className="text-xs">
               <div className="font-semibold">{b.bairro}</div>
-              <div>{b.pacientes} pacientes · {b.demanda} agendamentos</div>
+             <div>{b.pacientes} pacientes · {b.demanda} agendamentos</div>
+               <div>Faturamento: R$ {b.faturamento.toFixed(2)}</div>
               <div>Top: {b.topEspecialidade}</div>
               {b.distanciaKm != null && <div>{b.distanciaKm.toFixed(1)} km da unidade</div>}
             </div>

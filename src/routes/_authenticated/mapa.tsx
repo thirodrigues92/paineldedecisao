@@ -3,9 +3,9 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useFilters } from "@/lib/filters-context";
-import { dashboardQueryKey, fetchDashboardAppointments } from "@/lib/dashboard-data";
+import { dashboardQueryKey, fetchDashboardAppointments, fetchLabProducaoRows } from "@/lib/dashboard-data";
 import {
-  fetchPacientesGeo, fetchUnidadesGeo, distanceKm, idadeDe, imcDe,
+  fetchPacientesGeo, fetchUnidadesGeo, distanceKm, idadeDe, imcDe, normalizarCidade,
   type PacienteGeo,
 } from "@/lib/geo-data";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,6 +38,7 @@ export const Route = createFileRoute("/_authenticated/mapa")({
 function MapaPage() {
   const f = useFilters();
   const [mode, setMode] = useState<"heat" | "bubbles">("heat");
+  const [metric, setMetric] = useState<"pacientes" | "faturamento">("pacientes");
   const [especialidade, setEspecialidade] = useState<string>("__all__");
   const [faixa, setFaixa] = useState<[number, number]>([0, 100]);
   const [convenio, setConvenio] = useState<"todos" | "convenio" | "particular">("todos");
@@ -51,10 +52,11 @@ function MapaPage() {
     queryKey: dashboardQueryKey("mapa-ags", f),
     queryFn: () => fetchDashboardAppointments(f, 30_000),
   });
+  const producao = useQuery({ queryKey: dashboardQueryKey("mapa-producao", f), queryFn: () => fetchLabProducaoRows(f, 30_000) });
   const pacientes = useQuery({ queryKey: ["mapa-pacientes"], queryFn: () => fetchPacientesGeo() });
   const unidades = useQuery({ queryKey: ["mapa-unidades"], queryFn: fetchUnidadesGeo });
 
-  const loading = ags.isLoading || pacientes.isLoading;
+  const loading = ags.isLoading || pacientes.isLoading || producao.isLoading;
 
   const temMetricas = useMemo(
     () => (pacientes.data ?? []).some((p) => imcDe(p.metricas) != null),
@@ -92,7 +94,7 @@ function MapaPage() {
 
     type Acc = {
       bairro: string; cidade: string; lat: number; lng: number;
-      pacientes: Set<number>; demanda: number; noShow: number;
+      pacientes: Set<number>; demanda: number; faturamento: number; noShow: number;
       esp: Map<string, number>;
     };
     const acc = new Map<string, Acc>();
@@ -104,21 +106,24 @@ function MapaPage() {
       const pid = (a as any).paciente_id as number | null;
       if (!pid) continue;
       const p = pacMap.get(pid);
-      if (!p || !p.bairro || !p.cidade || !passaPerfil(p)) continue;
+      if (!p || !passaPerfil(p)) continue;
       contados.add(pid);
       if (p.latitude == null || p.longitude == null) { semCoord++; continue; }
-      const key = `${p.bairro}|${p.cidade}`;
+      const cidade = normalizarCidade(p.cidade);
+      const bairro = p.bairro?.trim() || "Não informado";
+      const key = `${bairro}|${cidade}`;
       let e = acc.get(key);
       if (!e) {
         e = {
-          bairro: p.bairro, cidade: p.cidade,
+          bairro, cidade,
           lat: Number(p.latitude), lng: Number(p.longitude),
-          pacientes: new Set(), demanda: 0, noShow: 0, esp: new Map(),
+          pacientes: new Set(), demanda: 0, faturamento: 0, noShow: 0, esp: new Map(),
         };
         acc.set(key, e);
       }
       e.pacientes.add(pid);
       e.demanda += 1;
+      e.faturamento += (producao.data ?? []).filter((r) => r.paciente_id === pid).reduce((sum, r) => sum + Number(r.valor || 0), 0);
       if (a.status_agendamento?.categoria === "no_show") e.noShow += 1;
       const nome = a.especialidades?.nome ?? "Sem especialidade";
       e.esp.set(nome, (e.esp.get(nome) ?? 0) + 1);
@@ -131,14 +136,14 @@ function MapaPage() {
         : null;
       return {
         key, bairro: e.bairro, cidade: e.cidade, lat: e.lat, lng: e.lng,
-        pacientes: e.pacientes.size, demanda: e.demanda,
+        pacientes: e.pacientes.size, demanda: e.demanda, faturamento: e.faturamento,
         topEspecialidade: top, distanciaKm: dist,
         noShowPct: e.demanda ? (e.noShow / e.demanda) * 100 : 0,
       };
-    }).sort((a, b) => b.pacientes - a.pacientes);
+    }).sort((a, b) => (metric === "faturamento" ? b.faturamento - a.faturamento : b.pacientes - a.pacientes));
 
     return { bairros: list, semGeo: semCoord, totalPacientes: contados.size };
-  }, [ags.data, pacientes.data, especialidade, faixa, convenio, somenteObesos, unidadePoints]);
+  }, [ags.data, pacientes.data, producao.data, especialidade, faixa, convenio, somenteObesos, unidadePoints]);
 
   const insights = useMemo(() => {
     const out: string[] = [];
@@ -177,16 +182,26 @@ function MapaPage() {
       <div>
         <h1 className="text-2xl font-semibold">Mapa de Pacientes</h1>
         <p className="text-sm text-muted-foreground">
-          Distribuição geográfica da demanda — apenas dados agregados por bairro (sem identificação de pacientes).
-        </p>
+          Distribuição geográfica por cidade e bairro, com faturamento real do período selecionado.
+         </p>
       </div>
 
       <Card>
         <CardContent className="flex flex-wrap items-end gap-4 p-4">
           <div className="flex items-center gap-2">
-            <Label htmlFor="modo" className="text-xs text-muted-foreground">Bolhas por bairro</Label>
+            <Label htmlFor="modo" className="text-xs text-muted-foreground">Bolhas</Label>
             <Switch id="modo" checked={mode === "heat"} onCheckedChange={(v) => setMode(v ? "heat" : "bubbles")} />
             <Label htmlFor="modo" className="text-xs text-muted-foreground">Heatmap</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <Label htmlFor="metrica" className="text-xs text-muted-foreground">Métrica</Label>
+            <Select value={metric} onValueChange={(v) => setMetric(v as typeof metric)}>
+              <SelectTrigger id="metrica" className="h-9 w-[190px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pacientes">Por quantidade de pacientes</SelectItem>
+                <SelectItem value="faturamento">Por faturamento</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="w-[220px]">
@@ -256,8 +271,9 @@ function MapaPage() {
             ) : (
               <Suspense fallback={<Skeleton className="h-[520px] w-full" />}>
                 <PatientMap
-                  mode={mode}
-                  bairros={bairros}
+                   mode={mode}
+                   bairros={bairros}
+                   metric={metric}
                   unidades={unidadePoints}
                   showUnits={showUnits}
                   selectedKey={selected}
@@ -269,9 +285,9 @@ function MapaPage() {
         </Card>
 
         <Card className="max-h-[560px] overflow-auto">
-          <CardHeader><CardTitle className="text-base">Top 10 bairros</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-base">Rio Verde — bairros por {metric === "faturamento" ? "faturamento" : "pacientes"}</CardTitle></CardHeader>
           <CardContent className="space-y-1 p-3">
-            {loading ? <Skeleton className="h-64 w-full" /> : bairros.slice(0, 10).map((b, i) => (
+            {loading ? <Skeleton className="h-64 w-full" /> : bairros.filter((b) => b.cidade === "Rio Verde").sort((a, b) => (metric === "faturamento" ? b.faturamento - a.faturamento : b.pacientes - a.pacientes)).slice(0, 10).map((b, i) => (
               <button
                 key={b.key}
                 onClick={() => setSelected(b.key)}
@@ -281,8 +297,8 @@ function MapaPage() {
               >
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-muted-foreground w-4">{i + 1}</span>
-                  <span className="text-sm font-medium flex-1 truncate">{b.bairro}</span>
-                  <Badge variant="secondary">{b.pacientes}</Badge>
+                   <span className="text-sm font-medium flex-1 truncate">{b.bairro}</span>
+                   <Badge variant="secondary">{metric === "faturamento" ? `R$ ${b.faturamento.toFixed(2)}` : b.pacientes}</Badge>
                 </div>
                 <div className="pl-6 text-xs text-muted-foreground truncate">
                   {b.topEspecialidade}
