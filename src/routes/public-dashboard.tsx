@@ -327,6 +327,7 @@ function PublicDashboardContent() {
         <Card className="lg:col-span-2">
           <CardHeader><CardTitle>Particular vs. Convênio (receita)</CardTitle></CardHeader>
           <CardContent>
+            <div className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie 
@@ -344,6 +345,7 @@ function PublicDashboardContent() {
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
+            </div>
             {donut.find((d: any) => d.name === "Particular")?.value! > 0 && (
               <div className="mt-8 pt-6 border-t border-border">
                 <p className="text-[10px] text-muted-foreground uppercase font-semibold mb-4 text-center">Formas de Pagamento (Particular)</p>
