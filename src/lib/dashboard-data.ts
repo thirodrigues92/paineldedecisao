@@ -281,8 +281,9 @@ export async function fetchLabProducaoRows(f: DashboardFilters, limit = 30_000):
     if (f.convenioTipo === "particular") {
       q = q.or("convenio_id.is.null,convenio_id.eq.0,convenio_nome.eq.Particular");
     } else if (f.convenioTipo === "convenio") {
-      q = q.and(`convenio_id.gt.0,convenio_nome.neq.Particular`);
+      q = q.not("convenio_nome", "eq", "Particular").not("convenio_id", "is", null).not("convenio_id", "eq", 0);
     }
+
 
     const { data, error } = await q;
     if (error) throw error;
