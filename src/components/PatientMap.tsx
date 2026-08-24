@@ -12,9 +12,12 @@ export type BairroPoint = {
   lng: number;
   pacientes: number;
   demanda: number;
+  faturamento: number;
   topEspecialidade: string;
   distanciaKm: number | null;
 };
+
+export type CityPoint = BairroPoint;
 
 export type UnidadePoint = { nome: string; lat: number; lng: number };
 
