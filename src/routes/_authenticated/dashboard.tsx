@@ -318,24 +318,25 @@ function DashboardPage() {
   if (detalheNoShow) {
     const bucket: ServicoBucket = { nome: "Pacientes No-show", valor: 0, qtd: 0, itens: new Map<string, ItemServico>() };
     const noShowRows = rows.filter((r: any) => r.status_agendamento?.categoria === "no_show");
+    const pacienteNomes = query.data?.pacienteNomes ?? new Map<number, string>();
     
     for (const r of noShowRows) {
       bucket.qtd += 1;
-      const itemNome = (r.procedimento_nome ?? "").trim() || "Sem descrição";
+      const itemNome = r.procedimentos?.nome || "Sem descrição";
       const it: ItemServico = bucket.itens.get(itemNome) ?? { nome: itemNome, valor: 0, qtd: 0, lancamentos: [] };
       it.qtd += 1;
       it.lancamentos.push({
         pacienteId: r.paciente_id ? Number(r.paciente_id) : null,
-        pacienteNome: r.paciente_nome || null,
+        pacienteNome: (r.paciente_id ? pacienteNomes.get(r.paciente_id) : null) || "Paciente não vinculado",
         nome: itemNome,
         valor: 0,
         data: r.data,
-        status: r.status_agendamento?.nome || "No-show",
-        categoria: r.especialidade_nome || null,
-        convenio: r.convenio_nome !== "Particular",
-        profissionalNome: r.profissional_nome,
+        status: r.status_agendamento?.descricao || "No-show",
+        categoria: r.especialidades?.nome || null,
+        convenio: r.convenio_id !== null && r.convenio_id !== 0,
+        profissionalNome: r.profissionais?.nome || null,
         formaPagamento: null,
-        isNovo: r.primeiro_agendamento,
+        isNovo: !!r.primeiro_agendamento,
       });
       bucket.itens.set(itemNome, it);
     }
