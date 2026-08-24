@@ -88,7 +88,7 @@ function LabConciliacao() {
 
   const { data: detailsData, isLoading: isLoadingDetails } = useQuery({
     queryKey: ['lab-conciliacao-details', selectedAgendamento],
-    queryFn: () => selectedAgendamento ? getLabFaturamentoItems({ data: { agendamento_id: selectedAgendamento } }) : Promise.resolve([]),
+    queryFn: () => selectedAgendamento ? getLabFaturamentoItems({ data: { agendamento_id: selectedAgendamento } } as any) : Promise.resolve([]),
     enabled: !!selectedAgendamento
   });
 
