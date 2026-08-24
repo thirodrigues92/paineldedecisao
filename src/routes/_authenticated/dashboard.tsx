@@ -481,7 +481,6 @@ function DashboardPage() {
                               {paymentData.map((_, index) => (
                                 <Cell key={`cell-${index}`} fill={`var(--chart-${(index % 5) + 1})`} className="hover:opacity-80 transition-opacity" />
                               ))}
-                              <label dataKey="value" position="right" />
                             </Bar>
                           </BarChart>
                         </ResponsiveContainer>
