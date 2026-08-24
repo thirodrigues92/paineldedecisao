@@ -38,6 +38,7 @@ export const Route = createFileRoute("/_authenticated/mapa")({
 function MapaPage() {
   const f = useFilters();
   const [mode, setMode] = useState<"heat" | "bubbles">("heat");
+  const [metric, setMetric] = useState<"pacientes" | "faturamento">("pacientes");
   const [especialidade, setEspecialidade] = useState<string>("__all__");
   const [faixa, setFaixa] = useState<[number, number]>([0, 100]);
   const [convenio, setConvenio] = useState<"todos" | "convenio" | "particular">("todos");
@@ -51,10 +52,11 @@ function MapaPage() {
     queryKey: dashboardQueryKey("mapa-ags", f),
     queryFn: () => fetchDashboardAppointments(f, 30_000),
   });
+  const producao = useQuery({ queryKey: dashboardQueryKey("mapa-producao", f), queryFn: () => fetchLabProducaoRows(f, 30_000) });
   const pacientes = useQuery({ queryKey: ["mapa-pacientes"], queryFn: () => fetchPacientesGeo() });
   const unidades = useQuery({ queryKey: ["mapa-unidades"], queryFn: fetchUnidadesGeo });
 
-  const loading = ags.isLoading || pacientes.isLoading;
+  const loading = ags.isLoading || pacientes.isLoading || producao.isLoading;
 
   const temMetricas = useMemo(
     () => (pacientes.data ?? []).some((p) => imcDe(p.metricas) != null),
@@ -92,7 +94,7 @@ function MapaPage() {
 
     type Acc = {
       bairro: string; cidade: string; lat: number; lng: number;
-      pacientes: Set<number>; demanda: number; noShow: number;
+      pacientes: Set<number>; demanda: number; faturamento: number; noShow: number;
       esp: Map<string, number>;
     };
     const acc = new Map<string, Acc>();
@@ -113,12 +115,13 @@ function MapaPage() {
         e = {
           bairro: p.bairro, cidade: p.cidade,
           lat: Number(p.latitude), lng: Number(p.longitude),
-          pacientes: new Set(), demanda: 0, noShow: 0, esp: new Map(),
+          pacientes: new Set(), demanda: 0, faturamento: 0, noShow: 0, esp: new Map(),
         };
         acc.set(key, e);
       }
       e.pacientes.add(pid);
       e.demanda += 1;
+      e.faturamento += (producao.data ?? []).filter((r) => r.paciente_id === pid).reduce((sum, r) => sum + Number(r.valor || 0), 0);
       if (a.status_agendamento?.categoria === "no_show") e.noShow += 1;
       const nome = a.especialidades?.nome ?? "Sem especialidade";
       e.esp.set(nome, (e.esp.get(nome) ?? 0) + 1);
@@ -131,14 +134,14 @@ function MapaPage() {
         : null;
       return {
         key, bairro: e.bairro, cidade: e.cidade, lat: e.lat, lng: e.lng,
-        pacientes: e.pacientes.size, demanda: e.demanda, faturamento: 0,
+        pacientes: e.pacientes.size, demanda: e.demanda, faturamento: e.faturamento,
         topEspecialidade: top, distanciaKm: dist,
         noShowPct: e.demanda ? (e.noShow / e.demanda) * 100 : 0,
       };
     }).sort((a, b) => b.pacientes - a.pacientes);
 
     return { bairros: list, semGeo: semCoord, totalPacientes: contados.size };
-  }, [ags.data, pacientes.data, especialidade, faixa, convenio, somenteObesos, unidadePoints]);
+  }, [ags.data, pacientes.data, producao.data, especialidade, faixa, convenio, somenteObesos, unidadePoints]);
 
   const insights = useMemo(() => {
     const out: string[] = [];
