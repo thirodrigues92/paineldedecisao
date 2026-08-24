@@ -51,6 +51,7 @@ type LancamentoDetalhe = {
   pacienteId: number | null;
   pacienteNome: string | null;
   profissionalNome?: string | null;
+  formaPagamento?: string | null;
   isNovo?: boolean;
 };
 type ItemServico = { nome: string; valor: number; qtd: number; lancamentos: LancamentoDetalhe[] };
@@ -248,6 +249,7 @@ function DashboardPage() {
       categoria: r.grupo_nome || null,
       convenio: r.convenio_nome !== "Particular",
       profissionalNome: r.profissional_nome,
+      formaPagamento: r.forma_pagamento,
       isNovo: r.is_novo_paciente,
     });
     
@@ -297,6 +299,7 @@ function DashboardPage() {
         categoria: r.grupo_nome || null,
         convenio: r.convenio_nome !== "Particular",
         profissionalNome: r.profissional_nome,
+        formaPagamento: r.forma_pagamento,
         isNovo: r.is_novo_paciente,
       });
       bucket.itens.set(itemNome, it);
@@ -572,6 +575,26 @@ function DashboardPage() {
                 ? `${brl(activeBucket.valor)} · ${num(activeBucket.qtd)} lançamentos · ${num(detalheItens.length)} itens distintos`
                 : "Sem itens."}
             </SheetDescription>
+            {activeBucket && (detalheOrigem || detalheNovos || detalheProfissional || detalheEspecialidade) && (
+              <div className="mt-4 grid grid-cols-2 gap-2 pb-2">
+                {Array.from(
+                  Array.from(activeBucket.itens.values()).reduce((acc, it) => {
+                    it.lancamentos.forEach((l) => {
+                      const f = (l.formaPagamento as string) || "Não informado";
+                      acc.set(f, (acc.get(f) ?? 0) + Number(l.valor));
+                    });
+                    return acc;
+                  }, new Map<string, number>())
+                )
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([forma, valor]) => (
+                    <div key={forma} className="rounded-md bg-muted/50 p-2 text-center">
+                      <div className="text-[10px] text-muted-foreground uppercase font-semibold">{forma}</div>
+                      <div className="text-sm font-bold text-foreground">{brl(valor)}</div>
+                    </div>
+                  ))}
+              </div>
+            )}
           </SheetHeader>
           <div className="mt-4 space-y-2">
             {detalheItens.map((it) => {
@@ -608,9 +631,10 @@ function DashboardPage() {
                                 {l.data ? new Date(`${l.data}T12:00:00`).toLocaleDateString("pt-BR") : "Sem data"}
                               </div>
                               <div className="truncate text-muted-foreground" title={l.categoria ?? ""}>
-                                {(l.categoria ?? "Sem categoria")} · {l.convenio ? "Convênio" : "Particular"}
+                                {l.categoria ?? "Sem categoria"} · {l.convenio ? "Convênio" : "Particular"}
                                 {l.status ? ` · ${l.status}` : ""}
                                 {l.profissionalNome ? ` · ${l.profissionalNome}` : ""}
+                                {l.formaPagamento ? ` · ${l.formaPagamento}` : ""}
                               </div>
                             </div>
                             <span className="shrink-0 font-medium text-foreground">{brl(l.valor)}</span>
