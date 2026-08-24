@@ -29,7 +29,7 @@ function PublicLoginPage() {
     if (username === "admin" && password === "admin") {
       localStorage.setItem("public_admin_session", "true");
       toast.success("Acesso autorizado");
-      navigate({ to: "/public-dashboard" });
+      navigate({ to: "/public-dashboard" as any });
     } else {
       toast.error("Usuário ou senha inválidos");
     }
