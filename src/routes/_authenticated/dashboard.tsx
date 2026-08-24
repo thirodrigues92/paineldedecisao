@@ -376,10 +376,8 @@ function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Particular vs. Convênio (receita)</CardTitle>
-          </CardHeader>
-          <CardContent className="h-[450px]">
+          <CardHeader><CardTitle>Particular vs. Convênio (receita)</CardTitle></CardHeader>
+          <CardContent className="h-72">
             {donut.every((d) => d.value === 0) ? <EmptyState /> : (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -387,23 +385,15 @@ function DashboardPage() {
                     data={donut} 
                     dataKey="value" 
                     nameKey="name" 
-                    innerRadius={80} 
-                    outerRadius={140}
-                    paddingAngle={5}
-                    stroke="none"
+                    innerRadius={55} 
+                    outerRadius={90}
                     cursor="pointer"
                     onClick={(d: any) => setDetalheOrigem(d?.name ?? null)}
                   >
-                    <Cell fill="hsl(var(--chart-1))" className="drop-shadow-sm transition-opacity hover:opacity-80" />
-                    <Cell fill="hsl(var(--chart-2))" className="drop-shadow-sm transition-opacity hover:opacity-80" />
+                    {donut.map((_, i) => <Cell key={i} fill={i === 0 ? "var(--chart-1)" : "var(--chart-2)"} />)}
                   </Pie>
                   <Tooltip {...tooltipProps} formatter={(v: any) => brl(Number(v))} />
-                  <Legend 
-                    verticalAlign="bottom" 
-                    height={36}
-                    iconType="circle"
-                    formatter={(value) => <span className="text-sm font-medium text-foreground">{value}</span>}
-                  />
+                  <Legend wrapperStyle={{ fontSize: 12, color: "var(--muted-foreground)" }} />
                 </PieChart>
               </ResponsiveContainer>
             )}
@@ -411,7 +401,7 @@ function DashboardPage() {
             {donut.find(d => d.name === "Particular")?.value! > 0 && (
               <div className="mt-4 pt-4 border-t border-border">
                 <p className="text-[10px] text-muted-foreground uppercase font-semibold mb-2">Formas de Pagamento (Particular)</p>
-                <div className="h-[120px] w-full">
+                <div className="h-[250px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                       data={Array.from(
@@ -432,8 +422,8 @@ function DashboardPage() {
                       <YAxis 
                         dataKey="name" 
                         type="category" 
-                        width={80} 
-                        fontSize={10}
+                        width={90} 
+                        fontSize={11}
                         axisLine={false}
                         tickLine={false}
                       />
@@ -451,9 +441,9 @@ function DashboardPage() {
                           return null;
                         }}
                       />
-                      <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                      <Bar dataKey="value" radius={[0, 6, 6, 0]}>
                         {Array.from({ length: 10 }).map((_, index) => (
-                          <Cell key={`cell-${index}`} fill={`hsl(var(--primary) / ${1 - index * 0.15})`} />
+                          <Cell key={`cell-${index}`} fill={`var(--chart-${(index % 5) + 1})`} />
                         ))}
                       </Bar>
                     </BarChart>
