@@ -60,6 +60,7 @@ type ServicoBucket = { nome: string; valor: number; qtd: number; itens: Map<stri
 function DashboardPage() {
   const f = useFilters();
   const [detalhe, setDetalhe] = useState<string | null>(null);
+  const [detalheOrigem, setDetalheOrigem] = useState<string | null>(null);
   const [itemAberto, setItemAberto] = useState<string | null>(null);
 
   const diff = differenceInDays(f.to, f.from) + 1;
@@ -226,8 +227,44 @@ function DashboardPage() {
   const receitaLote = byServico.get("Faturamento em lote (convênio)")?.valor ?? 0;
   const semDetalhe = byServico.get("Sem detalhamento da Feegow")?.valor ?? 0;
   const detalheBucket = detalhe ? byServico.get(detalhe) ?? null : null;
-  const detalheItens: ItemServico[] = detalheBucket
-    ? Array.from(detalheBucket.itens.values()).sort((a, b) => b.valor - a.valor).slice(0, 80)
+  
+  // Detalhe por Origem (Donut)
+  const byOrigem = new Map<string, ServicoBucket>();
+  if (detalheOrigem) {
+    const bucket: ServicoBucket = { nome: detalheOrigem, valor: 0, qtd: 0, itens: new Map<string, ItemServico>() };
+    const filteredRows = labRows.filter((r: any) => 
+      detalheOrigem === "Particular" ? r.convenio_nome === "Particular" : r.convenio_nome !== "Particular"
+    );
+    
+    for (const r of filteredRows) {
+      const valor = Number(r.valor || 0);
+      const nomeProc = r.procedimento_nome ?? "Sem descrição";
+      bucket.valor += valor;
+      bucket.qtd += 1;
+      
+      const itemNome = (nomeProc ?? "").trim() || "Sem descrição";
+      const it: ItemServico = bucket.itens.get(itemNome) ?? { nome: itemNome, valor: 0, qtd: 0, lancamentos: [] };
+      it.valor += valor;
+      it.qtd += 1;
+      
+      it.lancamentos.push({
+        pacienteId: r.paciente_id ? Number(r.paciente_id) : null,
+        pacienteNome: r.paciente_nome || null,
+        nome: itemNome,
+        valor,
+        data: r.data_execucao,
+        status: r.situacao || null,
+        categoria: r.grupo_nome || null,
+        convenio: r.convenio_nome !== "Particular",
+      });
+      bucket.itens.set(itemNome, it);
+    }
+    byOrigem.set(detalheOrigem, bucket);
+  }
+
+  const activeBucket = detalheOrigem ? byOrigem.get(detalheOrigem) : (detalhe ? byServico.get(detalhe) : null);
+  const detalheItens: ItemServico[] = activeBucket
+    ? Array.from(activeBucket.itens.values()).sort((a, b) => b.valor - a.valor).slice(0, 80)
     : [];
   const coberturaServico = faturadoReal > 0 ? (classificado * 100) / faturadoReal : 0;
 
@@ -288,7 +325,15 @@ function DashboardPage() {
             {donut.every((d) => d.value === 0) ? <EmptyState /> : (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={donut} dataKey="value" nameKey="name" innerRadius={55} outerRadius={90}>
+                  <Pie 
+                    data={donut} 
+                    dataKey="value" 
+                    nameKey="name" 
+                    innerRadius={55} 
+                    outerRadius={90}
+                    cursor="pointer"
+                    onClick={(d: any) => setDetalheOrigem(d?.name ?? null)}
+                  >
                     {donut.map((_, i) => <Cell key={i} fill={i === 0 ? "var(--chart-1)" : "var(--chart-2)"} />)}
                   </Pie>
                   <Tooltip {...tooltipProps} formatter={(v: any) => brl(Number(v))} />
@@ -432,13 +477,18 @@ function DashboardPage() {
         </Card>
       </div>
 
-      <Sheet open={detalhe !== null} onOpenChange={(o) => !o && setDetalhe(null)}>
+      <Sheet open={detalhe !== null || detalheOrigem !== null} onOpenChange={(o) => {
+        if (!o) {
+          setDetalhe(null);
+          setDetalheOrigem(null);
+        }
+      }}>
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>{detalhe ?? ""}</SheetTitle>
+            <SheetTitle>{detalheOrigem || detalhe || ""}</SheetTitle>
             <SheetDescription>
-              {detalheBucket
-                ? `${brl(detalheBucket.valor)} · ${num(detalheBucket.qtd)} lançamentos · ${num(detalheItens.length)} itens distintos`
+              {activeBucket
+                ? `${brl(activeBucket.valor)} · ${num(activeBucket.qtd)} lançamentos · ${num(detalheItens.length)} itens distintos`
                 : "Sem itens."}
             </SheetDescription>
           </SheetHeader>
