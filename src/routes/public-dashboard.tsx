@@ -388,11 +388,6 @@ function PublicDashboardContent() {
             )}
           </CardContent>
         </Card>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
         
         <Card>
           <CardHeader><CardTitle>Resumo por Convênio</CardTitle></CardHeader>

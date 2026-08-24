@@ -453,11 +453,6 @@ function DashboardPage() {
             )}
           </CardContent>
         </Card>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
 
         <Card>
           <CardHeader>
