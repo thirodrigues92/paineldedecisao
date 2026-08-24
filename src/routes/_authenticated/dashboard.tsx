@@ -170,6 +170,17 @@ function DashboardPage() {
     { name: "Convênio",   value: labRows.filter((r: any) => r.convenio_nome !== "Particular").reduce((s, r) => s + Number(r.valor || 0), 0) },
   ];
 
+  // Faturamento por convênio específico
+  const byConvenio = new Map<string, { nome: string; valor: number; qtd: number }>();
+  for (const r of labRows) {
+    const nome = (r.convenio_nome ?? "").trim() || "Particular";
+    const cur = byConvenio.get(nome) ?? { nome, valor: 0, qtd: 0 };
+    cur.valor += Number(r.valor || 0);
+    cur.qtd += 1;
+    byConvenio.set(nome, cur);
+  }
+  const conveniosBreakdown = Array.from(byConvenio.values()).filter((c) => c.valor > 0).sort((a, b) => b.valor - a.valor);
+
   // Faturamento por categoria (receitas)
   const byCategoria = new Map<string, { nome: string; valor: number; qtd: number }>();
   for (const r of labRows) {
@@ -228,13 +239,16 @@ function DashboardPage() {
   const semDetalhe = byServico.get("Sem detalhamento da Feegow")?.valor ?? 0;
   const detalheBucket = detalhe ? byServico.get(detalhe) ?? null : null;
   
-  // Detalhe por Origem (Donut)
+  // Detalhe por Origem ou Convênio Específico
   const byOrigem = new Map<string, ServicoBucket>();
   if (detalheOrigem) {
     const bucket: ServicoBucket = { nome: detalheOrigem, valor: 0, qtd: 0, itens: new Map<string, ItemServico>() };
-    const filteredRows = labRows.filter((r: any) => 
-      detalheOrigem === "Particular" ? r.convenio_nome === "Particular" : r.convenio_nome !== "Particular"
-    );
+    const filteredRows = labRows.filter((r: any) => {
+      if (detalheOrigem === "Particular") return r.convenio_nome === "Particular";
+      if (detalheOrigem === "Convênio") return r.convenio_nome !== "Particular";
+      // Caso seja um convênio específico clicado na tabela
+      return r.convenio_nome === detalheOrigem;
+    });
     
     for (const r of filteredRows) {
       const valor = Number(r.valor || 0);
@@ -319,7 +333,7 @@ function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card className="lg:col-span-3">
+        <Card className="lg:col-span-2">
           <CardHeader><CardTitle>Particular vs. Convênio (receita)</CardTitle></CardHeader>
           <CardContent className="h-72">
             {donut.every((d) => d.value === 0) ? <EmptyState /> : (
@@ -341,6 +355,31 @@ function DashboardPage() {
                 </PieChart>
               </ResponsiveContainer>
             )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Resumo por Convênio</CardTitle>
+            <p className="text-xs text-muted-foreground">Detalhamento por fonte pagadora. Clique para ver detalhes.</p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {query.isLoading ? <Skeleton className="h-40 w-full" /> : conveniosBreakdown.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Sem dados para os filtros selecionados.</p>
+            ) : conveniosBreakdown.map((c) => (
+              <button
+                key={c.nome}
+                type="button"
+                onClick={() => setDetalheOrigem(c.nome)}
+                className="w-full rounded-lg border border-border p-3 text-left hover:bg-muted/50 transition-colors"
+              >
+                <div className="text-sm font-medium truncate" title={c.nome}>{c.nome}</div>
+                <div className="mt-1 flex items-baseline justify-between text-xs text-muted-foreground">
+                  <span className="text-base font-semibold text-foreground">{brl(c.valor)}</span>
+                  <span>{num(c.qtd)} lanç.</span>
+                </div>
+              </button>
+            ))}
           </CardContent>
         </Card>
       </div>
