@@ -595,6 +595,56 @@ function DashboardPage() {
                   ))}
               </div>
             )}
+            {activeBucket && (detalheOrigem || detalheNovos || detalheProfissional || detalheEspecialidade) && (
+              <div className="mt-4 h-[120px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={Array.from(
+                      Array.from(activeBucket.itens.values()).reduce((acc, it) => {
+                        it.lancamentos.forEach((l) => {
+                          const f = (l.formaPagamento as string) || "Não informado";
+                          acc.set(f, (acc.get(f) ?? 0) + Number(l.valor));
+                        });
+                        return acc;
+                      }, new Map<string, number>())
+                    )
+                      .sort((a, b) => b[1] - a[1])
+                      .map(([name, value]) => ({ name, value }))}
+                    layout="vertical"
+                    margin={{ top: 0, right: 30, left: 40, bottom: 0 }}
+                  >
+                    <XAxis type="number" hide />
+                    <YAxis 
+                      dataKey="name" 
+                      type="category" 
+                      width={80} 
+                      fontSize={10}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <Tooltip 
+                      cursor={{ fill: 'transparent' }}
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          return (
+                            <div className="rounded-lg border border-border bg-background p-2 shadow-sm text-[10px]">
+                              <div className="font-medium">{payload[0].payload.name}</div>
+                              <div className="font-bold text-primary">{brl(payload[0].value as number)}</div>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                      {Array.from({ length: 10 }).map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={`hsl(var(--primary) / ${1 - index * 0.15})`} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </SheetHeader>
           <div className="mt-4 space-y-2">
             {detalheItens.map((it) => {
