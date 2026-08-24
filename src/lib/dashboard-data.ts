@@ -262,6 +262,7 @@ export type LabProducaoRow = {
   grupo_nome: string | null;
   profissional_nome: string | null;
   agendamento_id: number | null;
+  forma_pagamento: string | null;
   is_novo_paciente?: boolean;
 };
 
