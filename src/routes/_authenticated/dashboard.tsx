@@ -698,12 +698,13 @@ function DashboardPage() {
         </Card>
       </div>
 
-      <Sheet open={detalhe !== null || detalheOrigem !== null || detalheProfissional !== null || detalheNovos || detalheEspecialidade !== null || detalhePagamento !== null} onOpenChange={(o) => {
+      <Sheet open={detalhe !== null || detalheOrigem !== null || detalheProfissional !== null || detalheNovos || detalheNoShow || detalheEspecialidade !== null || detalhePagamento !== null} onOpenChange={(o) => {
         if (!o) {
           setDetalhe(null);
           setDetalheOrigem(null);
           setDetalheProfissional(null);
           setDetalheNovos(false);
+          setDetalheNoShow(false);
           setDetalheEspecialidade(null);
           setDetalhePagamento(null);
           setItemAberto(null);
@@ -711,10 +712,12 @@ function DashboardPage() {
       }}>
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>{detalheNovos ? "Pacientes Novos" : (detalhePagamento || detalheEspecialidade || detalheProfissional || detalheOrigem || detalhe || "")}</SheetTitle>
+            <SheetTitle>
+              {detalheNoShow ? "Pacientes No-show" : (detalheNovos ? "Pacientes Novos" : (detalhePagamento || detalheEspecialidade || detalheProfissional || detalheOrigem || detalhe || ""))}
+            </SheetTitle>
             <SheetDescription>
               {activeBucket
-                ? `${brl(activeBucket.valor)} · ${num(activeBucket.qtd)} lançamentos · ${num(detalheItens.length)} itens distintos`
+                ? `${detalheNoShow ? "" : brl(activeBucket.valor) + " · "}${num(activeBucket.qtd)} ${detalheNoShow ? "faltas" : "lançamentos"} · ${num(detalheItens.length)} itens distintos`
                 : "Sem itens."}
             </SheetDescription>
             {activeBucket && (detalheOrigem || detalheNovos || detalheProfissional || detalheEspecialidade || detalhePagamento) && (
