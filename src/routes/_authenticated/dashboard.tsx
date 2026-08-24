@@ -238,7 +238,7 @@ function DashboardPage() {
   const detalheItens: ItemServico[] = detalheBucket
     ? Array.from(detalheBucket.itens.values()).sort((a, b) => b.valor - a.valor).slice(0, 80)
     : [];
-  const coberturaServico = receitaPrev > 0 ? (classificado * 100) / receitaPrev : 0;
+  const coberturaServico = faturadoReal > 0 ? (classificado * 100) / faturadoReal : 0;
 
 
 
@@ -387,7 +387,7 @@ function DashboardPage() {
           <CardHeader>
             <CardTitle>Faturamento por tipo de serviço</CardTitle>
             <p className="text-xs text-muted-foreground">
-              Receita real do período ({brl(receitaPrev)}) — classificada por procedimento {brl(classificado)} ({pct(coberturaServico)})
+              Receita real do período ({brl(faturadoReal)}) — classificada por procedimento {brl(classificado)} ({pct(coberturaServico)})
               {receitaLote > 0 ? ` · faturas em lote de convênio ${brl(receitaLote)}` : ""}
               {semDetalhe > 0 ? ` · sem detalhamento da Feegow ${brl(semDetalhe)}` : ""}.
               Clique numa barra para ver o que há dentro da categoria.
@@ -451,7 +451,7 @@ function DashboardPage() {
                   </button>
                 ))}
                 <p className="pt-2 text-[11px] leading-snug text-muted-foreground border-t border-border">
-                  Total confere com a receita do período: {brl(totalServicos)} de {brl(receitaPrev)}.
+                  Total confere com a receita do período: {brl(totalServicos)} de {brl(faturadoReal)}.
                   {receitaLote > 0
                     ? ` ${brl(receitaLote)} vêm de faturas em lote de convênio (a Feegow não abre o procedimento nesse formato).`
                     : ""}
