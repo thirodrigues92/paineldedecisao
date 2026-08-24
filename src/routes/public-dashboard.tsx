@@ -234,7 +234,7 @@ export const Route = createFileRoute("/public-dashboard")({
     if (typeof window !== "undefined") {
       const isAuthed = localStorage.getItem("public_admin_session") === "true";
       if (!isAuthed) {
-        throw redirect({ to: "/public-login" });
+        throw redirect({ to: "/public-login" as any });
       }
     }
   },
