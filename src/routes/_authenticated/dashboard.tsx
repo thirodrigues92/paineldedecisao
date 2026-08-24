@@ -575,6 +575,26 @@ function DashboardPage() {
                 ? `${brl(activeBucket.valor)} · ${num(activeBucket.qtd)} lançamentos · ${num(detalheItens.length)} itens distintos`
                 : "Sem itens."}
             </SheetDescription>
+            {activeBucket && (detalheOrigem || detalheNovos || detalheProfissional || detalheEspecialidade) && (
+              <div className="mt-4 grid grid-cols-2 gap-2 pb-2">
+                {Array.from(
+                  activeBucket.itens.values().reduce((acc: Map<string, number>, it: any) => {
+                    it.lancamentos.forEach((l: any) => {
+                      const f = l.formaPagamento || "Não informado";
+                      acc.set(f, (acc.get(f) ?? 0) + l.valor);
+                    });
+                    return acc;
+                  }, new Map<string, number>())
+                )
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([forma, valor]) => (
+                    <div key={forma} className="rounded-md bg-muted/50 p-2 text-center">
+                      <div className="text-[10px] text-muted-foreground uppercase font-semibold">{forma}</div>
+                      <div className="text-sm font-bold text-foreground">{brl(valor as number)}</div>
+                    </div>
+                  ))}
+              </div>
+            )}
           </SheetHeader>
           <div className="mt-4 space-y-2">
             {detalheItens.map((it) => {
