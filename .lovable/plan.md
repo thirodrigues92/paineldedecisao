@@ -1,27 +1,20 @@
-# Plano: Retorno ao Fluxo Principal e Limpeza de Acessos Públicos
+# Plan: Particular Revenue Breakdown by Payment Method
 
-O usuário solicitou "voltar o sistema para a tela principal", o que indica um desejo de remover ou despriorizar os atalhos de acesso público configurados anteriormente e restaurar o comportamento padrão de login/dashboard administrativo como foco principal.
+The user wants to see how "Particular" (private pay) revenue was billed (e.g., PIX, Transfer, Cash) when clicking on the "Particular" slice of the dashboard charts. Currently, the drill-down only shows procedures and items without grouping by payment method.
 
-## Ajustes Solicitados
+## Proposed Changes
 
-1.  **Remoção de Destaques Públicos**: Remover os links e banners que apontam para o painel público (`/public-login`, `/public-dashboard`) das áreas administrativas autenticadas.
-2.  **Restauração do Fluxo de Login**: Garantir que o acesso principal (`/`) sempre direcione para a autenticação padrão do Supabase ou para o dashboard administrativo completo se já autenticado.
-3.  **Limpeza da Sidebar**: Remover o item "Link Admin (Visão Executiva)" da sidebar para evitar confusão.
+### 1. Database & Library (`src/lib/dashboard-data.ts`)
+- Update `fetchLabProducaoRows` to fetch payment information from `lab_recebimento` (which stores `forma_pagamento`) linked via `documento_id` (the Feegow `invoice_id`).
+- Enrich the `LabProducaoRow` type and the returned objects with a `formas_pagamento` array or a primary payment method.
 
-## Etapas de Implementação
+### 2. UI - Dashboard (`src/routes/_authenticated/dashboard.tsx` & `src/routes/public-dashboard.tsx`)
+- In the `detalheOrigem` drill-down (when clicking "Particular"):
+  - Add a summary section showing the breakdown by payment method (Total PIX, Total Dinheiro, etc.).
+  - Update the item list to display the payment method used for each launch if available.
+- Ensure these changes are reflected in both the authenticated and public dashboards.
 
-1.  **Sidebar (`src/components/AppSidebar.tsx`)**:
-    *   Remover a entrada `{ title: "Link Admin (Visão Executiva)", url: "/public-login", icon: LayoutDashboard }` do array `navFooter`.
-
-2.  **Dashboard (`src/routes/_authenticated/dashboard.tsx`)**:
-    *   Remover quaisquer banners ou cards informativos que exibam o link público (caso tenham sido adicionados conforme o plano anterior).
-
-3.  **Redirecionamento (`src/routes/index.tsx`)**:
-    *   Manter a lógica de redirecionamento para o `/dashboard` administrativo para usuários logados via Supabase.
-    *   Manter a lógica de redirecionamento para `/auth` para usuários não logados.
-    *   *Nota*: A lógica do `public_admin_session` em `localStorage` pode ser mantida no código para funcionamento técnico do dashboard público, mas não será mais incentivada via UI principal.
-
-## Verificação
-
-*   Confirmar que o item de link público não aparece mais na barra lateral.
-*   Confirmar que ao acessar a raiz do site, o usuário é levado ao dashboard principal (se logado) ou à tela de login padrão.
+## Verification Plan
+1. **Visual Check**: Open the dashboard, click on the "Particular" slice of the "Particular vs. Convênio" chart.
+2. **Data Integrity**: Verify that the sum of payment methods matches the total particular revenue displayed.
+3. **Fallback**: Ensure that records without specific payment data (e.g., old syncs) display a "Não informado" status rather than breaking.
