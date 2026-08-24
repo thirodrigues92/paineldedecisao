@@ -271,8 +271,9 @@ function MapaPage() {
             ) : (
               <Suspense fallback={<Skeleton className="h-[520px] w-full" />}>
                 <PatientMap
-                  mode={mode}
-                  bairros={bairros}
+                   mode={mode}
+                   bairros={bairros}
+                   metric={metric}
                   unidades={unidadePoints}
                   showUnits={showUnits}
                   selectedKey={selected}
