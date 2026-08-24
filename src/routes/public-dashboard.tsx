@@ -32,6 +32,7 @@ function PublicDashboardContent() {
   const f = useFilters();
   const [detalhe, setDetalhe] = useState<string | null>(null);
   const [detalheOrigem, setDetalheOrigem] = useState<string | null>(null);
+  const [detalhePagamento, setDetalhePagamento] = useState<string | null>(null);
   const [itemAberto, setItemAberto] = useState<string | null>(null);
   const [detalheProfissional, setDetalheProfissional] = useState<string | null>(null);
   const [detalheNovos, setDetalheNovos] = useState<boolean>(false);
@@ -197,14 +198,19 @@ function PublicDashboardContent() {
     .map(c => ({ ...c, share: faturadoReal > 0 ? (c.valor * 100) / faturadoReal : 0 }));
 
   const byOrigem = new Map<string, any>();
-  if (detalheOrigem || detalheProfissional || detalheNovos || detalheEspecialidade) {
-    const activeLabel = detalheNovos ? "Pacientes Novos" : (detalheOrigem || detalheProfissional || detalheEspecialidade || "");
+  if (detalheOrigem || detalheProfissional || detalheNovos || detalheEspecialidade || detalhePagamento) {
+    const activeLabel = detalheNovos ? "Pacientes Novos" : (detalhePagamento || detalheOrigem || detalheProfissional || detalheEspecialidade || "");
     const bucket = { nome: activeLabel, valor: 0, qtd: 0, itens: new Map() };
     
     const filteredRows = labRows.filter((r: any) => {
       if (detalheNovos) return !!r.is_novo_paciente;
       if (detalheProfissional) return (r.profissional_nome || "Não informado") === detalheProfissional;
       if (detalheEspecialidade) return (r.grupo_nome || "Sem especialidade") === detalheEspecialidade;
+      if (detalhePagamento) {
+        const raw = (r.forma_pagamento as string) || "Não informado";
+        if (detalhePagamento === "Múltiplas Formas") return raw.includes(",");
+        return raw === detalhePagamento;
+      }
       if (detalheOrigem === "Particular") return r.convenio_nome === "Particular";
       if (detalheOrigem === "Convênio") return r.convenio_nome !== "Particular";
       return r.convenio_nome === detalheOrigem;
@@ -241,7 +247,7 @@ function PublicDashboardContent() {
 
   const activeBucket = detalheNovos 
     ? byOrigem.get("Pacientes Novos") 
-    : (detalheOrigem ? byOrigem.get(detalheOrigem) : (detalheProfissional ? byOrigem.get(detalheProfissional) : (detalheEspecialidade ? byOrigem.get(detalheEspecialidade) : (detalhe ? byServico.get(detalhe) : null))));
+    : (detalhePagamento ? byOrigem.get(detalhePagamento) : (detalheOrigem ? byOrigem.get(detalheOrigem) : (detalheProfissional ? byOrigem.get(detalheProfissional) : (detalheEspecialidade ? byOrigem.get(detalheEspecialidade) : (detalhe ? byServico.get(detalhe) : null)))));
   
   const detalheItens = activeBucket
     ? Array.from(activeBucket.itens.values()).sort((a: any, b: any) => b.valor - a.valor).slice(0, 80)
@@ -411,7 +417,7 @@ function PublicDashboardContent() {
                               dataKey="value" 
                               radius={[0, 4, 4, 0]}
                               cursor="pointer"
-                              onClick={(d) => setDetalheOrigem(d.name === "Múltiplas Formas" ? "Particular" : d.name)}
+                              onClick={(d) => setDetalhePagamento(d.name)}
                             >
                               {paymentData.map((_, index) => (
                                 <Cell key={`cell-${index}`} fill={`var(--chart-${(index % 5) + 1})`} className="hover:opacity-80 transition-opacity" />
@@ -544,24 +550,25 @@ function PublicDashboardContent() {
         <LastSyncCard />
       </div>
 
-      <Sheet open={detalhe !== null || detalheOrigem !== null || detalheProfissional !== null || detalheNovos || detalheEspecialidade !== null} onOpenChange={(o) => {
+      <Sheet open={detalhe !== null || detalheOrigem !== null || detalheProfissional !== null || detalheNovos || detalheEspecialidade !== null || detalhePagamento !== null} onOpenChange={(o) => {
         if (!o) {
           setDetalhe(null);
           setDetalheOrigem(null);
           setDetalheProfissional(null);
           setDetalheNovos(false);
           setDetalheEspecialidade(null);
+          setDetalhePagamento(null);
         }
       }}>
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>{detalheNovos ? "Pacientes Novos" : (detalheEspecialidade || detalheProfissional || detalheOrigem || detalhe || "")}</SheetTitle>
+            <SheetTitle>{detalheNovos ? "Pacientes Novos" : (detalhePagamento || detalheEspecialidade || detalheProfissional || detalheOrigem || detalhe || "")}</SheetTitle>
             <SheetDescription>
               {activeBucket
                 ? `${brl(activeBucket.valor)} · ${num(activeBucket.qtd)} lançamentos · ${num(detalheItens.length)} itens distintos`
                 : "Sem itens."}
             </SheetDescription>
-            {activeBucket && (detalheOrigem || detalheNovos || detalheProfissional || detalheEspecialidade) && (
+            {activeBucket && (detalheOrigem || detalheNovos || detalheProfissional || detalheEspecialidade || detalhePagamento) && (
               <div className="mt-4 grid grid-cols-2 gap-2 pb-2">
                 {Array.from(
                   Array.from(activeBucket.itens.values()).reduce((acc: Map<string, number>, it: any) => {
