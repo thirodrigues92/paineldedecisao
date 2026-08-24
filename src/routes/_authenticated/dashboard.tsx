@@ -249,6 +249,7 @@ function DashboardPage() {
       categoria: r.grupo_nome || null,
       convenio: r.convenio_nome !== "Particular",
       profissionalNome: r.profissional_nome,
+      formaPagamento: r.forma_pagamento,
       isNovo: r.is_novo_paciente,
     });
     
@@ -298,6 +299,7 @@ function DashboardPage() {
         categoria: r.grupo_nome || null,
         convenio: r.convenio_nome !== "Particular",
         profissionalNome: r.profissional_nome,
+        formaPagamento: r.forma_pagamento,
         isNovo: r.is_novo_paciente,
       });
       bucket.itens.set(itemNome, it);
@@ -609,9 +611,10 @@ function DashboardPage() {
                                 {l.data ? new Date(`${l.data}T12:00:00`).toLocaleDateString("pt-BR") : "Sem data"}
                               </div>
                               <div className="truncate text-muted-foreground" title={l.categoria ?? ""}>
-                                {(l.categoria ?? "Sem categoria")} · {l.convenio ? "Convênio" : "Particular"}
+                                {l.categoria ?? "Sem categoria"} · {l.convenio ? "Convênio" : "Particular"}
                                 {l.status ? ` · ${l.status}` : ""}
                                 {l.profissionalNome ? ` · ${l.profissionalNome}` : ""}
+                                {l.formaPagamento ? ` · ${l.formaPagamento}` : ""}
                               </div>
                             </div>
                             <span className="shrink-0 font-medium text-foreground">{brl(l.valor)}</span>
