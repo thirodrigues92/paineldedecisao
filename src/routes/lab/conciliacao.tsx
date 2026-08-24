@@ -40,7 +40,7 @@ function LabConciliacao() {
 
   const { data: conciliacaoData, isLoading, refetch } = useQuery({
     queryKey: ['lab-conciliacao', startStr, endStr],
-    queryFn: () => getLabConciliacao({ data: { data_inicio: startStr, data_fim: endStr } })
+    queryFn: () => getLabConciliacao({ data: { data_inicio: startStr, data_fim: endStr } } as any)
   });
 
   const [isSyncing, setIsSyncing] = useState(false);
