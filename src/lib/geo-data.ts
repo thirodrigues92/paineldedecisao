@@ -68,6 +68,14 @@ export function idadeDe(anoNascimento: number | null | undefined): number | null
   return idade >= 0 && idade < 120 ? idade : null;
 }
 
+export function normalizarCidade(value: string | null | undefined): string {
+  const raw = value?.trim() || "Não informado";
+  const key = raw.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase();
+  if (key === "acreuna") return "Acreúna";
+  if (key === "santa helena" || key === "santa helena de goias") return "Santa Helena de Goiás";
+  return raw;
+}
+
 export function imcDe(metricas: Record<string, unknown> | null | undefined): number | null {
   if (!metricas) return null;
   const raw = (metricas as any).imc;

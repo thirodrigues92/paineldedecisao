@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { useFilters } from "@/lib/filters-context";
 import { dashboardQueryKey, fetchDashboardAppointments, fetchLabProducaoRows } from "@/lib/dashboard-data";
 import {
-  fetchPacientesGeo, fetchUnidadesGeo, distanceKm, idadeDe, imcDe,
+  fetchPacientesGeo, fetchUnidadesGeo, distanceKm, idadeDe, imcDe, normalizarCidade,
   type PacienteGeo,
 } from "@/lib/geo-data";
 import { supabase } from "@/integrations/supabase/client";
@@ -106,14 +106,16 @@ function MapaPage() {
       const pid = (a as any).paciente_id as number | null;
       if (!pid) continue;
       const p = pacMap.get(pid);
-      if (!p || !p.bairro || !p.cidade || !passaPerfil(p)) continue;
+      if (!p || !passaPerfil(p)) continue;
       contados.add(pid);
       if (p.latitude == null || p.longitude == null) { semCoord++; continue; }
-      const key = `${p.bairro}|${p.cidade}`;
+      const cidade = normalizarCidade(p.cidade);
+      const bairro = p.bairro?.trim() || "Não informado";
+      const key = `${bairro}|${cidade}`;
       let e = acc.get(key);
       if (!e) {
         e = {
-          bairro: p.bairro, cidade: p.cidade,
+          bairro, cidade,
           lat: Number(p.latitude), lng: Number(p.longitude),
           pacientes: new Set(), demanda: 0, faturamento: 0, noShow: 0, esp: new Map(),
         };
@@ -180,16 +182,26 @@ function MapaPage() {
       <div>
         <h1 className="text-2xl font-semibold">Mapa de Pacientes</h1>
         <p className="text-sm text-muted-foreground">
-          Distribuição geográfica da demanda — apenas dados agregados por bairro (sem identificação de pacientes).
-        </p>
+          Distribuição geográfica por cidade e bairro, com faturamento real do período selecionado.
+         </p>
       </div>
 
       <Card>
         <CardContent className="flex flex-wrap items-end gap-4 p-4">
           <div className="flex items-center gap-2">
-            <Label htmlFor="modo" className="text-xs text-muted-foreground">Bolhas por bairro</Label>
+            <Label htmlFor="modo" className="text-xs text-muted-foreground">Bolhas</Label>
             <Switch id="modo" checked={mode === "heat"} onCheckedChange={(v) => setMode(v ? "heat" : "bubbles")} />
             <Label htmlFor="modo" className="text-xs text-muted-foreground">Heatmap</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <Label htmlFor="metrica" className="text-xs text-muted-foreground">Métrica</Label>
+            <Select value={metric} onValueChange={(v) => setMetric(v as typeof metric)}>
+              <SelectTrigger id="metrica" className="h-9 w-[190px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pacientes">Por quantidade de pacientes</SelectItem>
+                <SelectItem value="faturamento">Por faturamento</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="w-[220px]">
@@ -272,9 +284,9 @@ function MapaPage() {
         </Card>
 
         <Card className="max-h-[560px] overflow-auto">
-          <CardHeader><CardTitle className="text-base">Top 10 bairros</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-base">Rio Verde — bairros por {metric === "faturamento" ? "faturamento" : "pacientes"}</CardTitle></CardHeader>
           <CardContent className="space-y-1 p-3">
-            {loading ? <Skeleton className="h-64 w-full" /> : bairros.slice(0, 10).map((b, i) => (
+            {loading ? <Skeleton className="h-64 w-full" /> : bairros.filter((b) => b.cidade === "Rio Verde").sort((a, b) => (metric === "faturamento" ? b.faturamento - a.faturamento : b.pacientes - a.pacientes)).slice(0, 10).map((b, i) => (
               <button
                 key={b.key}
                 onClick={() => setSelected(b.key)}
@@ -284,8 +296,8 @@ function MapaPage() {
               >
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-muted-foreground w-4">{i + 1}</span>
-                  <span className="text-sm font-medium flex-1 truncate">{b.bairro}</span>
-                  <Badge variant="secondary">{b.pacientes}</Badge>
+                   <span className="text-sm font-medium flex-1 truncate">{b.bairro}</span>
+                   <Badge variant="secondary">{metric === "faturamento" ? `R$ ${b.faturamento.toFixed(2)}` : b.pacientes}</Badge>
                 </div>
                 <div className="pl-6 text-xs text-muted-foreground truncate">
                   {b.topEspecialidade}
