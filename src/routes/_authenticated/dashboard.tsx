@@ -257,11 +257,12 @@ function DashboardPage() {
   const detalheBucket = detalhe ? byServico.get(detalhe) ?? null : null;
   
   const byOrigem = new Map<string, ServicoBucket>();
-  if (detalheOrigem || detalheProfissional) {
-    const activeLabel = detalheOrigem || detalheProfissional || "";
+  if (detalheOrigem || detalheProfissional || detalheNovos) {
+    const activeLabel = detalheNovos ? "Pacientes Novos" : (detalheOrigem || detalheProfissional || "");
     const bucket: ServicoBucket = { nome: activeLabel, valor: 0, qtd: 0, itens: new Map<string, ItemServico>() };
     
     const filteredRows = labRows.filter((r: any) => {
+      if (detalheNovos) return !!r.is_novo_paciente;
       if (detalheProfissional) return (r.profissional_nome || "Não informado") === detalheProfissional;
       if (detalheOrigem === "Particular") return r.convenio_nome === "Particular";
       if (detalheOrigem === "Convênio") return r.convenio_nome !== "Particular";
