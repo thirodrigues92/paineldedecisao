@@ -330,7 +330,11 @@ function DashboardPage() {
           const isGood = k.invertTrend ? (k.trend ?? 0) < 0 : (k.trend ?? 0) > 0;
           
           return (
-            <Card key={k.label}>
+            <Card 
+              key={k.label} 
+              className={cn(k.label === "Pacientes novos" && "cursor-pointer hover:bg-muted/50 transition-colors")}
+              onClick={() => k.label === "Pacientes novos" && setDetalheNovos(true)}
+            >
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 text-muted-foreground text-xs">
                   <k.icon className="h-3.5 w-3.5" /> {k.label}
