@@ -439,8 +439,8 @@ function DashboardPage() {
             )}
             
             {donut.find(d => d.name === "Particular")?.value! > 0 && (
-              <div className="mt-4 pt-4 border-t border-border">
-                <p className="text-[10px] text-muted-foreground uppercase font-semibold mb-2">Formas de Pagamento (Particular)</p>
+              <div className="mt-8 pt-6 border-t border-border">
+                <p className="text-[10px] text-muted-foreground uppercase font-semibold mb-4 text-center">Formas de Pagamento (Particular)</p>
                 <div className="w-full">
                   {(() => {
                     const paymentData = Array.from(
