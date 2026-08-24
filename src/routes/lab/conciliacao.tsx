@@ -40,7 +40,7 @@ function LabConciliacao() {
 
   const { data: conciliacaoData, isLoading, refetch } = useQuery({
     queryKey: ['lab-conciliacao', startStr, endStr],
-    queryFn: () => getLabConciliacao({ data: { data_inicio: startStr, data_fim: endStr } })
+    queryFn: () => getLabConciliacao({ data: { data_inicio: startStr, data_fim: endStr } } as any)
   });
 
   const [isSyncing, setIsSyncing] = useState(false);
@@ -88,7 +88,7 @@ function LabConciliacao() {
 
   const { data: detailsData, isLoading: isLoadingDetails } = useQuery({
     queryKey: ['lab-conciliacao-details', selectedAgendamento],
-    queryFn: () => selectedAgendamento ? getLabFaturamentoItems({ data: { agendamento_id: selectedAgendamento } }) : Promise.resolve([]),
+    queryFn: () => selectedAgendamento ? getLabFaturamentoItems({ data: { agendamento_id: selectedAgendamento } } as any) : Promise.resolve([]),
     enabled: !!selectedAgendamento
   });
 

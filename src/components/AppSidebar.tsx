@@ -34,6 +34,7 @@ const navAnalytics = [
 const navFooter = [
   { title: "Auditoria de Dados", url: "/auditoria", icon: ShieldCheck },
   { title: "Configurações", url: "/config", icon: Settings },
+  { title: "Link Admin (Visão Executiva)", url: "/public-login", icon: LayoutDashboard },
 ];
 
 const navLab = [
@@ -51,7 +52,7 @@ export function AppSidebar() {
     return (
       <SidebarMenuItem key={item.url}>
         <SidebarMenuButton asChild isActive={active}>
-          <Link to={item.url} className="flex items-center gap-2">
+          <Link to={item.url as any} className="flex items-center gap-2">
             <item.icon className="h-4 w-4" />
             <span className="flex-1">{item.title}</span>
             {(item as any).badge && (
