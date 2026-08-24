@@ -66,6 +66,7 @@ function DashboardPage() {
   const [itemAberto, setItemAberto] = useState<string | null>(null);
   const [detalheProfissional, setDetalheProfissional] = useState<string | null>(null);
   const [detalheNovos, setDetalheNovos] = useState<boolean>(false);
+  const [detalheEspecialidade, setDetalheEspecialidade] = useState<string | null>(null);
 
   const diff = differenceInDays(f.to, f.from) + 1;
   const prevFrom = subDays(f.from, diff);
@@ -262,13 +263,14 @@ function DashboardPage() {
   const detalheBucket = detalhe ? byServico.get(detalhe) ?? null : null;
   
   const byOrigem = new Map<string, ServicoBucket>();
-  if (detalheOrigem || detalheProfissional || detalheNovos) {
-    const activeLabel = detalheNovos ? "Pacientes Novos" : (detalheOrigem || detalheProfissional || "");
+  if (detalheOrigem || detalheProfissional || detalheNovos || detalheEspecialidade) {
+    const activeLabel = detalheNovos ? "Pacientes Novos" : (detalheOrigem || detalheProfissional || detalheEspecialidade || "");
     const bucket: ServicoBucket = { nome: activeLabel, valor: 0, qtd: 0, itens: new Map<string, ItemServico>() };
     
     const filteredRows = labRows.filter((r: any) => {
       if (detalheNovos) return !!r.is_novo_paciente;
       if (detalheProfissional) return (r.profissional_nome || "Não informado") === detalheProfissional;
+      if (detalheEspecialidade) return (r.grupo_nome || "Sem especialidade") === detalheEspecialidade;
       if (detalheOrigem === "Particular") return r.convenio_nome === "Particular";
       if (detalheOrigem === "Convênio") return r.convenio_nome !== "Particular";
       return r.convenio_nome === detalheOrigem;
@@ -302,7 +304,9 @@ function DashboardPage() {
     byOrigem.set(activeLabel, bucket);
   }
 
-  const activeBucket = detalheNovos ? byOrigem.get("Pacientes Novos") : (detalheOrigem ? byOrigem.get(detalheOrigem) : (detalheProfissional ? byOrigem.get(detalheProfissional) : (detalhe ? byServico.get(detalhe) : null)));
+  const activeBucket = detalheNovos 
+    ? byOrigem.get("Pacientes Novos") 
+    : (detalheOrigem ? byOrigem.get(detalheOrigem) : (detalheProfissional ? byOrigem.get(detalheProfissional) : (detalheEspecialidade ? byOrigem.get(detalheEspecialidade) : (detalhe ? byServico.get(detalhe) : null))));
   const detalheItens: ItemServico[] = activeBucket
     ? Array.from(activeBucket.itens.values()).sort((a, b) => b.valor - a.valor).slice(0, 80)
     : [];
@@ -551,17 +555,18 @@ function DashboardPage() {
         </Card>
       </div>
 
-      <Sheet open={detalhe !== null || detalheOrigem !== null || detalheProfissional !== null || detalheNovos} onOpenChange={(o) => {
+      <Sheet open={detalhe !== null || detalheOrigem !== null || detalheProfissional !== null || detalheNovos || detalheEspecialidade !== null} onOpenChange={(o) => {
         if (!o) {
           setDetalhe(null);
           setDetalheOrigem(null);
           setDetalheProfissional(null);
           setDetalheNovos(false);
+          setDetalheEspecialidade(null);
         }
       }}>
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>{detalheNovos ? "Pacientes Novos" : (detalheProfissional || detalheOrigem || detalhe || "")}</SheetTitle>
+            <SheetTitle>{detalheNovos ? "Pacientes Novos" : (detalheEspecialidade || detalheProfissional || detalheOrigem || detalhe || "")}</SheetTitle>
             <SheetDescription>
               {activeBucket
                 ? `${brl(activeBucket.valor)} · ${num(activeBucket.qtd)} lançamentos · ${num(detalheItens.length)} itens distintos`
@@ -704,7 +709,7 @@ function DashboardPage() {
                     fill="var(--chart-4)" 
                     radius={[0, 6, 6, 0]}
                     cursor="pointer"
-                    onClick={(d: any) => setDetalhe(d?.payload?.nome ?? null)}
+                    onClick={(d: any) => setDetalheEspecialidade(d?.payload?.nome ?? null)}
                   />
                 </BarChart>
               </ResponsiveContainer>
