@@ -169,7 +169,7 @@ function LabRelatorio() {
           data_inicio: dateRange.start.toISOString().split('T')[0],
           data_fim: dateRange.end.toISOString().split('T')[0]
         }
-      });
+      } as any);
     }
   });
 
