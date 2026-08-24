@@ -23,6 +23,8 @@ import { categoriaServico } from "@/lib/service-categories";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { differenceInDays, subDays, eachDayOfInterval, format } from "date-fns";
+import { cn } from "@/lib/utils";
+
 
 
 
