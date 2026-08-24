@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as PublicLoginRouteImport } from './routes/public-login'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
@@ -31,6 +32,11 @@ import { Route as AuthenticatedAnalyticsComercialRouteImport } from './routes/_a
 import { Route as AuthenticatedAnalyticsCapacidadeRouteImport } from './routes/_authenticated/analytics/capacidade'
 import { Route as AuthenticatedAnalyticsAplicacoesRouteImport } from './routes/_authenticated/analytics/aplicacoes'
 
+const PublicLoginRoute = PublicLoginRouteImport.update({
+  id: '/public-login',
+  path: '/public-login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -146,6 +152,7 @@ const AuthenticatedAnalyticsAplicacoesRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/public-login': typeof PublicLoginRoute
   '/auditoria': typeof AuthenticatedAuditoriaRoute
   '/config': typeof AuthenticatedConfigRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -168,6 +175,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/public-login': typeof PublicLoginRoute
   '/auditoria': typeof AuthenticatedAuditoriaRoute
   '/config': typeof AuthenticatedConfigRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -192,6 +200,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/public-login': typeof PublicLoginRoute
   '/_authenticated/auditoria': typeof AuthenticatedAuditoriaRoute
   '/_authenticated/config': typeof AuthenticatedConfigRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
@@ -216,6 +225,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/public-login'
     | '/auditoria'
     | '/config'
     | '/dashboard'
@@ -238,6 +248,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/public-login'
     | '/auditoria'
     | '/config'
     | '/dashboard'
@@ -261,6 +272,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/public-login'
     | '/_authenticated/auditoria'
     | '/_authenticated/config'
     | '/_authenticated/dashboard'
@@ -285,6 +297,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  PublicLoginRoute: typeof PublicLoginRoute
   LabConciliacaoRoute: typeof LabConciliacaoRoute
   LabFaturamentoRoute: typeof LabFaturamentoRoute
   LabRelatorioRoute: typeof LabRelatorioRoute
@@ -292,6 +305,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/public-login': {
+      id: '/public-login'
+      path: '/public-login'
+      fullPath: '/public-login'
+      preLoaderRoute: typeof PublicLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -487,6 +507,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  PublicLoginRoute: PublicLoginRoute,
   LabConciliacaoRoute: LabConciliacaoRoute,
   LabFaturamentoRoute: LabFaturamentoRoute,
   LabRelatorioRoute: LabRelatorioRoute,
