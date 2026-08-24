@@ -62,6 +62,7 @@ function DashboardPage() {
   const [detalhe, setDetalhe] = useState<string | null>(null);
   const [detalheOrigem, setDetalheOrigem] = useState<string | null>(null);
   const [itemAberto, setItemAberto] = useState<string | null>(null);
+  const [detalheProfissional, setDetalheProfissional] = useState<string | null>(null);
 
   const diff = differenceInDays(f.to, f.from) + 1;
   const prevFrom = subDays(f.from, diff);
@@ -250,14 +251,15 @@ function DashboardPage() {
   const semDetalhe = byServico.get("Sem detalhamento da Feegow")?.valor ?? 0;
   const detalheBucket = detalhe ? byServico.get(detalhe) ?? null : null;
   
-  // Detalhe por Origem ou Convênio Específico
   const byOrigem = new Map<string, ServicoBucket>();
-  if (detalheOrigem) {
-    const bucket: ServicoBucket = { nome: detalheOrigem, valor: 0, qtd: 0, itens: new Map<string, ItemServico>() };
+  if (detalheOrigem || detalheProfissional) {
+    const activeLabel = detalheOrigem || detalheProfissional || "";
+    const bucket: ServicoBucket = { nome: activeLabel, valor: 0, qtd: 0, itens: new Map<string, ItemServico>() };
+    
     const filteredRows = labRows.filter((r: any) => {
+      if (detalheProfissional) return (r.profissional_nome || "Não informado") === detalheProfissional;
       if (detalheOrigem === "Particular") return r.convenio_nome === "Particular";
       if (detalheOrigem === "Convênio") return r.convenio_nome !== "Particular";
-      // Caso seja um convênio específico clicado na tabela
       return r.convenio_nome === detalheOrigem;
     });
     
@@ -284,10 +286,10 @@ function DashboardPage() {
       });
       bucket.itens.set(itemNome, it);
     }
-    byOrigem.set(detalheOrigem, bucket);
+    byOrigem.set(activeLabel, bucket);
   }
 
-  const activeBucket = detalheOrigem ? byOrigem.get(detalheOrigem) : (detalhe ? byServico.get(detalhe) : null);
+  const activeBucket = detalheOrigem ? byOrigem.get(detalheOrigem) : (detalheProfissional ? byOrigem.get(detalheProfissional) : (detalhe ? byServico.get(detalhe) : null));
   const detalheItens: ItemServico[] = activeBucket
     ? Array.from(activeBucket.itens.values()).sort((a, b) => b.valor - a.valor).slice(0, 80)
     : [];
@@ -527,15 +529,16 @@ function DashboardPage() {
         </Card>
       </div>
 
-      <Sheet open={detalhe !== null || detalheOrigem !== null} onOpenChange={(o) => {
+      <Sheet open={detalhe !== null || detalheOrigem !== null || detalheProfissional !== null} onOpenChange={(o) => {
         if (!o) {
           setDetalhe(null);
           setDetalheOrigem(null);
+          setDetalheProfissional(null);
         }
       }}>
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>{detalheOrigem || detalhe || ""}</SheetTitle>
+            <SheetTitle>{detalheProfissional || detalheOrigem || detalhe || ""}</SheetTitle>
             <SheetDescription>
               {activeBucket
                 ? `${brl(activeBucket.valor)} · ${num(activeBucket.qtd)} lançamentos · ${num(detalheItens.length)} itens distintos`
@@ -595,6 +598,62 @@ function DashboardPage() {
 
 
 
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Faturamento por Profissional</CardTitle>
+            <p className="text-xs text-muted-foreground">Desempenho financeiro por médico/profissional no período.</p>
+          </CardHeader>
+          <CardContent className="h-80">
+            {query.isLoading ? <Skeleton className="h-full w-full" /> : profissionaisBreakdown.length === 0 ? <EmptyState /> : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={profissionaisBreakdown.slice(0, 10)} layout="vertical" margin={{ left: 8, right: 24 }}>
+                  <CartesianGrid {...gridProps} />
+                  <XAxis {...axisProps} type="number" tickFormatter={(v) => compactBrl(Number(v))} />
+                  <YAxis {...axisProps} dataKey="nome" type="category" width={150} interval={0} />
+                  <Tooltip
+                    {...tooltipProps}
+                    formatter={(v: any) => [brl(Number(v)), "Faturado"]}
+                  />
+                  <Bar 
+                    dataKey="valor" 
+                    fill="var(--chart-3)" 
+                    radius={[0, 6, 6, 0]}
+                    cursor="pointer"
+                    onClick={(d: any) => setDetalheProfissional(d?.payload?.nome ?? null)}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Top Profissionais</CardTitle>
+            <p className="text-xs text-muted-foreground">Ranking de faturamento por profissional.</p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {query.isLoading ? <Skeleton className="h-40 w-full" /> : profissionaisBreakdown.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Sem dados.</p>
+            ) : profissionaisBreakdown.slice(0, 5).map((p) => (
+              <button
+                key={p.nome}
+                type="button"
+                onClick={() => setDetalheProfissional(p.nome)}
+                className="w-full rounded-lg border border-border p-3 text-left hover:bg-muted/50 transition-colors"
+              >
+                <div className="text-sm font-medium truncate">{p.nome}</div>
+                <div className="mt-1 flex items-baseline justify-between text-xs text-muted-foreground">
+                  <span className="text-base font-semibold text-foreground">{brl(p.valor)}</span>
+                  <span>{num(p.qtd)} atend.</span>
+                </div>
+              </button>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2">
