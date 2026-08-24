@@ -26,6 +26,8 @@ export type Database = {
           duracao_min: number
           encaixe: boolean
           especialidade_id: number | null
+          hora_fim_real: string | null
+          hora_inicio_real: string | null
           horario: string | null
           local_id: number | null
           notas: string | null
@@ -40,6 +42,7 @@ export type Database = {
           status_id: number | null
           tabela_id: number | null
           telemedicina: boolean
+          tempo_permanencia_min: number | null
           unidade_id: number | null
           updated_at: string
           valor_estimado: number
@@ -57,6 +60,8 @@ export type Database = {
           duracao_min?: number
           encaixe?: boolean
           especialidade_id?: number | null
+          hora_fim_real?: string | null
+          hora_inicio_real?: string | null
           horario?: string | null
           local_id?: number | null
           notas?: string | null
@@ -71,6 +76,7 @@ export type Database = {
           status_id?: number | null
           tabela_id?: number | null
           telemedicina?: boolean
+          tempo_permanencia_min?: number | null
           unidade_id?: number | null
           updated_at?: string
           valor_estimado?: number
@@ -88,6 +94,8 @@ export type Database = {
           duracao_min?: number
           encaixe?: boolean
           especialidade_id?: number | null
+          hora_fim_real?: string | null
+          hora_inicio_real?: string | null
           horario?: string | null
           local_id?: number | null
           notas?: string | null
@@ -102,6 +110,7 @@ export type Database = {
           status_id?: number | null
           tabela_id?: number | null
           telemedicina?: boolean
+          tempo_permanencia_min?: number | null
           unidade_id?: number | null
           updated_at?: string
           valor_estimado?: number
