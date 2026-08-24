@@ -333,7 +333,7 @@ function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card className="lg:col-span-3">
+        <Card className="lg:col-span-2">
           <CardHeader><CardTitle>Particular vs. Convênio (receita)</CardTitle></CardHeader>
           <CardContent className="h-72">
             {donut.every((d) => d.value === 0) ? <EmptyState /> : (
@@ -355,6 +355,31 @@ function DashboardPage() {
                 </PieChart>
               </ResponsiveContainer>
             )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Resumo por Convênio</CardTitle>
+            <p className="text-xs text-muted-foreground">Detalhamento por fonte pagadora. Clique para ver detalhes.</p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {query.isLoading ? <Skeleton className="h-40 w-full" /> : conveniosBreakdown.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Sem dados para os filtros selecionados.</p>
+            ) : conveniosBreakdown.map((c) => (
+              <button
+                key={c.nome}
+                type="button"
+                onClick={() => setDetalheOrigem(c.nome)}
+                className="w-full rounded-lg border border-border p-3 text-left hover:bg-muted/50 transition-colors"
+              >
+                <div className="text-sm font-medium truncate" title={c.nome}>{c.nome}</div>
+                <div className="mt-1 flex items-baseline justify-between text-xs text-muted-foreground">
+                  <span className="text-base font-semibold text-foreground">{brl(c.valor)}</span>
+                  <span>{num(c.qtd)} lanç.</span>
+                </div>
+              </button>
+            ))}
           </CardContent>
         </Card>
       </div>
