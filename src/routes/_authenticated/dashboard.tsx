@@ -282,31 +282,7 @@ function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-
-        <Card className="lg:col-span-2">
-          <CardHeader><CardTitle>Evolução diária por status</CardTitle></CardHeader>
-          <CardContent className="h-72">
-            {query.isLoading ? <Skeleton className="h-full w-full" /> : daily.length === 0 ? (
-              <EmptyState />
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={daily}>
-                  <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
-                  <XAxis {...axisProps} dataKey="data" stroke="var(--muted-foreground)" fontSize={11} />
-                  <YAxis {...axisProps} stroke="var(--muted-foreground)" fontSize={11} />
-                  <Tooltip {...tooltipProps} />
-                  <Legend wrapperStyle={{ fontSize: 12, color: "var(--muted-foreground)" }} />
-                  <Line type="monotone" dataKey="realizado" stroke="var(--chart-2)" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="no_show" stroke="var(--chart-5)" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="cancelado" stroke="var(--chart-4)" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="agendado" stroke="var(--chart-1)" strokeWidth={2} dot={false} />
-                </LineChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
+        <Card className="lg:col-span-3">
           <CardHeader><CardTitle>Particular vs. Convênio (receita)</CardTitle></CardHeader>
           <CardContent className="h-72">
             {donut.every((d) => d.value === 0) ? <EmptyState /> : (
