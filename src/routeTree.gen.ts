@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as PublicLoginRouteImport } from './routes/public-login'
+import { Route as PublicDashboardRouteImport } from './routes/public-dashboard'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
@@ -35,6 +36,11 @@ import { Route as AuthenticatedAnalyticsAplicacoesRouteImport } from './routes/_
 const PublicLoginRoute = PublicLoginRouteImport.update({
   id: '/public-login',
   path: '/public-login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PublicDashboardRoute = PublicDashboardRouteImport.update({
+  id: '/public-dashboard',
+  path: '/public-dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -152,6 +158,7 @@ const AuthenticatedAnalyticsAplicacoesRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/public-dashboard': typeof PublicDashboardRoute
   '/public-login': typeof PublicLoginRoute
   '/auditoria': typeof AuthenticatedAuditoriaRoute
   '/config': typeof AuthenticatedConfigRoute
@@ -175,6 +182,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/public-dashboard': typeof PublicDashboardRoute
   '/public-login': typeof PublicLoginRoute
   '/auditoria': typeof AuthenticatedAuditoriaRoute
   '/config': typeof AuthenticatedConfigRoute
@@ -200,6 +208,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/public-dashboard': typeof PublicDashboardRoute
   '/public-login': typeof PublicLoginRoute
   '/_authenticated/auditoria': typeof AuthenticatedAuditoriaRoute
   '/_authenticated/config': typeof AuthenticatedConfigRoute
@@ -225,6 +234,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/public-dashboard'
     | '/public-login'
     | '/auditoria'
     | '/config'
@@ -248,6 +258,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/public-dashboard'
     | '/public-login'
     | '/auditoria'
     | '/config'
@@ -272,6 +283,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/public-dashboard'
     | '/public-login'
     | '/_authenticated/auditoria'
     | '/_authenticated/config'
@@ -297,6 +309,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  PublicDashboardRoute: typeof PublicDashboardRoute
   PublicLoginRoute: typeof PublicLoginRoute
   LabConciliacaoRoute: typeof LabConciliacaoRoute
   LabFaturamentoRoute: typeof LabFaturamentoRoute
@@ -310,6 +323,13 @@ declare module '@tanstack/react-router' {
       path: '/public-login'
       fullPath: '/public-login'
       preLoaderRoute: typeof PublicLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/public-dashboard': {
+      id: '/public-dashboard'
+      path: '/public-dashboard'
+      fullPath: '/public-dashboard'
+      preLoaderRoute: typeof PublicDashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -507,6 +527,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  PublicDashboardRoute: PublicDashboardRoute,
   PublicLoginRoute: PublicLoginRoute,
   LabConciliacaoRoute: LabConciliacaoRoute,
   LabFaturamentoRoute: LabFaturamentoRoute,

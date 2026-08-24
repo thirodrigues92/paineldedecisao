@@ -1,7 +1,7 @@
-import { createFileRoute, useNavigate, Outlet, redirect } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useFilters } from "@/lib/filters-context";
+import { useFilters, FiltersProvider } from "@/lib/filters-context";
 import { 
   dashboardQueryKey, 
   fetchDashboardAppointments, 
@@ -11,36 +11,22 @@ import {
   fetchLabProducaoRows
 } from "@/lib/dashboard-data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { brl, num, pct } from "@/lib/format";
 import { Calendar, DollarSign, UserPlus, UserX, Activity, TrendingUp, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import {
-  ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid,
+  ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid,
   BarChart, Bar, PieChart, Pie, Cell, Legend,
 } from "recharts";
 import { axisProps, gridProps, tooltipProps } from "@/lib/chart-theme";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LastSyncCard } from "@/components/LastSyncCard";
-import { categoriaServico } from "@/lib/service-categories";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { differenceInDays, subDays, eachDayOfInterval, format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { FiltersProvider } from "@/lib/filters-context";
 import { GlobalFilters } from "@/components/GlobalFilters";
 
-// Definindo a rota como um TanStack Route
-// Note: O arquivo precisa exportar Route para o TanStack Router registrar
-// Mas como estamos criando um novo arquivo, ele será detectado pelo file-based routing se seguirmos o padrão.
-
-// Componente principal que é uma versão simplificada do DashboardPage original
 function PublicDashboardContent() {
   const f = useFilters();
-  const [detalhe, setDetalhe] = useState<string | null>(null);
-  const [detalheOrigem, setDetalheOrigem] = useState<string | null>(null);
-  const [itemAberto, setItemAberto] = useState<string | null>(null);
-  const [detalheProfissional, setDetalheProfissional] = useState<string | null>(null);
-  const [detalheNovos, setDetalheNovos] = useState<boolean>(false);
-  const [detalheEspecialidade, setDetalheEspecialidade] = useState<string | null>(null);
-
   const diff = differenceInDays(f.to, f.from) + 1;
   const prevFrom = subDays(f.from, diff);
   const prevTo = subDays(f.to, diff);
@@ -109,7 +95,6 @@ function PublicDashboardContent() {
   const prevTicket = prevTotalItens > 0 ? prevFaturado / prevTotalItens : 0;
   const prevNovos = prevData?.appointments.filter((r: any) => r.primeiro_agendamento).length ?? 0;
 
-  // Por especialidade
   const byEsp = new Map<string, { total: number; valor: number }>();
   for (const r of labRows) {
     const nome = r.grupo_nome || "Sem especialidade";
@@ -123,7 +108,6 @@ function PublicDashboardContent() {
     .slice(0, 10)
     .map(([nome, d]) => ({ nome, total: d.total, valor: d.valor }));
 
-  // Donut particular vs convenio
   const donut = [
     { name: "Particular", value: labRows.filter((r: any) => r.convenio_nome === "Particular").reduce((s, r) => s + Number(r.valor || 0), 0) },
     { name: "Convênio",   value: labRows.filter((r: any) => r.convenio_nome !== "Particular").reduce((s, r) => s + Number(r.valor || 0), 0) },
@@ -244,12 +228,14 @@ function PublicDashboardContent() {
   );
 }
 
-// O componente de rota que gerencia a autenticação pública
 export const Route = createFileRoute("/public-dashboard")({
+  ssr: false,
   beforeLoad: () => {
-    const isAuthed = localStorage.getItem("public_admin_session") === "true";
-    if (!isAuthed) {
-      throw redirect({ to: "/public-login" });
+    if (typeof window !== "undefined") {
+      const isAuthed = localStorage.getItem("public_admin_session") === "true";
+      if (!isAuthed) {
+        throw redirect({ to: "/public-login" });
+      }
     }
   },
   component: () => (
