@@ -159,14 +159,19 @@ function DashboardPage() {
   });
 
 
-  // Por especialidade top10
-  const byEsp = new Map<string, number>();
-  for (const r of rows as any[]) {
-    const nome = r.especialidades?.nome ?? "Sem especialidade";
-    byEsp.set(nome, (byEsp.get(nome) ?? 0) + 1);
+  // Especialidades e Volume Faturado
+  const byEsp = new Map<string, { total: number; valor: number }>();
+  for (const r of labRows) {
+    const nome = r.grupo_nome || "Sem especialidade";
+    const cur = byEsp.get(nome) ?? { total: 0, valor: 0 };
+    cur.total += 1;
+    cur.valor += Number(r.valor || 0);
+    byEsp.set(nome, cur);
   }
-  const topEsp = Array.from(byEsp.entries()).sort((a, b) => b[1] - a[1]).slice(0, 10)
-    .map(([nome, total]) => ({ nome, total }));
+  const topEsp = Array.from(byEsp.entries())
+    .sort((a, b) => b[1].valor - a[1].valor)
+    .slice(0, 10)
+    .map(([nome, d]) => ({ nome, total: d.total, valor: d.valor }));
 
   // Donut particular vs convenio (por valor)
   const donut = [
@@ -676,16 +681,31 @@ function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2">
-          <CardHeader><CardTitle>Top 10 especialidades</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>Especialidades por Faturamento</CardTitle>
+            <p className="text-xs text-muted-foreground">Ranking das especialidades que mais geraram receita no período selecionado.</p>
+          </CardHeader>
           <CardContent className="h-80">
-            {topEsp.length === 0 ? <EmptyState /> : (
+            {query.isLoading ? <Skeleton className="h-full w-full" /> : topEsp.length === 0 ? <EmptyState /> : (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={topEsp} layout="vertical" margin={{ left: 40 }}>
-                  <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
-                  <XAxis {...axisProps} type="number" stroke="var(--muted-foreground)" fontSize={11} />
-                  <YAxis {...axisProps} dataKey="nome" type="category" width={140} stroke="var(--muted-foreground)" fontSize={11} />
-                  <Tooltip {...tooltipProps} />
-                  <Bar dataKey="total" fill="var(--chart-1)" radius={[0, 6, 6, 0]} />
+                <BarChart data={topEsp} layout="vertical" margin={{ left: 8, right: 24 }}>
+                  <CartesianGrid {...gridProps} />
+                  <XAxis {...axisProps} type="number" tickFormatter={(v) => compactBrl(Number(v))} />
+                  <YAxis {...axisProps} dataKey="nome" type="category" width={150} interval={0} />
+                  <Tooltip 
+                    {...tooltipProps}
+                    formatter={(v: any, _n: any, p: any) => [
+                      `${brl(Number(v))} · ${num(p?.payload?.total ?? 0)} atend.`, 
+                      "Faturado"
+                    ]}
+                  />
+                  <Bar 
+                    dataKey="valor" 
+                    fill="var(--chart-4)" 
+                    radius={[0, 6, 6, 0]}
+                    cursor="pointer"
+                    onClick={(d: any) => setDetalhe(d?.payload?.nome ?? null)}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             )}
