@@ -184,6 +184,8 @@ function DashboardPage() {
     ...c,
     share: totalCategorias > 0 ? (c.valor * 100) / totalCategorias : 0,
   }));
+  const menores = [...categorias].slice(-3).reverse();
+
 
   // Faturamento por tipo de serviço
   const byServico = new Map<string, ServicoBucket>();
