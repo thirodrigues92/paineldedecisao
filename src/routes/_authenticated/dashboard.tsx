@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useFilters } from "@/lib/filters-context";
+import { ProducaoGapAlert } from "@/components/ProducaoGapAlert";
 import { 
   dashboardQueryKey, 
   fetchDashboardAppointments, 
@@ -372,6 +373,10 @@ function DashboardPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Visão Executiva</h1>
       </div>
+
+      {!query.isLoading && (
+        <ProducaoGapAlert from={f.from} to={f.to} temDados={labRows.length > 0} />
+      )}
 
       
 

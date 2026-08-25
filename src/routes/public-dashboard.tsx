@@ -2,6 +2,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useFilters, FiltersProvider } from "@/lib/filters-context";
+import { ProducaoGapAlert } from "@/components/ProducaoGapAlert";
 import { 
   dashboardQueryKey, 
   fetchDashboardAppointments, 
@@ -279,6 +280,10 @@ function PublicDashboardContent() {
           Sair
         </Button>
       </div>
+
+      {!query.isLoading && (
+        <ProducaoGapAlert from={f.from} to={f.to} temDados={labRows.length > 0} />
+      )}
 
       
 

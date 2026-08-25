@@ -639,17 +639,18 @@ export const labSyncProducao = createServerFn({ method: "POST" })
 
         const item = {
           feegow_id: hashToBigInt(chaveNatural),
-          id_transacao: idTransacao || null,
-          n_guia_prestador: nGuia || null,
+          // Chave natural nunca pode ter NULL (NULL quebra a deduplicação do índice único)
+          id_transacao: idTransacao,
+          n_guia_prestador: nGuia,
           paciente_id: toBigInt(r.PacienteID),
           paciente_nome: r.NomePaciente || null,
           prontuario: r.Prontuario || r.ProntuarioPaciente || null,
-          agendamento_id: toBigInt(r.AgendamentoID),
+          agendamento_id: toBigInt(r.AgendamentoID) ?? -1,
           data_execucao: parseDataFeegow(r.Data),
           hora_inicio: r.HoraInicio || r.Hora || null,
           profissional_id: toBigInt(r.ProfissionalID),
           profissional_nome: r.NomeProfissional || null,
-          procedimento_id: toBigInt(r.ProcedimentoID),
+          procedimento_id: toBigInt(r.ProcedimentoID) ?? -1,
           procedimento_nome: r.NomeProcedimento || null,
           valor: parseValorBR(r.Valor),
           valor_pago: parseValorBR(r.ValorPago),

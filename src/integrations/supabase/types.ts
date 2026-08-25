@@ -643,7 +643,7 @@ export type Database = {
       }
       lab_producao_feegow: {
         Row: {
-          agendamento_id: number | null
+          agendamento_id: number
           convenio_id: number | null
           convenio_nome: string | null
           created_at: string | null
@@ -654,12 +654,12 @@ export type Database = {
           grupo_nome: string | null
           hora_inicio: string | null
           id: string
-          id_transacao: string | null
-          n_guia_prestador: string | null
+          id_transacao: string
+          n_guia_prestador: string
           paciente_id: number | null
           paciente_nome: string | null
           payload_raw: Json | null
-          procedimento_id: number | null
+          procedimento_id: number
           procedimento_nome: string | null
           profissional_id: number | null
           profissional_nome: string | null
@@ -673,7 +673,7 @@ export type Database = {
           valor_pago: number | null
         }
         Insert: {
-          agendamento_id?: number | null
+          agendamento_id?: number
           convenio_id?: number | null
           convenio_nome?: string | null
           created_at?: string | null
@@ -684,12 +684,12 @@ export type Database = {
           grupo_nome?: string | null
           hora_inicio?: string | null
           id?: string
-          id_transacao?: string | null
-          n_guia_prestador?: string | null
+          id_transacao?: string
+          n_guia_prestador?: string
           paciente_id?: number | null
           paciente_nome?: string | null
           payload_raw?: Json | null
-          procedimento_id?: number | null
+          procedimento_id?: number
           procedimento_nome?: string | null
           profissional_id?: number | null
           profissional_nome?: string | null
@@ -703,7 +703,7 @@ export type Database = {
           valor_pago?: number | null
         }
         Update: {
-          agendamento_id?: number | null
+          agendamento_id?: number
           convenio_id?: number | null
           convenio_nome?: string | null
           created_at?: string | null
@@ -714,12 +714,12 @@ export type Database = {
           grupo_nome?: string | null
           hora_inicio?: string | null
           id?: string
-          id_transacao?: string | null
-          n_guia_prestador?: string | null
+          id_transacao?: string
+          n_guia_prestador?: string
           paciente_id?: number | null
           paciente_nome?: string | null
           payload_raw?: Json | null
-          procedimento_id?: number | null
+          procedimento_id?: number
           procedimento_nome?: string | null
           profissional_id?: number | null
           profissional_nome?: string | null
