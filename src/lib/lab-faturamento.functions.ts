@@ -650,7 +650,7 @@ export const labSyncProducao = createServerFn({ method: "POST" })
           hora_inicio: r.HoraInicio || r.Hora || null,
           profissional_id: toBigInt(r.ProfissionalID),
           profissional_nome: r.NomeProfissional || null,
-          procedimento_id: toBigInt(r.ProcedimentoID),
+          procedimento_id: toBigInt(r.ProcedimentoID) ?? -1,
           procedimento_nome: r.NomeProcedimento || null,
           valor: parseValorBR(r.Valor),
           valor_pago: parseValorBR(r.ValorPago),
