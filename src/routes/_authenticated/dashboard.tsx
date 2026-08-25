@@ -373,6 +373,10 @@ function DashboardPage() {
         <h1 className="text-2xl font-bold tracking-tight">Visão Executiva</h1>
       </div>
 
+      {!query.isLoading && (
+        <ProducaoGapAlert from={f.from} to={f.to} temDados={labRows.length > 0} />
+      )}
+
       
 
 
