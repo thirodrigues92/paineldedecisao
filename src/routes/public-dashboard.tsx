@@ -21,7 +21,7 @@ import {
 import { axisProps, gridProps, tooltipProps } from "@/lib/chart-theme";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LastSyncCard } from "@/components/LastSyncCard";
-import { HojePanel } from "@/components/HojePanel";
+
 import { categoriaServico } from "@/lib/service-categories";
 import { differenceInDays, subDays, eachDayOfInterval, format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -280,7 +280,7 @@ function PublicDashboardContent() {
         </Button>
       </div>
 
-      <HojePanel />
+      
 
 
 
