@@ -645,7 +645,7 @@ export const labSyncProducao = createServerFn({ method: "POST" })
           paciente_id: toBigInt(r.PacienteID),
           paciente_nome: r.NomePaciente || null,
           prontuario: r.Prontuario || r.ProntuarioPaciente || null,
-          agendamento_id: toBigInt(r.AgendamentoID),
+          agendamento_id: toBigInt(r.AgendamentoID) ?? -1,
           data_execucao: parseDataFeegow(r.Data),
           hora_inicio: r.HoraInicio || r.Hora || null,
           profissional_id: toBigInt(r.ProfissionalID),
