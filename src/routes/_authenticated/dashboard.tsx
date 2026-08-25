@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useFilters } from "@/lib/filters-context";
+import { ProducaoGapAlert } from "@/components/ProducaoGapAlert";
 import { 
   dashboardQueryKey, 
   fetchDashboardAppointments, 
