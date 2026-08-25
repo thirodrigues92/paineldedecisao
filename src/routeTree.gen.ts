@@ -22,6 +22,7 @@ import { Route as AuthenticatedRelatorioAtendimentosRouteImport } from './routes
 import { Route as AuthenticatedProfissionaisRouteImport } from './routes/_authenticated/profissionais'
 import { Route as AuthenticatedNoShowRouteImport } from './routes/_authenticated/no-show'
 import { Route as AuthenticatedMapaRouteImport } from './routes/_authenticated/mapa'
+import { Route as AuthenticatedHojeRouteImport } from './routes/_authenticated/hoje'
 import { Route as AuthenticatedHeatmapRouteImport } from './routes/_authenticated/heatmap'
 import { Route as AuthenticatedFinanceiroRouteImport } from './routes/_authenticated/financeiro'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -99,6 +100,11 @@ const AuthenticatedMapaRoute = AuthenticatedMapaRouteImport.update({
   path: '/mapa',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedHojeRoute = AuthenticatedHojeRouteImport.update({
+  id: '/hoje',
+  path: '/hoje',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedHeatmapRoute = AuthenticatedHeatmapRouteImport.update({
   id: '/heatmap',
   path: '/heatmap',
@@ -165,6 +171,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/financeiro': typeof AuthenticatedFinanceiroRoute
   '/heatmap': typeof AuthenticatedHeatmapRoute
+  '/hoje': typeof AuthenticatedHojeRoute
   '/mapa': typeof AuthenticatedMapaRoute
   '/no-show': typeof AuthenticatedNoShowRoute
   '/profissionais': typeof AuthenticatedProfissionaisRoute
@@ -189,6 +196,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/financeiro': typeof AuthenticatedFinanceiroRoute
   '/heatmap': typeof AuthenticatedHeatmapRoute
+  '/hoje': typeof AuthenticatedHojeRoute
   '/mapa': typeof AuthenticatedMapaRoute
   '/no-show': typeof AuthenticatedNoShowRoute
   '/profissionais': typeof AuthenticatedProfissionaisRoute
@@ -215,6 +223,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/financeiro': typeof AuthenticatedFinanceiroRoute
   '/_authenticated/heatmap': typeof AuthenticatedHeatmapRoute
+  '/_authenticated/hoje': typeof AuthenticatedHojeRoute
   '/_authenticated/mapa': typeof AuthenticatedMapaRoute
   '/_authenticated/no-show': typeof AuthenticatedNoShowRoute
   '/_authenticated/profissionais': typeof AuthenticatedProfissionaisRoute
@@ -241,6 +250,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/financeiro'
     | '/heatmap'
+    | '/hoje'
     | '/mapa'
     | '/no-show'
     | '/profissionais'
@@ -265,6 +275,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/financeiro'
     | '/heatmap'
+    | '/hoje'
     | '/mapa'
     | '/no-show'
     | '/profissionais'
@@ -290,6 +301,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/financeiro'
     | '/_authenticated/heatmap'
+    | '/_authenticated/hoje'
     | '/_authenticated/mapa'
     | '/_authenticated/no-show'
     | '/_authenticated/profissionais'
@@ -409,6 +421,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMapaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/hoje': {
+      id: '/_authenticated/hoje'
+      path: '/hoje'
+      fullPath: '/hoje'
+      preLoaderRoute: typeof AuthenticatedHojeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/heatmap': {
       id: '/_authenticated/heatmap'
       path: '/heatmap'
@@ -488,6 +507,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedFinanceiroRoute: typeof AuthenticatedFinanceiroRoute
   AuthenticatedHeatmapRoute: typeof AuthenticatedHeatmapRoute
+  AuthenticatedHojeRoute: typeof AuthenticatedHojeRoute
   AuthenticatedMapaRoute: typeof AuthenticatedMapaRoute
   AuthenticatedNoShowRoute: typeof AuthenticatedNoShowRoute
   AuthenticatedProfissionaisRoute: typeof AuthenticatedProfissionaisRoute
@@ -506,6 +526,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedFinanceiroRoute: AuthenticatedFinanceiroRoute,
   AuthenticatedHeatmapRoute: AuthenticatedHeatmapRoute,
+  AuthenticatedHojeRoute: AuthenticatedHojeRoute,
   AuthenticatedMapaRoute: AuthenticatedMapaRoute,
   AuthenticatedNoShowRoute: AuthenticatedNoShowRoute,
   AuthenticatedProfissionaisRoute: AuthenticatedProfissionaisRoute,
