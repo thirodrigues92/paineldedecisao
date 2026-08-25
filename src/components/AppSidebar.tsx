@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const navMain = [
   { title: "Visão Executiva", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Hoje", url: "/hoje", icon: CalendarClock },
   { title: "Heatmap da Agenda", url: "/heatmap", icon: CalendarClock },
   { title: "Análise de No-show", url: "/no-show", icon: UserX },
   { title: "Financeiro", url: "/financeiro", icon: DollarSign },
