@@ -281,6 +281,10 @@ function PublicDashboardContent() {
         </Button>
       </div>
 
+      {!query.isLoading && (
+        <ProducaoGapAlert from={f.from} to={f.to} temDados={labRows.length > 0} />
+      )}
+
       
 
 
