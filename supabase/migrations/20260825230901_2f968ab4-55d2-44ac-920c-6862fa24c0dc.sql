@@ -1,0 +1,1 @@
+ALTER TABLE public.lab_producao_feegow DROP CONSTRAINT IF EXISTS lab_producao_feegow_feegow_id_key;
