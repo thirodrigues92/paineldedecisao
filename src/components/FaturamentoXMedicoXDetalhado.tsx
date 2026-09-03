@@ -1,17 +1,16 @@
 import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
-import { brl, pct, num } from "@/lib/format";
-import type { LabProducaoRow } from "@/lib/dashboard-data";
+import { brl, num } from "@/lib/format";
+import { fetchLabProducaoRows } from "@/lib/dashboard-data";
+import { useFilters } from "@/lib/filters-context";
 import { tooltipProps } from "@/lib/chart-theme";
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-
-interface FaturamentoXMedicoXDetalhadoProps {
-  dados: LabProducaoRow[];
-}
+import { Skeleton } from "@/components/ui/skeleton";
 
 function formataDataCurta(isoDate: string | null) {
   if (!isoDate) return "--";
@@ -20,7 +19,13 @@ function formataDataCurta(isoDate: string | null) {
   return `${parts[2]}/${parts[1]}/${parts[0].slice(2)}`;
 }
 
-export function FaturamentoXMedicoXDetalhado({ dados }: FaturamentoXMedicoXDetalhadoProps) {
+export function FaturamentoXMedicoXDetalhado() {
+  const filters = useFilters();
+  const { data: dados = [], isLoading } = useQuery({
+    queryKey: ["labProducaoData_detalhado", filters],
+    queryFn: () => fetchLabProducaoRows(filters, 30_000),
+  });
+
   const [layer, setLayer] = useState<1 | 2 | 3 | 4>(1);
   const [esp, setEsp] = useState<string | null>(null);
   const [med, setMed] = useState<string | null>(null);
@@ -210,6 +215,20 @@ export function FaturamentoXMedicoXDetalhado({ dados }: FaturamentoXMedicoXDetal
       </ScrollArea>
     </div>
   );
+
+  if (isLoading) {
+    return (
+      <Card className="w-full">
+        <CardHeader className="pb-4">
+          <Skeleton className="h-6 w-1/3 mb-2" />
+          <Skeleton className="h-4 w-1/2" />
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-64 w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (chartData.length === 0 && layer === 1) {
     return (
