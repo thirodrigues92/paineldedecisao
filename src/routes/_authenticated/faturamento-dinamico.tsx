@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from "recharts";
-import { RefreshCw, LayoutGrid, BarChart2 } from "lucide-react";
+import { RefreshCw, LayoutGrid, BarChart2, SlidersHorizontal } from "lucide-react";
 import { GlobalFilters } from "@/components/GlobalFilters";
 
 export const Route = createFileRoute("/_authenticated/faturamento-dinamico")({
