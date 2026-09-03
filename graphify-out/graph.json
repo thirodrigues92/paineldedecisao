@@ -1563,7 +1563,7 @@
       "file_type": "code",
       "norm_label": "faturamentodinamicopage()",
       "source_file": "src/routes/_authenticated/faturamento-dinamico.tsx",
-      "source_location": "L45"
+      "source_location": "L56"
     },
     {
       "id": "src_routes_lab_conciliacao_labconciliacao",
@@ -2300,7 +2300,7 @@
       "file_type": "code",
       "norm_label": "multiselectfilter()",
       "source_file": "src/routes/_authenticated/faturamento-dinamico.tsx",
-      "source_location": "L463"
+      "source_location": "L474"
     },
     {
       "id": "src_components_patientmap_fitbounds",
@@ -13222,7 +13222,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/routes/_authenticated/faturamento-dinamico.tsx",
-      "source_location": "L46",
+      "source_location": "L57",
       "weight": 1.0
     },
     {
@@ -13234,7 +13234,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/routes/_authenticated/faturamento-dinamico.tsx",
-      "source_location": "L490",
+      "source_location": "L501",
       "weight": 1.0
     },
     {
@@ -33672,7 +33672,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/routes/_authenticated/faturamento-dinamico.tsx",
-      "source_location": "L463",
+      "source_location": "L474",
       "weight": 1.0
     },
     {
@@ -35688,5 +35688,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "9827606669a546d8e1ec860866fb0cc3897ee0d8"
+  "built_at_commit": "7c3beb3a66ba346b0f4af903ba5f9e6793ecea82"
 }
