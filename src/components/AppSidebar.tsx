@@ -2,7 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, CalendarClock, UserX, DollarSign,
   Stethoscope, Building2, MapPinned, Settings, LogOut, Table2,
-  TrendingUp, PieChart, Activity, LineChart as LineIcon, Syringe, ShieldCheck, Database
+  TrendingUp, PieChart, Activity, LineChart as LineIcon, Syringe, ShieldCheck, Database, SlidersHorizontal
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const navMain = [
   { title: "Visão de Faturamento", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Faturamento Dinâmico", url: "/faturamento-dinamico", icon: SlidersHorizontal },
   { title: "Hoje", url: "/hoje", icon: CalendarClock },
   { title: "Heatmap da Agenda", url: "/heatmap", icon: CalendarClock },
   { title: "Análise de No-show", url: "/no-show", icon: UserX },
