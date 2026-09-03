@@ -11,7 +11,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 
 const navMain = [
-  { title: "Visão Executiva", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Visão de Faturamento", url: "/dashboard", icon: LayoutDashboard },
   { title: "Hoje", url: "/hoje", icon: CalendarClock },
   { title: "Heatmap da Agenda", url: "/heatmap", icon: CalendarClock },
   { title: "Análise de No-show", url: "/no-show", icon: UserX },
@@ -35,7 +35,7 @@ const navAnalytics = [
 const navFooter = [
   { title: "Auditoria de Dados", url: "/auditoria", icon: ShieldCheck },
   { title: "Configurações", url: "/config", icon: Settings },
-  { title: "Link Admin (Visão Executiva)", url: "/public-login", icon: LayoutDashboard },
+  { title: "Link Admin (Visão de Faturamento)", url: "/public-login", icon: LayoutDashboard },
 ];
 
 const navLab = [
