@@ -39,8 +39,19 @@ const METRICA_LABELS: Record<Metrica, string> = {
   quantidade: "Qtd. Procedimentos",
 };
 
-// Paleta de cores para os gráficos dinâmicos
-const CHART_COLORS = ["#0f172a", "#334155", "#64748b", "#94a3b8", "#3b82f6", "#1d4ed8", "#0369a1", "#0ea5e9", "#0f766e", "#14b8a6"];
+// Paleta de cores VIVAS para os gráficos dinâmicos
+const CHART_COLORS = [
+  "#3b82f6", // Azul Vivo
+  "#22c55e", // Verde Vivo
+  "#f59e0b", // Âmbar Vivo
+  "#ef4444", // Vermelho Vivo
+  "#8b5cf6", // Roxo Vivo
+  "#f97316", // Laranja Vivo
+  "#06b6d4", // Ciano Vivo
+  "#ec4899", // Rosa Vivo
+  "#84cc16", // Lima Vivo
+  "#14b8a6"  // Turquesa Vivo
+];
 
 function FaturamentoDinamicoPage() {
   const filters = useFilters();
@@ -520,7 +531,10 @@ function MultiSelectFilter({
               {options.map((option) => (
                 <CommandItem
                   key={option}
-                  onSelect={() => toggle(option)}
+                  value={option}
+                  onSelect={() => {
+                     toggle(option);
+                  }}
                 >
                   <div className={cn(
                     "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
@@ -538,6 +552,7 @@ function MultiSelectFilter({
               <div className="h-px bg-border" />
               <div className="p-1">
                 <CommandItem
+                  value="__clear_all__"
                   onSelect={() => { onChange([]); setOpen(false); }}
                   className="justify-center text-center text-sm cursor-pointer"
                 >
