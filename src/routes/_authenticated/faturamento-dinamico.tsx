@@ -10,8 +10,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from "recharts";
-import { RefreshCw, LayoutGrid, BarChart2, SlidersHorizontal } from "lucide-react";
+import { RefreshCw, LayoutGrid, BarChart2, SlidersHorizontal, Filter, FilterX, Check } from "lucide-react";
 import { GlobalFilters } from "@/components/GlobalFilters";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/faturamento-dinamico")({
   component: FaturamentoDinamicoPage,
@@ -43,9 +48,15 @@ function FaturamentoDinamicoPage() {
   const [coluna, setColuna] = useState<Dimensao | "none">("none");
   const [metrica, setMetrica] = useState<Metrica>("valor_faturado");
 
+  // Filtros locais para drill-down
+  const [filtroProfissionais, setFiltroProfissionais] = useState<string[]>([]);
+  const [filtroConvenios, setFiltroConvenios] = useState<string[]>([]);
+  const [filtroProcedimentos, setFiltroProcedimentos] = useState<string[]>([]);
+  const [filtroGrupos, setFiltroGrupos] = useState<string[]>([]);
+
   // Busca consolidada dos dados
   const { data: rawData, isLoading } = useQuery({
-    queryKey: ["faturamento-dinamico", filters.from, filters.to],
+    queryKey: ["faturamento-dinamico", filters.from, filters.to, filters.unidadeIds, filters.profissionalIds],
     queryFn: async () => {
       const ds = format(filters.from, "yyyy-MM-dd");
       const de = format(filters.to, "yyyy-MM-dd");
@@ -55,12 +66,20 @@ function FaturamentoDinamicoPage() {
       const pageSize = 1000;
 
       while (true) {
-        const { data, error } = await supabase
+        let query = supabase
           .from("lab_producao_feegow")
           .select("data_execucao, profissional_nome, procedimento_nome, grupo_nome, convenio_nome, valor, valor_pago")
           .gte("data_execucao", ds)
-          .lte("data_execucao", de)
-          .range(from, from + pageSize - 1);
+          .lte("data_execucao", de);
+
+        if (filters.unidadeIds.length > 0) {
+          query = query.in("unidade_id", filters.unidadeIds);
+        }
+        if (filters.profissionalIds.length > 0) {
+          query = query.in("profissional_id", filters.profissionalIds);
+        }
+
+        const { data, error } = await query.range(from, from + pageSize - 1);
 
         if (error) {
           console.error("Erro buscando dados:", error);
@@ -77,9 +96,38 @@ function FaturamentoDinamicoPage() {
     },
   });
 
-  // Processamento do Pivot (Matriz)
+  // Extrair opções únicas para os filtros
+  const filterOptions = useMemo(() => {
+    if (!rawData) return { profissionais: [], convenios: [], procedimentos: [], grupos: [] };
+    return {
+      profissionais: Array.from(new Set(rawData.map(d => d.profissional_nome || "Sem Profissional"))).sort(),
+      convenios: Array.from(new Set(rawData.map(d => d.convenio_nome || "Sem Convênio"))).sort(),
+      procedimentos: Array.from(new Set(rawData.map(d => d.procedimento_nome || "Sem Procedimento"))).sort(),
+      grupos: Array.from(new Set(rawData.map(d => d.grupo_nome || "Sem Grupo"))).sort(),
+    };
+  }, [rawData]);
+
+  // Aplicar filtros locais aos dados brutos
+  const filteredData = useMemo(() => {
+    if (!rawData) return [];
+    return rawData.filter((item) => {
+      const p = item.profissional_nome || "Sem Profissional";
+      const c = item.convenio_nome || "Sem Convênio";
+      const pr = item.procedimento_nome || "Sem Procedimento";
+      const g = item.grupo_nome || "Sem Grupo";
+
+      if (filtroProfissionais.length > 0 && !filtroProfissionais.includes(p)) return false;
+      if (filtroConvenios.length > 0 && !filtroConvenios.includes(c)) return false;
+      if (filtroProcedimentos.length > 0 && !filtroProcedimentos.includes(pr)) return false;
+      if (filtroGrupos.length > 0 && !filtroGrupos.includes(g)) return false;
+
+      return true;
+    });
+  }, [rawData, filtroProfissionais, filtroConvenios, filtroProcedimentos, filtroGrupos]);
+
+  // Processamento do Pivot (Matriz) baseado nos dados filtrados
   const { matrix, colunasAtivas, totais } = useMemo(() => {
-    if (!rawData) return { matrix: [], colunasAtivas: [], totais: {} };
+    if (filteredData.length === 0) return { matrix: [], colunasAtivas: [], totais: {} };
 
     const pivot: Record<string, Record<string, number>> = {};
     const colunasSet = new Set<string>();
@@ -102,7 +150,7 @@ function FaturamentoDinamicoPage() {
       }
     };
 
-    rawData.forEach((item) => {
+    filteredData.forEach((item) => {
       const rKey = getValDimensao(item, linha);
       const cKey = coluna === "none" ? "Geral" : getValDimensao(item, coluna);
       
@@ -141,13 +189,15 @@ function FaturamentoDinamicoPage() {
     });
 
     return { matrix: arrayMatrix, colunasAtivas: colunasOrdenadas, totais: totaisObj };
-  }, [rawData, linha, coluna, metrica]);
+  }, [filteredData, linha, coluna, metrica]);
 
   const formatarValor = (val: number | undefined) => {
     if (val === undefined) return "-";
     if (metrica === "quantidade") return val.toLocaleString("pt-BR");
     return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
   };
+
+  const hasFiltrosAtivos = filtroProfissionais.length > 0 || filtroConvenios.length > 0 || filtroProcedimentos.length > 0 || filtroGrupos.length > 0;
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -167,54 +217,106 @@ function FaturamentoDinamicoPage() {
           </div>
         </div>
 
-        {/* Painel de Controles */}
-        <Card className="border-border shadow-sm">
-          <CardContent className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Linhas (Eixo Principal)</label>
-              <Select value={linha} onValueChange={(v: Dimensao) => setLinha(v)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(DIMENSAO_LABELS).map(([k, v]) => (
-                    <SelectItem key={k} value={k}>{v}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+        <div className="grid grid-cols-1 gap-4">
+          {/* Painel de Controles da Pivot */}
+          <Card className="border-border shadow-sm">
+            <CardContent className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Linhas (Eixo Principal)</label>
+                <Select value={linha} onValueChange={(v: Dimensao) => setLinha(v)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(DIMENSAO_LABELS).map(([k, v]) => (
+                      <SelectItem key={k} value={k}>{v}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Colunas (Quebra Opcional)</label>
-              <Select value={coluna} onValueChange={(v: any) => setColuna(v)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Nenhuma (Apenas Total)</SelectItem>
-                  {Object.entries(DIMENSAO_LABELS).map(([k, v]) => (
-                     // Evita selecionar a mesma dimensão para linha e coluna
-                    <SelectItem key={k} value={k} disabled={k === linha}>{v}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Colunas (Quebra Opcional)</label>
+                <Select value={coluna} onValueChange={(v: any) => setColuna(v)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Nenhuma (Apenas Total)</SelectItem>
+                    {Object.entries(DIMENSAO_LABELS).map(([k, v]) => (
+                      <SelectItem key={k} value={k} disabled={k === linha}>{v}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Métrica (Valores)</label>
-              <Select value={metrica} onValueChange={(v: Metrica) => setMetrica(v)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(METRICA_LABELS).map(([k, v]) => (
-                    <SelectItem key={k} value={k}>{v}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Métrica (Valores)</label>
+                <Select value={metrica} onValueChange={(v: Metrica) => setMetrica(v)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(METRICA_LABELS).map(([k, v]) => (
+                      <SelectItem key={k} value={k}>{v}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Painel de Filtros Detalhados */}
+          <Card className="border-border shadow-sm bg-muted/10">
+            <CardHeader className="px-4 py-3 border-b flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <Filter className="w-4 h-4" /> Filtros Detalhados da Tabela
+              </CardTitle>
+              {hasFiltrosAtivos && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => {
+                    setFiltroProfissionais([]);
+                    setFiltroConvenios([]);
+                    setFiltroProcedimentos([]);
+                    setFiltroGrupos([]);
+                  }}
+                  className="h-7 px-2 text-xs text-muted-foreground"
+                >
+                  <FilterX className="w-3 h-3 mr-1" />
+                  Limpar Todos
+                </Button>
+              )}
+            </CardHeader>
+            <CardContent className="p-4 flex flex-wrap items-center gap-3">
+              <MultiSelectFilter 
+                title="Profissionais"
+                options={filterOptions.profissionais} 
+                selected={filtroProfissionais} 
+                onChange={setFiltroProfissionais} 
+              />
+              <MultiSelectFilter 
+                title="Convênios"
+                options={filterOptions.convenios} 
+                selected={filtroConvenios} 
+                onChange={setFiltroConvenios} 
+              />
+              <MultiSelectFilter 
+                title="Grupos"
+                options={filterOptions.grupos} 
+                selected={filtroGrupos} 
+                onChange={setFiltroGrupos} 
+              />
+              <MultiSelectFilter 
+                title="Procedimentos"
+                options={filterOptions.procedimentos} 
+                selected={filtroProcedimentos} 
+                onChange={setFiltroProcedimentos} 
+              />
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Área de Resultados */}
         <Tabs defaultValue="table" className="w-full">
@@ -247,7 +349,7 @@ function FaturamentoDinamicoPage() {
                      {!isLoading && matrix.length === 0 ? (
                        <TableRow>
                          <TableCell colSpan={(coluna !== "none" ? colunasAtivas.length : 0) + 2} className="text-center py-8 text-muted-foreground">
-                           Nenhum dado encontrado para o período.
+                           Nenhum dado encontrado para os filtros selecionados.
                          </TableCell>
                        </TableRow>
                      ) : (
@@ -345,7 +447,7 @@ function FaturamentoDinamicoPage() {
                 )}
                 {matrix.length > 50 && (
                   <p className="text-xs text-muted-foreground text-center mt-4">
-                    *O gráfico exibe apenas os 50 maiores registros. Verifique a tabela para os dados completos.
+                    *O gráfico exibe os top 50 registros principais. Ajuste os filtros detalhados para refinar sua análise.
                   </p>
                 )}
               </CardContent>
@@ -354,5 +456,98 @@ function FaturamentoDinamicoPage() {
         </Tabs>
       </div>
     </div>
+  );
+}
+
+// Componente auxiliar de Filtro Múltiplo estilo Combobox do Shadcn
+function MultiSelectFilter({ 
+  title, 
+  options, 
+  selected, 
+  onChange 
+}: { 
+  title: string;
+  options: string[];
+  selected: string[];
+  onChange: (val: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  
+  const toggle = (val: string) => {
+    if (selected.includes(val)) {
+      onChange(selected.filter(i => i !== val));
+    } else {
+      onChange([...selected, val]);
+    }
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className={cn("h-9 border-dashed flex gap-2", selected.length > 0 && "border-primary/50")}
+        >
+          {title}
+          {selected.length > 0 && (
+            <>
+              <span className="w-[1px] h-4 bg-border" />
+              <Badge variant="secondary" className="px-1 font-normal lg:hidden rounded-sm">{selected.length}</Badge>
+              <div className="hidden space-x-1 lg:flex">
+                {selected.length > 2 ? (
+                  <Badge variant="secondary" className="px-1 font-normal rounded-sm">
+                    {selected.length} selec.
+                  </Badge>
+                ) : (
+                  selected.map(o => (
+                    <Badge variant="secondary" key={o} className="px-1 font-normal truncate max-w-[100px] rounded-sm">
+                      {o}
+                    </Badge>
+                  ))
+                )}
+              </div>
+            </>
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[280px] p-0" align="start">
+        <Command>
+          <CommandInput placeholder={`Buscar em ${title.toLowerCase()}...`} />
+          <CommandList>
+            <CommandEmpty>Nenhum resultado.</CommandEmpty>
+            <CommandGroup>
+              {options.map((option) => (
+                <CommandItem
+                  key={option}
+                  onSelect={() => toggle(option)}
+                >
+                  <div className={cn(
+                    "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                    selected.includes(option) ? "bg-primary text-primary-foreground" : "opacity-50 [&_svg]:invisible"
+                  )}>
+                    <Check className={cn("h-4 w-4")} />
+                  </div>
+                  <span className="truncate">{option}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+          {selected.length > 0 && (
+            <>
+              <div className="h-px bg-border" />
+              <div className="p-1">
+                <CommandItem
+                  onSelect={() => { onChange([]); setOpen(false); }}
+                  className="justify-center text-center text-sm cursor-pointer"
+                >
+                  Limpar seleção
+                </CommandItem>
+              </div>
+            </>
+          )}
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }
