@@ -25,6 +25,7 @@ import { Route as AuthenticatedMapaRouteImport } from './routes/_authenticated/m
 import { Route as AuthenticatedHojeRouteImport } from './routes/_authenticated/hoje'
 import { Route as AuthenticatedHeatmapRouteImport } from './routes/_authenticated/heatmap'
 import { Route as AuthenticatedFinanceiroRouteImport } from './routes/_authenticated/financeiro'
+import { Route as AuthenticatedFaturamentoDinamicoRouteImport } from './routes/_authenticated/faturamento-dinamico'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedConfigRouteImport } from './routes/_authenticated/config'
 import { Route as AuthenticatedAuditoriaRouteImport } from './routes/_authenticated/auditoria'
@@ -115,6 +116,12 @@ const AuthenticatedFinanceiroRoute = AuthenticatedFinanceiroRouteImport.update({
   path: '/financeiro',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedFaturamentoDinamicoRoute =
+  AuthenticatedFaturamentoDinamicoRouteImport.update({
+    id: '/faturamento-dinamico',
+    path: '/faturamento-dinamico',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -169,6 +176,7 @@ export interface FileRoutesByFullPath {
   '/auditoria': typeof AuthenticatedAuditoriaRoute
   '/config': typeof AuthenticatedConfigRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/faturamento-dinamico': typeof AuthenticatedFaturamentoDinamicoRoute
   '/financeiro': typeof AuthenticatedFinanceiroRoute
   '/heatmap': typeof AuthenticatedHeatmapRoute
   '/hoje': typeof AuthenticatedHojeRoute
@@ -194,6 +202,7 @@ export interface FileRoutesByTo {
   '/auditoria': typeof AuthenticatedAuditoriaRoute
   '/config': typeof AuthenticatedConfigRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/faturamento-dinamico': typeof AuthenticatedFaturamentoDinamicoRoute
   '/financeiro': typeof AuthenticatedFinanceiroRoute
   '/heatmap': typeof AuthenticatedHeatmapRoute
   '/hoje': typeof AuthenticatedHojeRoute
@@ -221,6 +230,7 @@ export interface FileRoutesById {
   '/_authenticated/auditoria': typeof AuthenticatedAuditoriaRoute
   '/_authenticated/config': typeof AuthenticatedConfigRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/faturamento-dinamico': typeof AuthenticatedFaturamentoDinamicoRoute
   '/_authenticated/financeiro': typeof AuthenticatedFinanceiroRoute
   '/_authenticated/heatmap': typeof AuthenticatedHeatmapRoute
   '/_authenticated/hoje': typeof AuthenticatedHojeRoute
@@ -248,6 +258,7 @@ export interface FileRouteTypes {
     | '/auditoria'
     | '/config'
     | '/dashboard'
+    | '/faturamento-dinamico'
     | '/financeiro'
     | '/heatmap'
     | '/hoje'
@@ -273,6 +284,7 @@ export interface FileRouteTypes {
     | '/auditoria'
     | '/config'
     | '/dashboard'
+    | '/faturamento-dinamico'
     | '/financeiro'
     | '/heatmap'
     | '/hoje'
@@ -299,6 +311,7 @@ export interface FileRouteTypes {
     | '/_authenticated/auditoria'
     | '/_authenticated/config'
     | '/_authenticated/dashboard'
+    | '/_authenticated/faturamento-dinamico'
     | '/_authenticated/financeiro'
     | '/_authenticated/heatmap'
     | '/_authenticated/hoje'
@@ -442,6 +455,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFinanceiroRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/faturamento-dinamico': {
+      id: '/_authenticated/faturamento-dinamico'
+      path: '/faturamento-dinamico'
+      fullPath: '/faturamento-dinamico'
+      preLoaderRoute: typeof AuthenticatedFaturamentoDinamicoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -505,6 +525,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAuditoriaRoute: typeof AuthenticatedAuditoriaRoute
   AuthenticatedConfigRoute: typeof AuthenticatedConfigRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedFaturamentoDinamicoRoute: typeof AuthenticatedFaturamentoDinamicoRoute
   AuthenticatedFinanceiroRoute: typeof AuthenticatedFinanceiroRoute
   AuthenticatedHeatmapRoute: typeof AuthenticatedHeatmapRoute
   AuthenticatedHojeRoute: typeof AuthenticatedHojeRoute
@@ -524,6 +545,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAuditoriaRoute: AuthenticatedAuditoriaRoute,
   AuthenticatedConfigRoute: AuthenticatedConfigRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedFaturamentoDinamicoRoute: AuthenticatedFaturamentoDinamicoRoute,
   AuthenticatedFinanceiroRoute: AuthenticatedFinanceiroRoute,
   AuthenticatedHeatmapRoute: AuthenticatedHeatmapRoute,
   AuthenticatedHojeRoute: AuthenticatedHojeRoute,
