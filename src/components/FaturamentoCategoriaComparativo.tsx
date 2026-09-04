@@ -175,9 +175,13 @@ export function FaturamentoCategoriaComparativo() {
 
   const CustomTreemapContent = (props: any) => {
     const { x, y, width, height, index, name, value } = props;
+    // Recharts também renderiza nós internos/raiz sem nome — ignorar
+    if (!name || typeof width !== "number" || typeof height !== "number") {
+      return <g />;
+    }
     const isSelected = activeCats.includes(name);
     const hasSelection = activeCats.length > 0;
-    const color = PALETTE[index % PALETTE.length];
+    const color = PALETTE[(index ?? 0) % PALETTE.length];
     const dimmed = hasSelection && !isSelected;
     const showName = width > 46 && height > 24;
     const showValue = width > 60 && height > 42;
