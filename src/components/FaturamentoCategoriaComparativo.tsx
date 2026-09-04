@@ -176,54 +176,68 @@ export function FaturamentoCategoriaComparativo() {
   const CustomTreemapContent = (props: any) => {
     const { x, y, width, height, index, name, value } = props;
     const isSelected = activeCats.includes(name);
+    const hasSelection = activeCats.length > 0;
     const color = PALETTE[index % PALETTE.length];
+    const dimmed = hasSelection && !isSelected;
+    const showName = width > 70 && height > 32;
+    const showValue = width > 80 && height > 52;
 
     return (
       <g onClick={() => handleCatClick(name)} style={{ cursor: "pointer" }}>
+        {/* bloco com cantos arredondados, borda sutil na mesma cor escurecida */}
         <rect
-          x={x}
-          y={y}
-          width={width}
-          height={height}
+          x={x + 2}
+          y={y + 2}
+          width={Math.max(0, width - 4)}
+          height={Math.max(0, height - 4)}
+          rx={8}
+          ry={8}
           fill={color}
-          stroke={
-            activeCats.length > 0
-              ? isSelected
-                ? "#fff"
-                : "transparent"
-              : "#fff"
-          }
-          strokeWidth={isSelected ? 3 : 1}
-          opacity={
-            activeCats.length > 0 && !isSelected
-              ? 0.3
-              : isSelected
-                ? 1
-                : 0.85
-          }
-          className="transition-all duration-300 hover:opacity-100"
+          fillOpacity={dimmed ? 0.25 : isSelected ? 0.95 : 0.7}
+          stroke={dimmed ? "transparent" : color}
+          strokeWidth={1}
+          strokeOpacity={0.9}
+          className="transition-all duration-300 hover:fill-opacity-100"
         />
-        {width > 50 && height > 30 && (
+        {/* anel de seleção em tom claro da própria cor (sem branco estourado) */}
+        {isSelected && (
+          <rect
+            x={x + 2}
+            y={y + 2}
+            width={Math.max(0, width - 4)}
+            height={Math.max(0, height - 4)}
+            rx={8}
+            ry={8}
+            fill="none"
+            stroke={color}
+            strokeWidth={3}
+            strokeOpacity={0.9}
+            pointerEvents="none"
+          />
+        )}
+        {showName && (
           <text
-            x={x + width / 2}
-            y={y + height / 2}
-            textAnchor="middle"
-            fill="#fff"
+            x={x + 12}
+            y={y + 20}
+            textAnchor="start"
+            fill="#ffffff"
+            fillOpacity={dimmed ? 0.7 : 0.95}
             fontSize={12}
-            fontWeight="bold"
+            fontWeight={600}
             pointerEvents="none"
           >
             {name}
           </text>
         )}
-        {width > 60 && height > 50 && (
+        {showValue && (
           <text
-            x={x + width / 2}
-            y={y + height / 2 + 16}
-            textAnchor="middle"
-            fill="#fff"
-            fontSize={10}
-            opacity={0.8}
+            x={x + 12}
+            y={y + 36}
+            textAnchor="start"
+            fill="#ffffff"
+            fillOpacity={dimmed ? 0.5 : 0.75}
+            fontSize={11}
+            fontWeight={500}
             pointerEvents="none"
           >
             {brl(value)}
