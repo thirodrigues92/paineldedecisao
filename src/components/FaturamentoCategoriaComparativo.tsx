@@ -43,6 +43,8 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
 
 const formataDataCurta = (isoDate: string | null) => {
   if (!isoDate) return "--";
@@ -74,6 +76,7 @@ export function FaturamentoCategoriaComparativo() {
   const [isCompareMode, setIsCompareMode] = useState(false);
   const [selectedCat, setSelectedCat] = useState<string | null>(null);
   const [compareCats, setCompareCats] = useState<string[]>([]);
+  const [busca, setBusca] = useState("");
 
   const handleCatClick = (catName: string) => {
     if (isCompareMode) {
@@ -172,6 +175,26 @@ export function FaturamentoCategoriaComparativo() {
         activeCats: activeCatsList,
       };
     }, [dados, isCompareMode, selectedCat, compareCats]);
+
+  const tableDataFiltrada = useMemo(() => {
+    const q = busca.trim().toLowerCase();
+    if (!q) return tableData;
+    const qNum = q.replace(/[r$\s.]/g, "").replace(",", ".");
+    return tableData.filter((p) => {
+      if (
+        [p.paciente, p.medico, p.categoria, p.procedimento, p.convenio]
+          .filter(Boolean)
+          .some((campo) => String(campo).toLowerCase().includes(q))
+      )
+        return true;
+      if (p.data && formataDataCurta(p.data).includes(q)) return true;
+      // busca numérica: valor (ex.: "150" ou "150,00")
+      if (qNum && !isNaN(Number(qNum))) {
+        return String(p.valor.toFixed(2)).includes(qNum);
+      }
+      return false;
+    });
+  }, [tableData, busca]);
 
   const CustomTreemapContent = (props: any) => {
     const { x, y, width, height, index, name, value } = props;
@@ -491,7 +514,18 @@ export function FaturamentoCategoriaComparativo() {
 
             {/* Tabela de Lançamentos */}
             <div>
-              <h3 className="text-sm font-semibold mb-2">Detalhamento</h3>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                <h3 className="text-sm font-semibold">Detalhamento</h3>
+                <div className="relative w-full sm:w-[280px]">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                  <Input
+                    value={busca}
+                    onChange={(e) => setBusca(e.target.value)}
+                    placeholder="Pesquisar paciente, médico, procedimento, valor..."
+                    className="pl-8 h-8 text-xs"
+                  />
+                </div>
+              </div>
               <div className="rounded-md border bg-card w-full">
                 <ScrollArea className="h-[350px]">
                   <Table>
@@ -509,17 +543,19 @@ export function FaturamentoCategoriaComparativo() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {tableData.length === 0 ? (
+                      {tableDataFiltrada.length === 0 ? (
                         <TableRow>
                           <TableCell
                             colSpan={isCompareMode ? 7 : 6}
                             className="text-center h-32 text-muted-foreground"
                           >
-                            Nenhum registro associado.
+                            {busca.trim()
+                              ? `Nenhum resultado para "${busca.trim()}".`
+                              : "Nenhum registro associado."}
                           </TableCell>
                         </TableRow>
                       ) : (
-                        tableData.map((p, idx) => (
+                        tableDataFiltrada.map((p, idx) => (
                           <TableRow
                             key={`${p.id}-${idx}`}
                             className="hover:bg-muted/30"
