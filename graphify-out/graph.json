@@ -9656,7 +9656,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/FaturamentoCategoriaComparativo.tsx",
-      "source_location": "L245",
+      "source_location": "L249",
       "weight": 1.0
     },
     {
@@ -9668,7 +9668,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/FaturamentoCategoriaComparativo.tsx",
-      "source_location": "L394",
+      "source_location": "L398",
       "weight": 1.0
     },
     {
@@ -9680,7 +9680,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/FaturamentoCategoriaComparativo.tsx",
-      "source_location": "L524",
+      "source_location": "L528",
       "weight": 1.0
     },
     {
@@ -36482,5 +36482,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "8edfa9b558dce5b62ff8d2dacf28bbc462455963"
+  "built_at_commit": "b37922a44dad0731973d0de3d1fe108013d19114"
 }
