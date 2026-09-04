@@ -176,6 +176,26 @@ export function FaturamentoCategoriaComparativo() {
       };
     }, [dados, isCompareMode, selectedCat, compareCats]);
 
+  const tableDataFiltrada = useMemo(() => {
+    const q = busca.trim().toLowerCase();
+    if (!q) return tableData;
+    const qNum = q.replace(/[r$\s.]/g, "").replace(",", ".");
+    return tableData.filter((p) => {
+      if (
+        [p.paciente, p.medico, p.categoria, p.procedimento, p.convenio]
+          .filter(Boolean)
+          .some((campo) => String(campo).toLowerCase().includes(q))
+      )
+        return true;
+      if (p.data && formataDataCurta(p.data).includes(q)) return true;
+      // busca numérica: valor (ex.: "150" ou "150,00")
+      if (qNum && !isNaN(Number(qNum))) {
+        return String(p.valor.toFixed(2)).includes(qNum);
+      }
+      return false;
+    });
+  }, [tableData, busca]);
+
   const CustomTreemapContent = (props: any) => {
     const { x, y, width, height, index, name, value } = props;
     // Recharts também renderiza nós internos/raiz sem nome — ignorar
