@@ -1,0 +1,531 @@
+import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  Treemap,
+  Legend,
+} from "recharts";
+import { brl, num } from "@/lib/format";
+import { fetchLabProducaoRows } from "@/lib/dashboard-data";
+import { useFilters } from "@/lib/filters-context";
+import { tooltipProps } from "@/lib/chart-theme";
+import {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+
+const formataDataCurta = (isoDate: string | null) => {
+  if (!isoDate) return "--";
+  const parts = isoDate.split("T")[0].split("-");
+  if (parts.length !== 3) return isoDate;
+  return `${parts[2]}/${parts[1]}/${parts[0].slice(2)}`;
+};
+
+const PALETTE = [
+  "#2563eb",
+  "#16a34a",
+  "#d97706",
+  "#dc2626",
+  "#9333ea",
+  "#0891b2",
+  "#ea580c",
+  "#4f46e5",
+  "#65a30d",
+  "#be123c",
+];
+
+export function FaturamentoCategoriaComparativo() {
+  const filters = useFilters();
+  const { data: dados = [], isLoading } = useQuery({
+    queryKey: ["labProducaoData_categoria_comparativo", filters],
+    queryFn: () => fetchLabProducaoRows(filters, 30_000),
+  });
+
+  const [isCompareMode, setIsCompareMode] = useState(false);
+  const [selectedCat, setSelectedCat] = useState<string | null>(null);
+  const [compareCats, setCompareCats] = useState<string[]>([]);
+
+  const handleCatClick = (catName: string) => {
+    if (isCompareMode) {
+      setCompareCats((prev) =>
+        prev.includes(catName)
+          ? prev.filter((c) => c !== catName)
+          : [...prev, catName]
+      );
+    } else {
+      setSelectedCat(catName);
+    }
+  };
+
+  const { treeData, totalFaturado, chartData, tableData, activeCats } =
+    useMemo(() => {
+      let baseTotal = 0;
+      const catMap = new Map<
+        string,
+        { name: string; size: number; qtd: number }
+      >();
+
+      for (const r of dados) {
+        const valor = Number(r.valor || 0);
+        const cat = (r.grupo_nome || "Não classificado").trim();
+        baseTotal += valor;
+        const cur = catMap.get(cat) ?? { name: cat, size: 0, qtd: 0 };
+        cur.size += valor;
+        cur.qtd += 1;
+        catMap.set(cat, cur);
+      }
+
+      let tData = Array.from(catMap.values())
+        .filter((d) => d.size > 0)
+        .sort((a, b) => b.size - a.size);
+
+      let activeCatsList = isCompareMode
+        ? compareCats
+        : selectedCat
+          ? [selectedCat]
+          : [];
+
+      let medData: any[] = [];
+      let tabData: any[] = [];
+
+      if (activeCatsList.length > 0) {
+        const filtered = dados.filter((r) =>
+          activeCatsList.includes((r.grupo_nome || "Não classificado").trim())
+        );
+
+        tabData = filtered
+          .map((r) => ({
+            id: r.id,
+            data: r.data_execucao,
+            paciente: r.paciente_nome || "Paciente não identificado",
+            medico: r.profissional_nome || "Não informado",
+            categoria: (r.grupo_nome || "Não classificado").trim(),
+            procedimento: r.procedimento_nome || "Sem descrição",
+            convenio: r.convenio_nome || "Particular",
+            valor: Number(r.valor || 0),
+          }))
+          .sort((a, b) => b.valor - a.valor);
+
+        const medMap = new Map<string, any>();
+
+        for (const r of filtered) {
+          const med = r.profissional_nome || "Não informado";
+          const cat = (r.grupo_nome || "Não classificado").trim();
+          const valor = Number(r.valor || 0);
+
+          let cur = medMap.get(med);
+          if (!cur) {
+            cur = { name: med, total: 0, qtdTotal: 0 };
+            activeCatsList.forEach((c) => {
+              cur[c] = 0;
+              cur[`${c}_qtd`] = 0;
+            });
+            medMap.set(med, cur);
+          }
+
+          cur[cat] = (cur[cat] || 0) + valor;
+          cur[`${cat}_qtd`] = (cur[`${cat}_qtd`] || 0) + 1;
+          cur.total += valor;
+          cur.qtdTotal += 1;
+        }
+
+        medData = Array.from(medMap.values()).sort(
+          (a, b) => b.total - a.total
+        );
+      }
+
+      return {
+        treeData: tData,
+        totalFaturado: baseTotal,
+        chartData: medData,
+        tableData: tabData,
+        activeCats: activeCatsList,
+      };
+    }, [dados, isCompareMode, selectedCat, compareCats]);
+
+  const CustomTreemapContent = (props: any) => {
+    const { x, y, width, height, index, name, value } = props;
+    const isSelected = activeCats.includes(name);
+    const color = PALETTE[index % PALETTE.length];
+
+    return (
+      <g onClick={() => handleCatClick(name)} style={{ cursor: "pointer" }}>
+        <rect
+          x={x}
+          y={y}
+          width={width}
+          height={height}
+          fill={color}
+          stroke={
+            activeCats.length > 0
+              ? isSelected
+                ? "#fff"
+                : "transparent"
+              : "#fff"
+          }
+          strokeWidth={isSelected ? 3 : 1}
+          opacity={
+            activeCats.length > 0 && !isSelected
+              ? 0.3
+              : isSelected
+                ? 1
+                : 0.85
+          }
+          className="transition-all duration-300 hover:opacity-100"
+        />
+        {width > 50 && height > 30 && (
+          <text
+            x={x + width / 2}
+            y={y + height / 2}
+            textAnchor="middle"
+            fill="#fff"
+            fontSize={12}
+            fontWeight="bold"
+            pointerEvents="none"
+          >
+            {name}
+          </text>
+        )}
+        {width > 60 && height > 50 && (
+          <text
+            x={x + width / 2}
+            y={y + height / 2 + 16}
+            textAnchor="middle"
+            fill="#fff"
+            fontSize={10}
+            opacity={0.8}
+            pointerEvents="none"
+          >
+            {brl(value)}
+          </text>
+        )}
+      </g>
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <Card className="w-full">
+        <CardHeader className="pb-4">
+          <Skeleton className="h-6 w-1/3 mb-2" />
+          <Skeleton className="h-4 w-1/2" />
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-64 w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (treeData.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-10 text-center text-sm text-muted-foreground">
+          Nenhum dado de categoria encontrado no período.
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="w-full">
+      <CardHeader className="pb-4">
+        <div className="flex flex-col md:flex-row justify-between md:items-start gap-4">
+          <div>
+            <CardTitle className="text-lg font-bold">
+              Faturamento por Categoria (Treemap)
+            </CardTitle>
+            <CardDescription>
+              Visualização proporcional e análise por médico.
+            </CardDescription>
+          </div>
+          <div className="flex flex-col items-end gap-2">
+            <div className="text-right">
+              <p className="text-xs text-muted-foreground">
+                Total Faturado Global
+              </p>
+              <p className="text-xl font-semibold text-primary">
+                {brl(totalFaturado)}
+              </p>
+            </div>
+            <div className="flex items-center space-x-2 bg-muted/30 p-1.5 rounded-md border border-border/50">
+              <Switch
+                id="compare-mode"
+                checked={isCompareMode}
+                onCheckedChange={(c) => {
+                  setIsCompareMode(c);
+                  setSelectedCat(null);
+                  setCompareCats([]);
+                }}
+              />
+              <Label
+                htmlFor="compare-mode"
+                className="text-xs cursor-pointer font-medium"
+              >
+                Modo de Comparação
+              </Label>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3 bg-muted/20 p-3 rounded-lg border border-border/50 mt-2">
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setSelectedCat(null);
+                    setCompareCats([]);
+                  }}
+                  className={`text-sm ${
+                    activeCats.length === 0
+                      ? "font-semibold text-primary"
+                      : "font-medium hover:text-primary transition-colors"
+                  }`}
+                >
+                  Categorias (Treemap)
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+
+              {activeCats.length > 0 && (
+                <>
+                  <BreadcrumbSeparator />
+                  <BreadcrumbItem>
+                    <BreadcrumbPage className="font-semibold text-primary text-sm">
+                      {isCompareMode
+                        ? `${activeCats.length} categoria(s) comparada(s)`
+                        : selectedCat}
+                    </BreadcrumbPage>
+                  </BreadcrumbItem>
+                </>
+              )}
+            </BreadcrumbList>
+          </Breadcrumb>
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            {isCompareMode
+              ? "Clique em múltiplas caixas para compará-las entre os médicos."
+              : "Clique numa categoria para ver os médicos que a faturaram."}
+          </p>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Treemap */}
+        <div className="w-full h-[240px] animate-in fade-in duration-500">
+          <ResponsiveContainer width="100%" height="100%">
+            <Treemap
+              data={treeData}
+              dataKey="size"
+              aspectRatio={4 / 3}
+              stroke="#fff"
+              content={<CustomTreemapContent />}
+            >
+              <Tooltip
+                formatter={(value) => [brl(Number(value)), "Faturado"]}
+                labelFormatter={() => ""}
+              />
+            </Treemap>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Detalhamento por Médicos (Modo Normal e Comparação) */}
+        {activeCats.length > 0 && (
+          <div className="pt-6 border-t border-border animate-in slide-in-from-bottom-4 fade-in duration-500 space-y-6">
+            <div>
+              <h3 className="text-sm font-semibold mb-1">
+                {isCompareMode
+                  ? "Comparativo de Médicos por Categoria"
+                  : `Médicos que faturaram: ${selectedCat}`}
+              </h3>
+              <p className="text-xs text-muted-foreground mb-4">
+                Gráfico das categorias selecionadas faturada(s) por
+                profissional.
+              </p>
+              <div
+                style={{ height: Math.max(300, chartData.length * 45), width: "100%" }}
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={chartData}
+                    layout="vertical"
+                    margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
+                    barSize={isCompareMode ? 16 : 24}
+                  >
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      horizontal={false}
+                      vertical={true}
+                      opacity={0.3}
+                    />
+                    <XAxis type="number" hide />
+                    <YAxis
+                      dataKey="name"
+                      type="category"
+                      width={140}
+                      fontSize={11}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <Tooltip
+                      {...tooltipProps}
+                      cursor={{ fill: "var(--muted)", opacity: 0.15 }}
+                      formatter={(val, name, props) => {
+                        const qName = `${name}_qtd`;
+                        const qtd = props.payload[qName] || 0;
+                        const ticket = qtd > 0 ? Number(val) / qtd : 0;
+                        return [
+                          `${brl(Number(val))} (${num(
+                            qtd
+                          )} itens) — TM: ${brl(ticket)}`,
+                          name,
+                        ];
+                      }}
+                    />
+                    {isCompareMode && (
+                      <Legend
+                        wrapperStyle={{ fontSize: 11, paddingTop: 10 }}
+                      />
+                    )}
+
+                    {activeCats.map((cat, idx) => (
+                      <Bar
+                        key={cat}
+                        dataKey={cat}
+                        name={cat}
+                        stackId={isCompareMode ? "a" : undefined}
+                        fill={
+                          PALETTE[
+                            treeData.findIndex((t) => t.name === cat) %
+                              PALETTE.length
+                          ] || PALETTE[idx % PALETTE.length]
+                        }
+                        radius={!isCompareMode ? [0, 4, 4, 0] : undefined}
+                      />
+                    ))}
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Tabela de Lançamentos */}
+            <div>
+              <h3 className="text-sm font-semibold mb-2">Detalhamento</h3>
+              <div className="rounded-md border bg-card w-full">
+                <ScrollArea className="h-[350px]">
+                  <Table>
+                    <TableHeader className="bg-muted/50 sticky top-0 backdrop-blur-sm z-10">
+                      <TableRow>
+                        <TableHead className="w-[80px]">Data</TableHead>
+                        <TableHead>Paciente</TableHead>
+                        <TableHead>Médico</TableHead>
+                        {(isCompareMode || activeCats.length > 1) && (
+                          <TableHead>Categoria</TableHead>
+                        )}
+                        <TableHead>Procedimento</TableHead>
+                        <TableHead>Convênio</TableHead>
+                        <TableHead className="text-right">Valor</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {tableData.length === 0 ? (
+                        <TableRow>
+                          <TableCell
+                            colSpan={isCompareMode ? 7 : 6}
+                            className="text-center h-32 text-muted-foreground"
+                          >
+                            Nenhum registro associado.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        tableData.map((p, idx) => (
+                          <TableRow
+                            key={`${p.id}-${idx}`}
+                            className="hover:bg-muted/30"
+                          >
+                            <TableCell className="text-xs whitespace-nowrap text-muted-foreground">
+                              {formataDataCurta(p.data)}
+                            </TableCell>
+                            <TableCell
+                              className="font-medium text-xs truncate max-w-[150px]"
+                              title={p.paciente}
+                            >
+                              {p.paciente}
+                            </TableCell>
+                            <TableCell
+                              className="text-xs truncate max-w-[120px]"
+                              title={p.medico}
+                            >
+                              {p.medico}
+                            </TableCell>
+                            {(isCompareMode || activeCats.length > 1) && (
+                              <TableCell>
+                                <Badge
+                                  variant="outline"
+                                  className="text-[9px] bg-background"
+                                >
+                                  {p.categoria}
+                                </Badge>
+                              </TableCell>
+                            )}
+                            <TableCell
+                              className="text-xs truncate max-w-[150px]"
+                              title={p.procedimento}
+                            >
+                              {p.procedimento}
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant="secondary"
+                                className="text-[9px] bg-muted whitespace-nowrap"
+                              >
+                                {p.convenio}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right font-medium text-xs">
+                              {brl(p.valor)}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
+              </div>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
