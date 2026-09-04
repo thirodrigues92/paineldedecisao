@@ -364,7 +364,7 @@ export function FaturamentoCategoriaComparativo() {
               data={treeData}
               dataKey="size"
               aspectRatio={4 / 3}
-              stroke="#fff"
+              stroke="transparent"
               content={<CustomTreemapContent />}
             >
               <Tooltip
@@ -373,6 +373,37 @@ export function FaturamentoCategoriaComparativo() {
               />
             </Treemap>
           </ResponsiveContainer>
+        </div>
+
+        {/* Legenda completa — garante que TODAS as categorias apareçam, mesmo as de bloco pequeno */}
+        <div className="flex flex-wrap gap-1.5">
+          {treeData.map((cat, idx) => {
+            const color = PALETTE[idx % PALETTE.length];
+            const isActive = activeCats.includes(cat.name);
+            const dimmed = activeCats.length > 0 && !isActive;
+            return (
+              <button
+                key={cat.name}
+                type="button"
+                onClick={() => handleCatClick(cat.name)}
+                className={`flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-medium transition-all hover:bg-muted/60 ${
+                  isActive
+                    ? "border-primary/60 bg-muted/60"
+                    : "border-border/50 bg-muted/20"
+                } ${dimmed ? "opacity-45" : ""}`}
+                title={`${cat.name} — ${brl(cat.size)} (${num(cat.qtd)} itens)`}
+              >
+                <span
+                  className="inline-block h-2.5 w-2.5 rounded-sm shrink-0"
+                  style={{ backgroundColor: color }}
+                />
+                <span className="truncate max-w-[160px]">{cat.name}</span>
+                <span className="text-muted-foreground font-normal whitespace-nowrap">
+                  {brl(cat.size)}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Detalhamento por Médicos (Modo Normal e Comparação) */}
