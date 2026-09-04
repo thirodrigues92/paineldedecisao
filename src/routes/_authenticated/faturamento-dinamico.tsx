@@ -693,6 +693,8 @@ function FaturamentoDinamicoPage() {
                 </p>
               </CardContent>
             </Card>
+            <FaturamentoCategoriaComparativo />
+            </div>
           </TabsContent>
         </Tabs>
       </div>
