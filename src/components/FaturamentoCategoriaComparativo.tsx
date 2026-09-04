@@ -43,6 +43,8 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
 
 const formataDataCurta = (isoDate: string | null) => {
   if (!isoDate) return "--";
@@ -74,6 +76,7 @@ export function FaturamentoCategoriaComparativo() {
   const [isCompareMode, setIsCompareMode] = useState(false);
   const [selectedCat, setSelectedCat] = useState<string | null>(null);
   const [compareCats, setCompareCats] = useState<string[]>([]);
+  const [busca, setBusca] = useState("");
 
   const handleCatClick = (catName: string) => {
     if (isCompareMode) {
