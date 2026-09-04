@@ -179,8 +179,8 @@ export function FaturamentoCategoriaComparativo() {
     const hasSelection = activeCats.length > 0;
     const color = PALETTE[index % PALETTE.length];
     const dimmed = hasSelection && !isSelected;
-    const showName = width > 70 && height > 32;
-    const showValue = width > 80 && height > 52;
+    const showName = width > 46 && height > 24;
+    const showValue = width > 60 && height > 42;
 
     return (
       <g onClick={() => handleCatClick(name)} style={{ cursor: "pointer" }}>
@@ -193,11 +193,11 @@ export function FaturamentoCategoriaComparativo() {
           rx={8}
           ry={8}
           fill={color}
-          fillOpacity={dimmed ? 0.25 : isSelected ? 0.95 : 0.7}
+          fillOpacity={dimmed ? 0.2 : isSelected ? 0.85 : 0.55}
           stroke={dimmed ? "transparent" : color}
           strokeWidth={1}
-          strokeOpacity={0.9}
-          className="transition-all duration-300 hover:fill-opacity-100"
+          strokeOpacity={0.7}
+          className="transition-all duration-300 hover:fill-opacity-90"
         />
         {/* anel de seleção em tom claro da própria cor (sem branco estourado) */}
         {isSelected && (
@@ -217,27 +217,29 @@ export function FaturamentoCategoriaComparativo() {
         )}
         {showName && (
           <text
-            x={x + 12}
-            y={y + 20}
+            x={x + 10}
+            y={y + 17}
             textAnchor="start"
-            fill="#ffffff"
-            fillOpacity={dimmed ? 0.7 : 0.95}
-            fontSize={12}
-            fontWeight={600}
+            fill="var(--foreground)"
+            fillOpacity={dimmed ? 0.45 : 0.85}
+            fontSize={11}
+            fontWeight={500}
             pointerEvents="none"
           >
-            {name}
+            {name.length * 6.2 > width - 16
+              ? `${name.slice(0, Math.max(3, Math.floor((width - 16) / 6.2)))}…`
+              : name}
           </text>
         )}
         {showValue && (
           <text
-            x={x + 12}
-            y={y + 36}
+            x={x + 10}
+            y={y + 32}
             textAnchor="start"
-            fill="#ffffff"
-            fillOpacity={dimmed ? 0.5 : 0.75}
-            fontSize={11}
-            fontWeight={500}
+            fill="var(--foreground)"
+            fillOpacity={dimmed ? 0.35 : 0.6}
+            fontSize={10}
+            fontWeight={400}
             pointerEvents="none"
           >
             {brl(value)}
@@ -362,7 +364,7 @@ export function FaturamentoCategoriaComparativo() {
               data={treeData}
               dataKey="size"
               aspectRatio={4 / 3}
-              stroke="#fff"
+              stroke="transparent"
               content={<CustomTreemapContent />}
             >
               <Tooltip
@@ -371,6 +373,37 @@ export function FaturamentoCategoriaComparativo() {
               />
             </Treemap>
           </ResponsiveContainer>
+        </div>
+
+        {/* Legenda completa — garante que TODAS as categorias apareçam, mesmo as de bloco pequeno */}
+        <div className="flex flex-wrap gap-1.5">
+          {treeData.map((cat, idx) => {
+            const color = PALETTE[idx % PALETTE.length];
+            const isActive = activeCats.includes(cat.name);
+            const dimmed = activeCats.length > 0 && !isActive;
+            return (
+              <button
+                key={cat.name}
+                type="button"
+                onClick={() => handleCatClick(cat.name)}
+                className={`flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-medium transition-all hover:bg-muted/60 ${
+                  isActive
+                    ? "border-primary/60 bg-muted/60"
+                    : "border-border/50 bg-muted/20"
+                } ${dimmed ? "opacity-45" : ""}`}
+                title={`${cat.name} — ${brl(cat.size)} (${num(cat.qtd)} itens)`}
+              >
+                <span
+                  className="inline-block h-2.5 w-2.5 rounded-sm shrink-0"
+                  style={{ backgroundColor: color }}
+                />
+                <span className="truncate max-w-[160px]">{cat.name}</span>
+                <span className="text-muted-foreground font-normal whitespace-nowrap">
+                  {brl(cat.size)}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Detalhamento por Médicos (Modo Normal e Comparação) */}
