@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+// busca textual no detalhamento
 import { useQuery } from "@tanstack/react-query";
 import {
   ResponsiveContainer,
