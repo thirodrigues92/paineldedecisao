@@ -2278,7 +2278,7 @@
       "file_type": "code",
       "norm_label": "multiselectfilter()",
       "source_file": "src/routes/_authenticated/faturamento-dinamico.tsx",
-      "source_location": "L704"
+      "source_location": "L706"
     },
     {
       "id": "src_components_ui_chart_chartstyle",
@@ -13402,7 +13402,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/routes/_authenticated/faturamento-dinamico.tsx",
-      "source_location": "L731",
+      "source_location": "L733",
       "weight": 1.0
     },
     {
@@ -34374,7 +34374,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/routes/_authenticated/faturamento-dinamico.tsx",
-      "source_location": "L704",
+      "source_location": "L706",
       "weight": 1.0
     },
     {
@@ -36401,5 +36401,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "4f6369c2c8ff2003d73fad88b752081e7b27e638"
+  "built_at_commit": "366d248db218a22fd0e0a3d3dc165132dd2bc210"
 }
