@@ -1,12 +1,15 @@
 # Automacao do mapa do projeto (gerada pela extensao).
+# versao-workflow: 3
 # Gera um resumo tecnico do projeto no CI e o commita (graphify-out/) de volta ao repositorio.
+#
+# SO POR DISPARO DA EXTENSAO. Antes havia tambem `on: push`, e era isso
+# que fazia o Actions rodar a cada commit do dono do repositorio —
+# inclusive de quem parou de usar a extensao ou esta com a chave
+# expirada, porque este arquivo vive no repositorio DELE e nao pergunta
+# nada ao servidor. O mapa agora e gerado quando a extensao pede.
 name: Mapa do Projeto
 
 on:
-  push:
-    branches: [ "main" ]
-    paths-ignore:
-      - "graphify-out/**"
   workflow_dispatch:
 
 permissions:
