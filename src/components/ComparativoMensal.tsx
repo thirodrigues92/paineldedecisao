@@ -43,7 +43,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Search, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Search, TrendingUp, TrendingDown, Minus, AlertTriangle } from "lucide-react";
 
 const PALETTE = [
   "#2563eb",
@@ -283,6 +283,23 @@ export function ComparativoMensal() {
       </CardHeader>
 
       <CardContent className="space-y-6">
+        {diasFaltantes.length > 0 && (
+          <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[11px] leading-relaxed">
+            <p className="font-medium text-amber-500 flex items-center gap-1.5">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              Alguns dias úteis não têm registros — os meses abaixo podem estar
+              incompletos
+            </p>
+            <ul className="mt-1 space-y-0.5 text-muted-foreground">
+              {diasFaltantes.map((f) => (
+                <li key={f.mes}>
+                  <span className="capitalize font-medium">{rotuloMes(f.mes)}</span>
+                  : {f.dias.join(", ")}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         {/* Linha do tempo mensal */}
         <div className="w-full h-[260px]">
           <ResponsiveContainer width="100%" height="100%">
