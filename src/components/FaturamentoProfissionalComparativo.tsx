@@ -159,7 +159,7 @@ export function FaturamentoProfissionalComparativo() {
       > = {};
 
       if (activeList.length > 0) {
-        const filtered = dados.filter((r) =>
+        const filtered = dadosBase.filter((r) =>
           activeList.includes((r.profissional_nome || "Não informado").trim())
         );
 
