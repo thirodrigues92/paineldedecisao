@@ -80,6 +80,7 @@ export function FaturamentoProfissionalComparativo() {
   const [selected, setSelected] = useState<string | null>(null);
   const [compare, setCompare] = useState<string[]>([]);
   const [busca, setBusca] = useState("");
+  const [conveniosSel, setConveniosSel] = useState<string[]>([]);
 
   const handleClick = (nome: string) => {
     if (isCompareMode) {
@@ -90,6 +91,33 @@ export function FaturamentoProfissionalComparativo() {
       setSelected(nome);
     }
   };
+
+  const nomeConvenio = (r: any) =>
+    (r.convenio_nome || "Particular").trim() || "Particular";
+
+  const listaConvenios = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const r of dados) {
+      const c = nomeConvenio(r);
+      map.set(c, (map.get(c) || 0) + Number(r.valor || 0));
+    }
+    return Array.from(map.entries())
+      .map(([nome, total]) => ({ nome, total }))
+      .sort((a, b) => b.total - a.total);
+  }, [dados]);
+
+  const dadosBase = useMemo(
+    () =>
+      conveniosSel.length === 0
+        ? dados
+        : dados.filter((r) => conveniosSel.includes(nomeConvenio(r))),
+    [dados, conveniosSel]
+  );
+
+  const toggleConvenio = (nome: string) =>
+    setConveniosSel((prev) =>
+      prev.includes(nome) ? prev.filter((c) => c !== nome) : [...prev, nome]
+    );
 
   const {
     treeData,
