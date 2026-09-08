@@ -362,6 +362,48 @@ export type Database = {
         }
         Relationships: []
       }
+      lab_backfill_jobs: {
+        Row: {
+          batch_id: string
+          created_at: string
+          data_fim: string
+          data_inicio: string
+          erro: string | null
+          id: string
+          processado_em: string | null
+          registros: number
+          status: string
+          tentativas: number
+          updated_at: string
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string
+          data_fim: string
+          data_inicio: string
+          erro?: string | null
+          id?: string
+          processado_em?: string | null
+          registros?: number
+          status?: string
+          tentativas?: number
+          updated_at?: string
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string
+          data_fim?: string
+          data_inicio?: string
+          erro?: string | null
+          id?: string
+          processado_em?: string | null
+          registros?: number
+          status?: string
+          tentativas?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       lab_convenios: {
         Row: {
           atualizado_em: string | null
@@ -776,6 +818,51 @@ export type Database = {
           payload_raw?: Json | null
           synced_at?: string | null
           valor_recebido?: number | null
+        }
+        Relationships: []
+      }
+      lab_sync_lock: {
+        Row: {
+          consecutive_failures: number
+          created_at: string
+          id: string
+          last_error: string | null
+          last_result: Json | null
+          last_run_at: string | null
+          last_success_at: string | null
+          lease_until: string | null
+          pause_reason: string | null
+          paused: boolean
+          running: boolean
+          updated_at: string
+        }
+        Insert: {
+          consecutive_failures?: number
+          created_at?: string
+          id: string
+          last_error?: string | null
+          last_result?: Json | null
+          last_run_at?: string | null
+          last_success_at?: string | null
+          lease_until?: string | null
+          pause_reason?: string | null
+          paused?: boolean
+          running?: boolean
+          updated_at?: string
+        }
+        Update: {
+          consecutive_failures?: number
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          last_result?: Json | null
+          last_run_at?: string | null
+          last_success_at?: string | null
+          lease_until?: string | null
+          pause_reason?: string | null
+          paused?: boolean
+          running?: boolean
+          updated_at?: string
         }
         Relationships: []
       }
