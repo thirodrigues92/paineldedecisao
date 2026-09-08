@@ -29,6 +29,9 @@ import { cn } from "@/lib/utils";
 import { GlobalFilters } from "@/components/GlobalFilters";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Eye, SlidersHorizontal } from "lucide-react";
+import { FaturamentoDinamicoPage } from "@/components/FaturamentoDinamico";
 
 
 function PublicDashboardContent() {
