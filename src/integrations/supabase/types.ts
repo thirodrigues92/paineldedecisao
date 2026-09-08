@@ -428,6 +428,24 @@ export type Database = {
         }
         Relationships: []
       }
+      lab_cron_token: {
+        Row: {
+          created_at: string
+          id: string
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          token?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          token?: string
+        }
+        Relationships: []
+      }
       lab_dim_agendamento: {
         Row: {
           agendamento_id: number
