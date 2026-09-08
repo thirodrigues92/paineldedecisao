@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { LastSyncCard } from "@/components/LastSyncCard";
+import { SyncAutomaticaPanel } from "@/components/SyncAutomaticaPanel";
 import { useAppSettings, useUpdateSetting } from "@/lib/app-settings";
 
 export const Route = createFileRoute("/_authenticated/config")({
@@ -113,6 +114,12 @@ function ConfigPage() {
           </CardContent>
         </Card>
       </div>
+
+      <div>
+        <h2 className="text-lg font-semibold">Atualização automática & histórico</h2>
+        <p className="text-sm text-muted-foreground">Sincronização a cada 30 minutos e carga de períodos anteriores.</p>
+      </div>
+      <SyncAutomaticaPanel />
 
       <LastSyncCard />
     </div>
