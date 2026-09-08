@@ -750,6 +750,7 @@ function DashboardPage() {
           setDetalheEspecialidade(null);
           setDetalhePagamento(null);
           setItemAberto(null);
+          setBuscaDetalhe("");
         }
       }}>
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
@@ -759,7 +760,7 @@ function DashboardPage() {
             </SheetTitle>
             <SheetDescription>
               {activeBucket
-                ? `${detalheNoShow ? "" : brl(activeBucket.valor) + " · "}${num(activeBucket.qtd)} ${detalheNoShow ? "faltas" : "lançamentos"} · ${num(detalheItens.length)} itens distintos`
+                ? `${detalheNoShow ? "" : brl(activeBucket.valor) + " · "}${num(activeBucket.qtd)} ${detalheNoShow ? "faltas" : "lançamentos"} · ${num(detalheItens.length)} itens distintos${buscaAtiva ? ` · ${num(detalheItensFiltrados.reduce((s, i) => s + i.qtd, 0))} encontrados na busca` : ""}`
                 : "Sem itens."}
             </SheetDescription>
             {activeBucket && (detalheOrigem || detalheNovos || detalheProfissional || detalheEspecialidade || detalhePagamento) && !detalheNoShow && (
@@ -783,9 +784,24 @@ function DashboardPage() {
               </div>
             )}
           </SheetHeader>
+          <div className="relative mt-3">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Pesquisar paciente, procedimento, convênio, valor..."
+              className="pl-9 h-9 text-xs"
+              value={buscaDetalhe}
+              onChange={(e) => setBuscaDetalhe(e.target.value)}
+            />
+          </div>
           <div className="mt-4 space-y-2">
-            {detalheItens.map((it) => {
-              const aberto = itemAberto === it.nome;
+            {buscaAtiva && detalheItensFiltrados.length === 0 && (
+              <div className="text-sm text-muted-foreground text-center py-8 border rounded-md">
+                Nenhum lançamento encontrado para &quot;{buscaDetalhe}&quot;.
+              </div>
+            )}
+            {detalheItensFiltrados.map((it) => {
+              const aberto = itemAberto === it.nome || buscaAtiva;
               return (
                 <div key={it.nome} className="rounded-lg border border-border p-3">
                   <button
