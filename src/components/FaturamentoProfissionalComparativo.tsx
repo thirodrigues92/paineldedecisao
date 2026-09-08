@@ -125,6 +125,10 @@ export function FaturamentoProfissionalComparativo() {
       let catChart: any[] = [];
       let tabData: any[] = [];
       let catKeys: string[] = [];
+      const procPorProf: Record<
+        string,
+        { name: string; value: number; qtd: number }[]
+      > = {};
 
       if (activeList.length > 0) {
         const filtered = dados.filter((r) =>
