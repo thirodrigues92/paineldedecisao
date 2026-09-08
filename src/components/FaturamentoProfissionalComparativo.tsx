@@ -91,8 +91,15 @@ export function FaturamentoProfissionalComparativo() {
     }
   };
 
-  const { treeData, totalFaturado, chartData, tableData, activeProfs, cats } =
-    useMemo(() => {
+  const {
+    treeData,
+    totalFaturado,
+    chartData,
+    tableData,
+    activeProfs,
+    cats,
+    procDataPorProf,
+  } = useMemo(() => {
       let baseTotal = 0;
       const profMap = new Map<
         string,
