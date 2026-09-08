@@ -10,6 +10,9 @@ import {
   CartesianGrid,
   Treemap,
   Legend,
+  PieChart,
+  Pie,
+  Cell,
 } from "recharts";
 import { brl, num } from "@/lib/format";
 import { fetchLabProducaoRows } from "@/lib/dashboard-data";
