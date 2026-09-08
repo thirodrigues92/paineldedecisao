@@ -171,6 +171,34 @@ export function FaturamentoProfissionalComparativo() {
           (a, b) => b.total - a.total
         );
         catKeys = activeList;
+
+        // Pizza: procedimentos por profissional (com % de participação)
+        for (const prof of activeList) {
+          const rowsProf = filtered.filter(
+            (r) => (r.profissional_nome || "Não informado").trim() === prof
+          );
+          const map = new Map<string, { value: number; qtd: number }>();
+          for (const r of rowsProf) {
+            const proc = (r.procedimento_nome || "Sem descrição").trim();
+            const cur = map.get(proc) ?? { value: 0, qtd: 0 };
+            cur.value += Number(r.valor || 0);
+            cur.qtd += 1;
+            map.set(proc, cur);
+          }
+          const itens = Array.from(map.entries())
+            .map(([name, v]) => ({ name, value: v.value, qtd: v.qtd }))
+            .sort((a, b) => b.value - a.value);
+          const top = itens.slice(0, 7);
+          const resto = itens.slice(7);
+          if (resto.length > 0) {
+            top.push({
+              name: "Outros",
+              value: resto.reduce((s, i) => s + i.value, 0),
+              qtd: resto.reduce((s, i) => s + i.qtd, 0),
+            });
+          }
+          procPorProf[prof] = top;
+        }
       }
 
       return {
@@ -180,6 +208,7 @@ export function FaturamentoProfissionalComparativo() {
         tableData: tabData,
         activeProfs: activeList,
         cats: catKeys,
+        procDataPorProf: procPorProf,
       };
     }, [dados, isCompareMode, selected, compare]);
 
