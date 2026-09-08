@@ -296,7 +296,19 @@ export async function runIncrementalSync(diasJanela = 3) {
     const result = { inicio, fim, producao, safety };
     await logSync("auto-sync:30min", { inicio, fim }, true, producao.gravados + safety.preenchidos);
     await releaseLock("auto_sync", { ok: true, result, falhasAnteriores });
-    return { skipped: false, ...result };
+
+    // Se houver carga histórica pendente, aproveita a execução para adiantar 2 blocos.
+    let backfill: any = null;
+    const { count } = await supabaseAdmin
+      .from("lab_backfill_jobs")
+      .select("id", { count: "exact", head: true })
+      .in("status", ["pendente", "erro"])
+      .lt("tentativas", 3);
+    if ((count ?? 0) > 0) {
+      try { backfill = await processBackfillQueue(2); } catch (e: any) { backfill = { erro: e.message }; }
+    }
+
+    return { skipped: false, ...result, backfill };
   } catch (e: any) {
     await logSync("auto-sync:30min", { inicio, fim }, false, 0, e.message);
     await releaseLock("auto_sync", { ok: false, error: e.message, falhasAnteriores });
