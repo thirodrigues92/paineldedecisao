@@ -34,6 +34,7 @@ import { Route as AuthenticatedAnalyticsPrevisoesRouteImport } from './routes/_a
 import { Route as AuthenticatedAnalyticsComercialRouteImport } from './routes/_authenticated/analytics/comercial'
 import { Route as AuthenticatedAnalyticsCapacidadeRouteImport } from './routes/_authenticated/analytics/capacidade'
 import { Route as AuthenticatedAnalyticsAplicacoesRouteImport } from './routes/_authenticated/analytics/aplicacoes'
+import { Route as ApiPublicHooksSyncFeegowRouteImport } from './routes/api/public/hooks/sync-feegow'
 
 const PublicLoginRoute = PublicLoginRouteImport.update({
   id: '/public-login',
@@ -167,6 +168,12 @@ const AuthenticatedAnalyticsAplicacoesRoute =
     path: '/analytics/aplicacoes',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicHooksSyncFeegowRoute =
+  ApiPublicHooksSyncFeegowRouteImport.update({
+    id: '/api/public/hooks/sync-feegow',
+    path: '/api/public/hooks/sync-feegow',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -193,6 +200,7 @@ export interface FileRoutesByFullPath {
   '/analytics/comercial': typeof AuthenticatedAnalyticsComercialRoute
   '/analytics/previsoes': typeof AuthenticatedAnalyticsPrevisoesRoute
   '/analytics/rentabilidade': typeof AuthenticatedAnalyticsRentabilidadeRoute
+  '/api/public/hooks/sync-feegow': typeof ApiPublicHooksSyncFeegowRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -219,6 +227,7 @@ export interface FileRoutesByTo {
   '/analytics/comercial': typeof AuthenticatedAnalyticsComercialRoute
   '/analytics/previsoes': typeof AuthenticatedAnalyticsPrevisoesRoute
   '/analytics/rentabilidade': typeof AuthenticatedAnalyticsRentabilidadeRoute
+  '/api/public/hooks/sync-feegow': typeof ApiPublicHooksSyncFeegowRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -247,6 +256,7 @@ export interface FileRoutesById {
   '/_authenticated/analytics/comercial': typeof AuthenticatedAnalyticsComercialRoute
   '/_authenticated/analytics/previsoes': typeof AuthenticatedAnalyticsPrevisoesRoute
   '/_authenticated/analytics/rentabilidade': typeof AuthenticatedAnalyticsRentabilidadeRoute
+  '/api/public/hooks/sync-feegow': typeof ApiPublicHooksSyncFeegowRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -275,6 +285,7 @@ export interface FileRouteTypes {
     | '/analytics/comercial'
     | '/analytics/previsoes'
     | '/analytics/rentabilidade'
+    | '/api/public/hooks/sync-feegow'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -301,6 +312,7 @@ export interface FileRouteTypes {
     | '/analytics/comercial'
     | '/analytics/previsoes'
     | '/analytics/rentabilidade'
+    | '/api/public/hooks/sync-feegow'
   id:
     | '__root__'
     | '/'
@@ -328,6 +340,7 @@ export interface FileRouteTypes {
     | '/_authenticated/analytics/comercial'
     | '/_authenticated/analytics/previsoes'
     | '/_authenticated/analytics/rentabilidade'
+    | '/api/public/hooks/sync-feegow'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -339,6 +352,7 @@ export interface RootRouteChildren {
   LabConciliacaoRoute: typeof LabConciliacaoRoute
   LabFaturamentoRoute: typeof LabFaturamentoRoute
   LabRelatorioRoute: typeof LabRelatorioRoute
+  ApiPublicHooksSyncFeegowRoute: typeof ApiPublicHooksSyncFeegowRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -518,6 +532,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAnalyticsAplicacoesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/hooks/sync-feegow': {
+      id: '/api/public/hooks/sync-feegow'
+      path: '/api/public/hooks/sync-feegow'
+      fullPath: '/api/public/hooks/sync-feegow'
+      preLoaderRoute: typeof ApiPublicHooksSyncFeegowRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -575,6 +596,7 @@ const rootRouteChildren: RootRouteChildren = {
   LabConciliacaoRoute: LabConciliacaoRoute,
   LabFaturamentoRoute: LabFaturamentoRoute,
   LabRelatorioRoute: LabRelatorioRoute,
+  ApiPublicHooksSyncFeegowRoute: ApiPublicHooksSyncFeegowRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
