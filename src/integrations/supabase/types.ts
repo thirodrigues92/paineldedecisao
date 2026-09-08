@@ -839,6 +839,99 @@ export type Database = {
         }
         Relationships: []
       }
+      lab_repasse_feegow: {
+        Row: {
+          convenio_id: number | null
+          convenio_nome: string | null
+          created_at: string
+          data_repasse: string | null
+          especialidade_id: number | null
+          forma_pagamento: string | null
+          grupo_id: number | null
+          id: string
+          id_transacao: string
+          item_id: string
+          paciente_id: number | null
+          paciente_nome: string | null
+          payload_raw: Json | null
+          percentual: number | null
+          procedimento_id: number
+          procedimento_nome: string | null
+          profissional_id: number
+          profissional_nome: string | null
+          quantidade: number | null
+          regra_repasse: string | null
+          situacao_repasse: string | null
+          tipo_lancamento: string | null
+          unidade_id: number | null
+          unidade_nome: string | null
+          updated_at: string
+          valor: number
+          valor_liquido: number
+          valor_repassado: number
+        }
+        Insert: {
+          convenio_id?: number | null
+          convenio_nome?: string | null
+          created_at?: string
+          data_repasse?: string | null
+          especialidade_id?: number | null
+          forma_pagamento?: string | null
+          grupo_id?: number | null
+          id?: string
+          id_transacao?: string
+          item_id?: string
+          paciente_id?: number | null
+          paciente_nome?: string | null
+          payload_raw?: Json | null
+          percentual?: number | null
+          procedimento_id?: number
+          procedimento_nome?: string | null
+          profissional_id?: number
+          profissional_nome?: string | null
+          quantidade?: number | null
+          regra_repasse?: string | null
+          situacao_repasse?: string | null
+          tipo_lancamento?: string | null
+          unidade_id?: number | null
+          unidade_nome?: string | null
+          updated_at?: string
+          valor?: number
+          valor_liquido?: number
+          valor_repassado?: number
+        }
+        Update: {
+          convenio_id?: number | null
+          convenio_nome?: string | null
+          created_at?: string
+          data_repasse?: string | null
+          especialidade_id?: number | null
+          forma_pagamento?: string | null
+          grupo_id?: number | null
+          id?: string
+          id_transacao?: string
+          item_id?: string
+          paciente_id?: number | null
+          paciente_nome?: string | null
+          payload_raw?: Json | null
+          percentual?: number | null
+          procedimento_id?: number
+          procedimento_nome?: string | null
+          profissional_id?: number
+          profissional_nome?: string | null
+          quantidade?: number | null
+          regra_repasse?: string | null
+          situacao_repasse?: string | null
+          tipo_lancamento?: string | null
+          unidade_id?: number | null
+          unidade_nome?: string | null
+          updated_at?: string
+          valor?: number
+          valor_liquido?: number
+          valor_repassado?: number
+        }
+        Relationships: []
+      }
       lab_sync_lock: {
         Row: {
           consecutive_failures: number

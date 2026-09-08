@@ -149,7 +149,107 @@ export async function syncProducaoRange(start: string, end: string) {
   return resumo;
 }
 
+// --- REPASSE MÉDICO (reports/generate: medical-transfer) ---
+
+/** Busca o relatório de Repasse em uma janela pequena (a Feegow falha em janelas grandes). */
+async function fetchRepasseJanela(start: string, end: string): Promise<any[]> {
+  const res = await fetch(`${FEEGOW_BASE}/reports/generate`, {
+    method: "POST",
+    headers: { "x-access-token": FEEGOW_TOKEN(), "Content-Type": "application/json" },
+    body: JSON.stringify({
+      report: "medical-transfer",
+      DATA_INICIO: toFeegowDate(start, "/"),
+      DATA_FIM: toFeegowDate(end, "/"),
+      UNIDADE_IDS: [0],
+    }),
+  });
+  if (!res.ok) throw new Error(`Feegow HTTP ${res.status} em medical-transfer (${start} a ${end})`);
+  const body = await res.json();
+  if (!body?.success) throw new Error(`Feegow recusou medical-transfer: ${JSON.stringify(body).slice(0, 200)}`);
+  return Array.isArray(body.data) ? body.data : [];
+}
+
+function mapRepasse(r: any) {
+  const toBig = (v: any) => {
+    if (v === undefined || v === null || v === "") return null;
+    try { return BigInt(v); } catch { return null; }
+  };
+  const idTransacao = String(r.IDTransacao ?? "");
+  const itemId = String(r.ItemID ?? r.ItemInvoiceID ?? r.ItemGuiaID ?? "");
+  return {
+    id_transacao: idTransacao,
+    item_id: itemId,
+    profissional_id: r.ProfissionalID != null ? Number(r.ProfissionalID) : -1,
+    procedimento_id: r.ProcedimentoID != null ? Number(r.ProcedimentoID) : -1,
+    data_repasse: parseDataFeegow(r.Data ?? r.DataReferencia),
+    profissional_nome: (r.NomeProfissional || r.Executante || null),
+    paciente_id: toBig(r.PacienteID),
+    paciente_nome: r.NomePaciente || null,
+    procedimento_nome: r.NomeProcedimento || null,
+    grupo_id: r.GrupoID != null ? Number(r.GrupoID) : null,
+    especialidade_id: r.EspecialidadeID != null ? Number(r.EspecialidadeID) : null,
+    convenio_id: r.ConvenioID != null ? Number(r.ConvenioID) : null,
+    convenio_nome: r.NomeConvenio || null,
+    unidade_id: toBig(r.UnidadeID),
+    unidade_nome: r.NomeUnidade || null,
+    tipo_lancamento: r.TipoLancamento || null,
+    forma_pagamento: r.PaymentMethod || null,
+    valor: parseValorBR(r.Valor),
+    valor_liquido: parseValorBR(r.ValorLiquido),
+    valor_repassado: parseValorBR(r.ValorRepassado),
+    percentual: r.Percentual != null && r.Percentual !== "" ? parseValorBR(r.Percentual) : null,
+    regra_repasse: r.RegraRepasse || null,
+    situacao_repasse: r.SituacaoRepasse || null,
+    quantidade: r.Quantidade != null && r.Quantidade !== "" ? parseValorBR(r.Quantidade) : null,
+    payload_raw: r,
+  };
+}
+
+/** Sincroniza repasse em fatias de 3 dias, com retry diário quando a Feegow falha. */
+export async function syncRepasseRange(start: string, end: string) {
+  const resumo = { total: 0, gravados: 0, erros: [] as string[] };
+  const janelas: Array<[string, string]> = [];
+  for (let d = start; d <= end; d = addDaysISO(d, 3)) {
+    const b = addDaysISO(d, 2);
+    janelas.push([d, b > end ? end : b]);
+  }
+
+  for (const [a, b] of janelas) {
+    let rows: any[] = [];
+    try {
+      rows = await fetchRepasseJanela(a, b);
+    } catch (e: any) {
+      // refatia em dias individuais
+      for (let dd = a; dd <= b; dd = addDaysISO(dd, 1)) {
+        try {
+          rows.push(...(await fetchRepasseJanela(dd, dd)));
+        } catch (e2: any) {
+          resumo.erros.push(`${dd}: ${e2.message}`);
+        }
+      }
+      if (rows.length === 0) continue;
+    }
+
+    resumo.total += rows.length;
+    const dedup = new Map<string, any>();
+    for (const r of rows) {
+      const m = mapRepasse(r);
+      dedup.set(`${m.id_transacao}|${m.item_id}|${m.profissional_id}|${m.procedimento_id}`, m);
+    }
+    for (const bloco of chunk([...dedup.values()], 200)) {
+      const { error } = await supabaseAdmin
+        .from("lab_repasse_feegow")
+        .upsert(bloco as any, { onConflict: "id_transacao,item_id,profissional_id,procedimento_id" });
+      if (error) resumo.erros.push(error.message);
+      else resumo.gravados += bloco.length;
+    }
+  }
+
+  return resumo;
+}
+
 // --- REDE DE SEGURANÇA (appoints/search) ---
+
 
 export async function syncSafetyNetRange(start: string, end: string) {
   const resumo = { dias: 0, preenchidos: 0, erros: [] as string[] };
@@ -292,9 +392,12 @@ export async function runIncrementalSync(diasJanela = 3) {
   try {
     const producao = await syncProducaoRange(inicio, fim);
     const safety = await syncSafetyNetRange(inicio, fim);
+    let repasse: any = null;
+    try { repasse = await syncRepasseRange(inicio, fim); } catch (e: any) { repasse = { erro: e.message }; }
     await enriquecer();
-    const result = { inicio, fim, producao, safety };
+    const result = { inicio, fim, producao, safety, repasse };
     await logSync("auto-sync:30min", { inicio, fim }, true, producao.gravados + safety.preenchidos);
+
     await releaseLock("auto_sync", { ok: true, result, falhasAnteriores });
 
     // Se houver carga histórica pendente, aproveita a execução para adiantar 2 blocos.
@@ -371,9 +474,12 @@ export async function processBackfillQueue(maxBlocos = 3) {
 /** Tenta o bloco inteiro; se a Feegow falhar, refatia em 3 dias e depois 1 dia. */
 async function processarBlocoFatiado(inicio: string, fim: string): Promise<number> {
   const tentar = async (a: string, b: string) => (await syncProducaoRange(a, b)).gravados;
+  // O repasse do mesmo período é carregado junto (best-effort, em fatias de 3 dias).
+  try { await syncRepasseRange(inicio, fim); } catch { /* repasse é complementar */ }
   try {
     return await tentar(inicio, fim);
   } catch {
+
     let total = 0;
     const erros: string[] = [];
     for (let d = inicio; d <= fim; d = addDaysISO(d, 3)) {

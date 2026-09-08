@@ -15,7 +15,7 @@ import {
   Cell,
 } from "recharts";
 import { brl, num } from "@/lib/format";
-import { fetchLabProducaoRows } from "@/lib/dashboard-data";
+import { fetchLabProducaoRows, fetchLabRepasseRows } from "@/lib/dashboard-data";
 import { useFilters } from "@/lib/filters-context";
 import { tooltipProps } from "@/lib/chart-theme";
 import {
@@ -76,11 +76,18 @@ export function FaturamentoProfissionalComparativo() {
     queryFn: () => fetchLabProducaoRows(filters, 30_000),
   });
 
+  const { data: repasses = [] } = useQuery({
+    queryKey: ["labRepasse_prof_comparativo", filters],
+    queryFn: () => fetchLabRepasseRows(filters, 30_000),
+  });
+
   const [isCompareMode, setIsCompareMode] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [compare, setCompare] = useState<string[]>([]);
   const [busca, setBusca] = useState("");
+  const [buscaRepasse, setBuscaRepasse] = useState("");
   const [conveniosSel, setConveniosSel] = useState<string[]>([]);
+
 
   const handleClick = (nome: string) => {
     if (isCompareMode) {
@@ -259,6 +266,107 @@ export function FaturamentoProfissionalComparativo() {
     });
   }, [tableData, busca]);
 
+  // ---- Repasse (quanto o profissional recebeu) ----
+  const chaveProf = (n?: string | null) => (n || "Não informado").trim().toUpperCase();
+
+  const repassesBase = useMemo(
+    () =>
+      conveniosSel.length === 0
+        ? repasses
+        : repasses.filter((r) =>
+            conveniosSel.includes((r.convenio_nome || "Particular").trim() || "Particular")
+          ),
+    [repasses, conveniosSel]
+  );
+
+  const resumoRepassePorProf = useMemo(() => {
+    const map = new Map<string, { repassado: number; bruto: number; qtd: number }>();
+    for (const r of repassesBase) {
+      const k = chaveProf(r.profissional_nome);
+      const cur = map.get(k) ?? { repassado: 0, bruto: 0, qtd: 0 };
+      cur.repassado += Number(r.valor_repassado || 0);
+      cur.bruto += Number(r.valor || 0);
+      cur.qtd += 1;
+      map.set(k, cur);
+    }
+    return map;
+  }, [repassesBase]);
+
+  const totalRepassadoGlobal = useMemo(
+    () => repassesBase.reduce((s, r) => s + Number(r.valor_repassado || 0), 0),
+    [repassesBase]
+  );
+
+  const repasseLinhas = useMemo(() => {
+    if (activeProfs.length === 0) return [];
+    const alvo = new Set(activeProfs.map(chaveProf));
+    return repassesBase
+      .filter((r) => alvo.has(chaveProf(r.profissional_nome)))
+      .map((r) => ({
+        id: r.id,
+        data: r.data_repasse,
+        medico: (r.profissional_nome || "Não informado").trim(),
+        paciente: r.paciente_nome || "Paciente não identificado",
+        procedimento: r.procedimento_nome || "Sem descrição",
+        convenio: r.convenio_nome || "Particular",
+        valor: Number(r.valor || 0),
+        repassado: Number(r.valor_repassado || 0),
+        regra: r.regra_repasse || "—",
+        situacao: r.situacao_repasse || "—",
+      }))
+      .sort((a, b) => b.repassado - a.repassado);
+  }, [repassesBase, activeProfs]);
+
+  const repasseLinhasFiltradas = useMemo(() => {
+    const q = buscaRepasse.trim().toLowerCase();
+    if (!q) return repasseLinhas;
+    const qNum = q.replace(/[r$\s.]/g, "").replace(",", ".");
+    return repasseLinhas.filter((p) => {
+      if (
+        [p.paciente, p.medico, p.procedimento, p.convenio, p.regra, p.situacao]
+          .filter(Boolean)
+          .some((campo) => String(campo).toLowerCase().includes(q))
+      )
+        return true;
+      if (p.data && formataDataCurta(p.data).includes(q)) return true;
+      if (qNum && !isNaN(Number(qNum))) {
+        return (
+          String(p.valor.toFixed(2)).includes(qNum) ||
+          String(p.repassado.toFixed(2)).includes(qNum)
+        );
+      }
+      return false;
+    });
+  }, [repasseLinhas, buscaRepasse]);
+
+  const exportarRepasseCSV = () => {
+    const linhas = [
+      ["Data", "Medico", "Paciente", "Procedimento", "Convenio", "Valor", "Repassado", "Regra", "Situacao"],
+      ...repasseLinhasFiltradas.map((p) => [
+        formataDataCurta(p.data),
+        p.medico,
+        p.paciente,
+        p.procedimento,
+        p.convenio,
+        p.valor.toFixed(2).replace(".", ","),
+        p.repassado.toFixed(2).replace(".", ","),
+        p.regra,
+        p.situacao,
+      ]),
+    ];
+    const csv = linhas
+      .map((l) => l.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(";"))
+      .join("\n");
+    const url = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8;" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "repasse-profissionais.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+
+
   const CustomTreemapContent = (props: any) => {
     const { x, y, width, height, index, name, value } = props;
     if (!name || typeof width !== "number" || typeof height !== "number") {
@@ -380,7 +488,19 @@ export function FaturamentoProfissionalComparativo() {
               <p className="text-xl font-semibold text-primary">
                 {brl(totalFaturado)}
               </p>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Repassado aos profissionais:{" "}
+                <span className="font-medium text-foreground/80">
+                  {brl(totalRepassadoGlobal)}
+                </span>
+                {totalFaturado > 0 && (
+                  <span className="ml-1">
+                    ({((totalRepassadoGlobal / totalFaturado) * 100).toFixed(1)}%)
+                  </span>
+                )}
+              </p>
             </div>
+
             <div className="flex items-center space-x-2 bg-muted/30 p-1.5 rounded-md border border-border/50">
               <Switch
                 id="compare-mode-prof"
@@ -549,6 +669,172 @@ export function FaturamentoProfissionalComparativo() {
         {activeProfs.length > 0 && (
           <div className="pt-6 border-t border-border animate-in slide-in-from-bottom-4 fade-in duration-500 space-y-6">
             <div>
+              <h3 className="text-sm font-semibold mb-1">
+                Repasse ao profissional (o que ele recebeu)
+              </h3>
+              <p className="text-xs text-muted-foreground mb-4">
+                Comparação entre o que foi faturado e o que foi repassado no
+                período selecionado.
+              </p>
+              <div
+                className={`grid gap-4 ${
+                  activeProfs.length === 1
+                    ? "grid-cols-1"
+                    : "grid-cols-1 md:grid-cols-2"
+                }`}
+              >
+                {activeProfs.map((prof) => {
+                  const faturado =
+                    treeData.find((t) => t.name === prof)?.size ?? 0;
+                  const rep = resumoRepassePorProf.get(chaveProf(prof));
+                  const repassado = rep?.repassado ?? 0;
+                  const retido = faturado - repassado;
+                  const pctRepasse =
+                    faturado > 0 ? (repassado / faturado) * 100 : 0;
+                  const pctTotal =
+                    totalFaturado > 0 ? (repassado / totalFaturado) * 100 : 0;
+                  return (
+                    <div
+                      key={prof}
+                      className="rounded-lg border border-border/60 bg-muted/10 p-4 space-y-3"
+                    >
+                      <p className="text-sm font-semibold truncate">{prof}</p>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        <Kpi label="Faturado" value={brl(faturado)} />
+                        <Kpi label="Repassado" value={brl(repassado)} />
+                        <Kpi label="Retido pela clínica" value={brl(retido)} />
+                        <Kpi
+                          label="% de repasse"
+                          value={`${pctRepasse.toFixed(1)}%`}
+                        />
+                        <Kpi
+                          label="% do faturamento total"
+                          value={`${pctTotal.toFixed(1)}%`}
+                        />
+                        <Kpi
+                          label="Itens repassados"
+                          value={num(rep?.qtd ?? 0)}
+                        />
+                      </div>
+                      {faturado > 0 && repassado === 0 && (
+                        <p className="text-[11px] text-amber-500 leading-relaxed">
+                          Este profissional tem faturamento no período, mas
+                          nenhum repasse lançado ainda — o valor recebido pode
+                          aparecer depois que o repasse for gerado.
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="mt-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                  <h4 className="text-xs font-semibold">
+                    Lançamentos de repasse ({num(repasseLinhasFiltradas.length)}) —{" "}
+                    {brl(
+                      repasseLinhasFiltradas.reduce((s, p) => s + p.repassado, 0)
+                    )}
+                  </h4>
+                  <div className="flex items-center gap-2">
+                    <div className="relative w-full sm:w-[240px]">
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                      <Input
+                        value={buscaRepasse}
+                        onChange={(e) => setBuscaRepasse(e.target.value)}
+                        placeholder="Pesquisar repasse..."
+                        className="pl-8 h-8 text-xs"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={exportarRepasseCSV}
+                      disabled={repasseLinhasFiltradas.length === 0}
+                      className="rounded-md border border-border/60 px-2 py-1.5 text-[11px] font-medium hover:bg-muted/60 disabled:opacity-40"
+                    >
+                      Exportar CSV
+                    </button>
+                  </div>
+                </div>
+                <div className="rounded-md border bg-card w-full">
+                  <ScrollArea className="h-[300px]">
+                    <Table>
+                      <TableHeader className="bg-muted/50 sticky top-0 backdrop-blur-sm z-10">
+                        <TableRow>
+                          <TableHead className="w-[80px]">Data</TableHead>
+                          <TableHead>Paciente</TableHead>
+                          <TableHead>Procedimento</TableHead>
+                          <TableHead>Convênio</TableHead>
+                          <TableHead>Regra</TableHead>
+                          <TableHead className="text-right">Valor</TableHead>
+                          <TableHead className="text-right">Repassado</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {repasseLinhasFiltradas.length === 0 ? (
+                          <TableRow>
+                            <TableCell
+                              colSpan={7}
+                              className="text-center h-28 text-muted-foreground"
+                            >
+                              {buscaRepasse.trim()
+                                ? `Nenhum resultado para "${buscaRepasse.trim()}".`
+                                : "Nenhum repasse encontrado no período."}
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          repasseLinhasFiltradas.map((p, idx) => (
+                            <TableRow
+                              key={`${p.id}-${idx}`}
+                              className="hover:bg-muted/30"
+                            >
+                              <TableCell className="text-xs whitespace-nowrap text-muted-foreground">
+                                {formataDataCurta(p.data)}
+                              </TableCell>
+                              <TableCell
+                                className="text-xs truncate max-w-[150px]"
+                                title={p.paciente}
+                              >
+                                {p.paciente}
+                              </TableCell>
+                              <TableCell
+                                className="text-xs truncate max-w-[150px]"
+                                title={p.procedimento}
+                              >
+                                {p.procedimento}
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant="secondary"
+                                  className="text-[9px] bg-muted whitespace-nowrap"
+                                >
+                                  {p.convenio}
+                                </Badge>
+                              </TableCell>
+                              <TableCell
+                                className="text-[11px] text-muted-foreground truncate max-w-[130px]"
+                                title={p.regra}
+                              >
+                                {p.regra}
+                              </TableCell>
+                              <TableCell className="text-right text-xs">
+                                {brl(p.valor)}
+                              </TableCell>
+                              <TableCell className="text-right font-medium text-xs text-primary">
+                                {brl(p.repassado)}
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </ScrollArea>
+                </div>
+              </div>
+            </div>
+
+            <div>
+
               <h3 className="text-sm font-semibold mb-1">
                 {isCompareMode
                   ? "Comparativo por Categoria entre Profissionais"
@@ -839,5 +1125,14 @@ export function FaturamentoProfissionalComparativo() {
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function Kpi({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-border/60 bg-background/40 p-2">
+      <p className="text-[10px] text-muted-foreground leading-tight">{label}</p>
+      <p className="text-sm font-semibold">{value}</p>
+    </div>
   );
 }

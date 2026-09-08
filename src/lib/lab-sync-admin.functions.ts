@@ -45,7 +45,17 @@ export const runBackfillLote = createServerFn({ method: "POST" })
     return await core.processBackfillQueue(data.blocos);
   });
 
+export const runRepasseSync = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { inicio: string; fim: string }) => ({ inicio: isoDate(d?.inicio), fim: isoDate(d?.fim) }))
+  .handler(async ({ data }) => {
+    if (data.fim < data.inicio) throw new Error("Data final anterior à inicial");
+    const core = await import("@/lib/lab-sync-core.server");
+    return await core.syncRepasseRange(data.inicio, data.fim);
+  });
+
 export const criarBackfillJob = createServerFn({ method: "POST" })
+
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { inicio: string; fim: string }) => ({ inicio: isoDate(d?.inicio), fim: isoDate(d?.fim) }))
   .handler(async ({ data }) => {
