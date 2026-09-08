@@ -238,7 +238,7 @@ export function FaturamentoProfissionalComparativo() {
         cats: catKeys,
         procDataPorProf: procPorProf,
       };
-    }, [dados, isCompareMode, selected, compare]);
+    }, [dadosBase, isCompareMode, selected, compare]);
 
   const tableDataFiltrada = useMemo(() => {
     const q = busca.trim().toLowerCase();
