@@ -10,6 +10,9 @@ import {
   CartesianGrid,
   Treemap,
   Legend,
+  PieChart,
+  Pie,
+  Cell,
 } from "recharts";
 import { brl, num } from "@/lib/format";
 import { fetchLabProducaoRows } from "@/lib/dashboard-data";
@@ -88,8 +91,15 @@ export function FaturamentoProfissionalComparativo() {
     }
   };
 
-  const { treeData, totalFaturado, chartData, tableData, activeProfs, cats } =
-    useMemo(() => {
+  const {
+    treeData,
+    totalFaturado,
+    chartData,
+    tableData,
+    activeProfs,
+    cats,
+    procDataPorProf,
+  } = useMemo(() => {
       let baseTotal = 0;
       const profMap = new Map<
         string,
@@ -115,6 +125,10 @@ export function FaturamentoProfissionalComparativo() {
       let catChart: any[] = [];
       let tabData: any[] = [];
       let catKeys: string[] = [];
+      const procPorProf: Record<
+        string,
+        { name: string; value: number; qtd: number }[]
+      > = {};
 
       if (activeList.length > 0) {
         const filtered = dados.filter((r) =>
@@ -157,6 +171,34 @@ export function FaturamentoProfissionalComparativo() {
           (a, b) => b.total - a.total
         );
         catKeys = activeList;
+
+        // Pizza: procedimentos por profissional (com % de participação)
+        for (const prof of activeList) {
+          const rowsProf = filtered.filter(
+            (r) => (r.profissional_nome || "Não informado").trim() === prof
+          );
+          const map = new Map<string, { value: number; qtd: number }>();
+          for (const r of rowsProf) {
+            const proc = (r.procedimento_nome || "Sem descrição").trim();
+            const cur = map.get(proc) ?? { value: 0, qtd: 0 };
+            cur.value += Number(r.valor || 0);
+            cur.qtd += 1;
+            map.set(proc, cur);
+          }
+          const itens = Array.from(map.entries())
+            .map(([name, v]) => ({ name, value: v.value, qtd: v.qtd }))
+            .sort((a, b) => b.value - a.value);
+          const top = itens.slice(0, 7);
+          const resto = itens.slice(7);
+          if (resto.length > 0) {
+            top.push({
+              name: "Outros",
+              value: resto.reduce((s, i) => s + i.value, 0),
+              qtd: resto.reduce((s, i) => s + i.qtd, 0),
+            });
+          }
+          procPorProf[prof] = top;
+        }
       }
 
       return {
@@ -166,6 +208,7 @@ export function FaturamentoProfissionalComparativo() {
         tableData: tabData,
         activeProfs: activeList,
         cats: catKeys,
+        procDataPorProf: procPorProf,
       };
     }, [dados, isCompareMode, selected, compare]);
 
@@ -494,6 +537,125 @@ export function FaturamentoProfissionalComparativo() {
                     ))}
                   </BarChart>
                 </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-semibold mb-1">
+                Participação dos Procedimentos por Profissional
+              </h3>
+              <p className="text-xs text-muted-foreground mb-4">
+                Cada pizza mostra, em %, o que o profissional faturou por
+                procedimento.
+              </p>
+              <div
+                className={`grid gap-4 ${
+                  activeProfs.length === 1
+                    ? "grid-cols-1"
+                    : activeProfs.length === 2
+                      ? "grid-cols-1 md:grid-cols-2"
+                      : "grid-cols-1 md:grid-cols-2 xl:grid-cols-3"
+                }`}
+              >
+                {activeProfs.map((prof) => {
+                  const pieData = procDataPorProf[prof] || [];
+                  const totalProf = pieData.reduce((s, i) => s + i.value, 0);
+                  const profColor =
+                    PALETTE[
+                      treeData.findIndex((t) => t.name === prof) %
+                        PALETTE.length
+                    ];
+                  return (
+                    <div
+                      key={prof}
+                      className="rounded-lg border border-border/60 bg-muted/10 p-4"
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <p className="text-sm font-semibold truncate flex items-center gap-2">
+                          <span
+                            className="inline-block h-2.5 w-2.5 rounded-sm shrink-0"
+                            style={{ backgroundColor: profColor }}
+                          />
+                          {prof}
+                        </p>
+                        <p className="text-xs font-medium text-primary whitespace-nowrap">
+                          {brl(totalProf)}
+                        </p>
+                      </div>
+                      <div className="h-[240px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={pieData}
+                              dataKey="value"
+                              nameKey="name"
+                              innerRadius="45%"
+                              outerRadius="75%"
+                              paddingAngle={2}
+                              stroke="var(--background)"
+                              strokeWidth={1}
+                              label={({ percent }) =>
+                                percent && percent >= 0.04
+                                  ? `${(percent * 100).toFixed(0)}%`
+                                  : ""
+                              }
+                              labelLine={false}
+                              fontSize={10}
+                            >
+                              {pieData.map((_, idx) => (
+                                <Cell
+                                  key={idx}
+                                  fill={PALETTE[idx % PALETTE.length]}
+                                  fillOpacity={0.85}
+                                />
+                              ))}
+                            </Pie>
+                            <Tooltip
+                              {...tooltipProps}
+                              formatter={(val, name, props) => {
+                                const pct =
+                                  totalProf > 0
+                                    ? (Number(val) / totalProf) * 100
+                                    : 0;
+                                return [
+                                  `${brl(Number(val))} (${pct.toFixed(1)}%) — ${num(
+                                    props.payload.qtd
+                                  )} itens`,
+                                  name,
+                                ];
+                              }}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {pieData.map((p, idx) => (
+                          <span
+                            key={p.name}
+                            className="flex items-center gap-1 text-[10px] text-muted-foreground"
+                            title={`${p.name} — ${brl(p.value)} (${num(p.qtd)} itens)`}
+                          >
+                            <span
+                              className="inline-block h-2 w-2 rounded-sm shrink-0"
+                              style={{
+                                backgroundColor:
+                                  PALETTE[idx % PALETTE.length],
+                              }}
+                            />
+                            <span className="truncate max-w-[120px]">
+                              {p.name}
+                            </span>
+                            <span className="font-medium text-foreground/80">
+                              {totalProf > 0
+                                ? `${((p.value / totalProf) * 100).toFixed(0)}%`
+                                : "0%"}
+                            </span>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
