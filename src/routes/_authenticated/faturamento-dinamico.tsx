@@ -18,6 +18,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { FaturamentoCategoriaComparativo } from "@/components/FaturamentoCategoriaComparativo";
+import { FaturamentoProfissionalComparativo } from "@/components/FaturamentoProfissionalComparativo";
+import { ComparativoMensal } from "@/components/ComparativoMensal";
 
 
 export const Route = createFileRoute("/_authenticated/faturamento-dinamico")({
@@ -696,6 +698,8 @@ function FaturamentoDinamicoPage() {
               </CardContent>
             </Card>
             <FaturamentoCategoriaComparativo />
+            <FaturamentoProfissionalComparativo />
+            <ComparativoMensal />
 
           </TabsContent>
         </Tabs>
