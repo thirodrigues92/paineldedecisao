@@ -317,3 +317,47 @@ export async function fetchLabProducaoRows(f: DashboardFilters, limit = 30_000):
 }
 
 
+
+// ---- Repasse médico (quanto o profissional recebeu) ----
+
+export type LabRepasseRow = {
+  id: string;
+  data_repasse: string | null;
+  profissional_id: number | null;
+  profissional_nome: string | null;
+  paciente_nome: string | null;
+  procedimento_id: number | null;
+  procedimento_nome: string | null;
+  convenio_nome: string | null;
+  valor: number | null;
+  valor_liquido: number | null;
+  valor_repassado: number | null;
+  percentual: number | null;
+  regra_repasse: string | null;
+  situacao_repasse: string | null;
+};
+
+export async function fetchLabRepasseRows(f: DashboardFilters, limit = 30_000): Promise<LabRepasseRow[]> {
+  const pageSize = 1_000;
+  const all: LabRepasseRow[] = [];
+
+  for (let from = 0; from < limit; from += pageSize) {
+    let q = supabase
+      .from("lab_repasse_feegow")
+      .select("id, data_repasse, profissional_id, profissional_nome, paciente_nome, procedimento_id, procedimento_nome, convenio_nome, valor, valor_liquido, valor_repassado, percentual, regra_repasse, situacao_repasse")
+      .gte("data_repasse", toISO(f.from))
+      .lte("data_repasse", toISO(f.to))
+      .order("data_repasse", { ascending: true })
+      .range(from, Math.min(from + pageSize - 1, limit - 1));
+
+    if (f.unidadeIds.length) q = q.in("unidade_id", f.unidadeIds);
+    if (f.profissionalIds.length) q = q.in("profissional_id", f.profissionalIds);
+
+    const { data, error } = await q;
+    if (error) throw error;
+    all.push(...((data ?? []) as LabRepasseRow[]));
+    if (!data || data.length < pageSize) break;
+  }
+
+  return all;
+}

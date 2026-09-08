@@ -10,8 +10,9 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { RefreshCw, Play, History, AlertTriangle } from "lucide-react";
 import {
-  getSyncStatus, runSyncNow, runBackfillLote, criarBackfillJob, resetSyncJob, reprocessarBlocosComErro,
+  getSyncStatus, runSyncNow, runBackfillLote, criarBackfillJob, resetSyncJob, reprocessarBlocosComErro, runRepasseSync,
 } from "@/lib/lab-sync-admin.functions";
+
 
 const fmtDate = (v?: string | null) => (v ? new Date(v).toLocaleString("pt-BR") : "—");
 
@@ -23,6 +24,8 @@ export function SyncAutomaticaPanel() {
   const criarFn = useServerFn(criarBackfillJob);
   const resetFn = useServerFn(resetSyncJob);
   const retryFn = useServerFn(reprocessarBlocosComErro);
+  const repasseFn = useServerFn(runRepasseSync);
+
 
   const hoje = new Date().toISOString().slice(0, 10);
   const [inicio, setInicio] = useState(() => {
@@ -73,6 +76,16 @@ export function SyncAutomaticaPanel() {
     mutationFn: () => retryFn({}),
     onSuccess: (r: any) => { toast.success(`${r.reenfileirados} blocos reenfileirados`); invalidate(); },
   });
+
+  const mRepasse = useMutation({
+    mutationFn: () => repasseFn({ data: { inicio, fim } }),
+    onSuccess: (r: any) => {
+      toast.success(`Repasse: ${r.gravados} lançamentos gravados${r.erros?.length ? ` (${r.erros.length} falhas)` : ""}`);
+      invalidate();
+    },
+    onError: (e: any) => toast.error(e.message ?? "Falha ao sincronizar repasse"),
+  });
+
 
   const auto = (q.data?.locks ?? []).find((l: any) => l.id === "auto_sync");
   const back = (q.data?.locks ?? []).find((l: any) => l.id === "backfill");
@@ -146,6 +159,10 @@ export function SyncAutomaticaPanel() {
             <Button variant="secondary" onClick={() => mLote.mutate()} disabled={mLote.isPending}>
               {mLote.isPending ? "Processando..." : "Processar próximos blocos"}
             </Button>
+            <Button variant="secondary" onClick={() => mRepasse.mutate()} disabled={mRepasse.isPending}>
+              {mRepasse.isPending ? "Carregando repasse..." : "Carregar repasse do período"}
+            </Button>
+
             {(porStatus["erro"] ?? 0) > 0 && (
               <Button variant="outline" onClick={() => mRetry.mutate()}>Reprocessar com erro</Button>
             )}
