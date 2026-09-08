@@ -134,7 +134,7 @@ export function FaturamentoProfissionalComparativo() {
         { name: string; size: number; qtd: number }
       >();
 
-      for (const r of dados) {
+      for (const r of dadosBase) {
         const valor = Number(r.valor || 0);
         const prof = (r.profissional_nome || "Não informado").trim();
         baseTotal += valor;
