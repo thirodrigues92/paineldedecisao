@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { LastSyncCard } from "@/components/LastSyncCard";
+import { SyncAutomaticaPanel } from "@/components/SyncAutomaticaPanel";
 import { useAppSettings, useUpdateSetting } from "@/lib/app-settings";
 
 export const Route = createFileRoute("/_authenticated/config")({
