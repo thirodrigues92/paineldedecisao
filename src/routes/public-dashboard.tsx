@@ -14,7 +14,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { brl, num, pct } from "@/lib/format";
-import { Calendar, DollarSign, UserPlus, UserX, Activity, TrendingUp, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { Calendar, DollarSign, UserPlus, UserX, Activity, TrendingUp, ArrowUpRight, ArrowDownRight, Search } from "lucide-react";
 import {
   ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid,
   BarChart, Bar, PieChart, Pie, Cell, Legend,
@@ -28,6 +28,7 @@ import { differenceInDays, subDays, eachDayOfInterval, format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { GlobalFilters } from "@/components/GlobalFilters";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Input } from "@/components/ui/input";
 
 
 function PublicDashboardContent() {
@@ -36,6 +37,7 @@ function PublicDashboardContent() {
   const [detalheOrigem, setDetalheOrigem] = useState<string | null>(null);
   const [detalhePagamento, setDetalhePagamento] = useState<string | null>(null);
   const [itemAberto, setItemAberto] = useState<string | null>(null);
+  const [buscaDetalhe, setBuscaDetalhe] = useState("");
   const [detalheProfissional, setDetalheProfissional] = useState<string | null>(null);
   const [detalheNovos, setDetalheNovos] = useState<boolean>(false);
   const [detalheNoShow, setDetalheNoShow] = useState<boolean>(false);
@@ -255,6 +257,35 @@ function PublicDashboardContent() {
   const detalheItens = activeBucket
     ? Array.from(activeBucket.itens.values()).sort((a: any, b: any) => b.valor - a.valor).slice(0, 80)
     : [];
+
+  const buscaDetalheNorm = buscaDetalhe.trim().toLowerCase();
+  const buscaAtiva = buscaDetalheNorm.length > 0;
+  const lancMatch = (l: any, b: string) =>
+    (l.nome ?? "").toLowerCase().includes(b) ||
+    (l.pacienteNome ?? "").toLowerCase().includes(b) ||
+    (l.categoria ?? "").toLowerCase().includes(b) ||
+    (l.status ?? "").toLowerCase().includes(b) ||
+    (l.profissionalNome ?? "").toLowerCase().includes(b) ||
+    (l.formaPagamento ?? "").toLowerCase().includes(b) ||
+    (l.data ?? "").includes(b) ||
+    (l.data ? new Date(`${l.data}T12:00:00`).toLocaleDateString("pt-BR").includes(b) : false) ||
+    String(l.valor).includes(b) ||
+    brl(Number(l.valor || 0)).toLowerCase().includes(b);
+  const detalheItensFiltrados: any[] = buscaAtiva
+    ? detalheItens
+        .map((it: any) => {
+          if (it.nome.toLowerCase().includes(buscaDetalheNorm)) return it;
+          const lancs = it.lancamentos.filter((l: any) => lancMatch(l, buscaDetalheNorm));
+          if (!lancs.length) return null;
+          return {
+            ...it,
+            lancamentos: lancs,
+            qtd: lancs.length,
+            valor: lancs.reduce((s: number, l: any) => s + Number(l.valor || 0), 0),
+          };
+        })
+        .filter((x: any) => x !== null)
+    : detalheItens;
 
   const kpis = [
     { label: "Agendamentos", value: num(total), icon: Calendar, trend: getDiff(total, prevTotal) },
