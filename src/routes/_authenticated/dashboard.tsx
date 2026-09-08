@@ -12,7 +12,7 @@ import {
 } from "@/lib/dashboard-data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { brl, num, pct } from "@/lib/format";
-import { Calendar, DollarSign, UserPlus, UserX, Activity, TrendingUp, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { Calendar, DollarSign, UserPlus, UserX, Activity, TrendingUp, ArrowUpRight, ArrowDownRight, Search } from "lucide-react";
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid,
   BarChart, Bar, PieChart, Pie, Cell, Legend,
@@ -24,6 +24,7 @@ import { LastSyncCard } from "@/components/LastSyncCard";
 import { categoriaServico } from "@/lib/service-categories";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Input } from "@/components/ui/input";
 import { differenceInDays, subDays, eachDayOfInterval, format } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -68,6 +69,7 @@ function DashboardPage() {
   const [detalheOrigem, setDetalheOrigem] = useState<string | null>(null);
   const [detalhePagamento, setDetalhePagamento] = useState<string | null>(null);
   const [itemAberto, setItemAberto] = useState<string | null>(null);
+  const [buscaDetalhe, setBuscaDetalhe] = useState("");
   const [detalheProfissional, setDetalheProfissional] = useState<string | null>(null);
   const [detalheNovos, setDetalheNovos] = useState<boolean>(false);
   const [detalheNoShow, setDetalheNoShow] = useState<boolean>(false);
@@ -353,6 +355,35 @@ function DashboardPage() {
   const detalheItens: ItemServico[] = activeBucket
     ? Array.from(activeBucket.itens.values()).sort((a, b) => b.qtd - a.qtd).slice(0, 80)
     : [];
+
+  const buscaDetalheNorm = buscaDetalhe.trim().toLowerCase();
+  const buscaAtiva = buscaDetalheNorm.length > 0;
+  const lancMatch = (l: LancamentoDetalhe, b: string) =>
+    (l.nome ?? "").toLowerCase().includes(b) ||
+    (l.pacienteNome ?? "").toLowerCase().includes(b) ||
+    (l.categoria ?? "").toLowerCase().includes(b) ||
+    (l.status ?? "").toLowerCase().includes(b) ||
+    (l.profissionalNome ?? "").toLowerCase().includes(b) ||
+    (l.formaPagamento ?? "").toLowerCase().includes(b) ||
+    (l.data ?? "").includes(b) ||
+    (l.data ? new Date(`${l.data}T12:00:00`).toLocaleDateString("pt-BR").includes(b) : false) ||
+    String(l.valor).includes(b) ||
+    brl(Number(l.valor || 0)).toLowerCase().includes(b);
+  const detalheItensFiltrados: ItemServico[] = buscaAtiva
+    ? detalheItens
+        .map((it) => {
+          if (it.nome.toLowerCase().includes(buscaDetalheNorm)) return it;
+          const lancs = it.lancamentos.filter((l) => lancMatch(l, buscaDetalheNorm));
+          if (!lancs.length) return null;
+          return {
+            ...it,
+            lancamentos: lancs,
+            qtd: lancs.length,
+            valor: lancs.reduce((s, l) => s + Number(l.valor || 0), 0),
+          };
+        })
+        .filter((x): x is ItemServico => x !== null)
+    : detalheItens;
   const coberturaServico = faturadoReal > 0 ? (classificado * 100) / faturadoReal : 0;
 
 
