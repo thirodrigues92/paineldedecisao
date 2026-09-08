@@ -4,9 +4,18 @@ export const Route = createFileRoute("/api/public/hooks/sync-feegow")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const secret = process.env['CRON_SYNC_SECRET'];
-        const provided = request.headers.get("x-cron-secret");
-        if (!secret || !provided || provided !== secret) {
+        const provided = request.headers.get("x-cron-secret") ?? "";
+        const envSecret = process.env['CRON_SYNC_SECRET'] ?? "";
+        let autorizado = provided.length > 0 && provided === envSecret;
+
+        if (!autorizado && provided.length > 0) {
+          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+          const { data: tok } = await supabaseAdmin
+            .from("lab_cron_token").select("token").eq("id", "default").maybeSingle();
+          autorizado = !!tok?.token && tok.token === provided;
+        }
+
+        if (!autorizado) {
           return new Response(JSON.stringify({ error: "Unauthorized" }), {
             status: 401,
             headers: { "Content-Type": "application/json" },
