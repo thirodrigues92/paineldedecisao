@@ -4,12 +4,13 @@
 
 Testei a API ao vivo, sem alterar nada:
 
-- **Contas a pagar** existe como relatório (`bills-to-pay`), mas devolveu vazio com os filtros testados — e ele é por fornecedor/despesa, não liga o pagamento ao atendimento.
-- **Repasse** (`medical-transfer`) é o relatório certo: traz linha a linha o que cada profissional recebeu, já ligado ao paciente, procedimento, convênio e forma de pagamento.
+- **Contas a pagar** existe como relatório, mas devolve vazio pela API em todas as combinações de filtros e períodos testadas (agosto, setembro e o ano inteiro). Ou seja, aqueles lançamentos "Repasse de 01/08/2026 a 31/08/2026" que você vê na tela não vêm pela API de contas a pagar.
+- **Repasse** é o relatório que tem essa informação, item a item, ligado a paciente, procedimento, convênio, profissional e forma de pagamento.
 
-Campos confirmados em 03/08/2026 (218 linhas): profissional, procedimento, convênio, valor do atendimento, valor líquido, **valor repassado**, regra de repasse, percentual, situação do repasse, unidade e data.
+Conferência com o seu exemplo: somando o repasse de agosto/2026 do Dr. Donato Silva Bastos pela API dá **R$ 3.355,00** em 33 itens (faturamento de R$ 6.576,00). Os dois lançamentos que você mostrou (1.680,00 + 1.555,00 = 3.235,00) estão dentro desse total — a diferença de R$ 120,00 é de item(ns) ainda não incluído(s) nos lançamentos gerados. Portanto o relatório de Repasse reproduz o contas a pagar do médico, com a vantagem de mostrar o detalhe por atendimento.
 
 Limite observado: janelas de até ~3 dias respondem; 7 dias ou 1 mês dão erro no servidor da Feegow. A carga precisa ser fatiada, como já é feito na produção.
+
 
 ## O que vou construir
 
