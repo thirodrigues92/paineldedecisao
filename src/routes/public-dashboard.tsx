@@ -733,7 +733,22 @@ export const Route = createFileRoute("/public-dashboard")({
           <GlobalFilters />
         </header>
         <main className="max-w-7xl mx-auto">
-          <PublicDashboardContent />
+          <Tabs defaultValue="visao-executiva" className="w-full">
+            <TabsList className="grid grid-cols-2 w-full max-w-md mb-6">
+              <TabsTrigger value="visao-executiva" className="flex items-center gap-2">
+                <Eye className="w-4 h-4" /> Visão Executiva
+              </TabsTrigger>
+              <TabsTrigger value="faturamento-dinamico" className="flex items-center gap-2">
+                <SlidersHorizontal className="w-4 h-4" /> Faturamento Dinâmico
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="visao-executiva" className="p-0 outline-none">
+              <PublicDashboardContent />
+            </TabsContent>
+            <TabsContent value="faturamento-dinamico" className="p-0 outline-none">
+              <FaturamentoDinamicoPage />
+            </TabsContent>
+          </Tabs>
         </main>
       </div>
     </FiltersProvider>
