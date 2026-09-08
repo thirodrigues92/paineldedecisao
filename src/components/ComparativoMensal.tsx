@@ -123,6 +123,31 @@ export function ComparativoMensal() {
     }));
   }, [dados, janela]);
 
+  // Dias úteis (seg-sex) do período que não possuem nenhum registro gravado
+  const diasFaltantes = useMemo(() => {
+    const presentes = new Set<string>();
+    for (const r of dados) {
+      const d = (r.data_execucao || "").slice(0, 10);
+      if (d) presentes.add(d);
+    }
+    const hoje = new Date();
+    const hojeISO = format(hoje, "yyyy-MM-dd");
+    const faltas: Record<string, string[]> = {};
+    const cursor = new Date(range.from);
+    while (cursor <= range.to) {
+      const iso = format(cursor, "yyyy-MM-dd");
+      const dow = cursor.getDay();
+      if (iso < hojeISO && dow !== 0 && dow !== 6 && !presentes.has(iso)) {
+        const mes = iso.slice(0, 7);
+        (faltas[mes] ||= []).push(format(cursor, "dd/MM"));
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    return Object.entries(faltas)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([mes, dias]) => ({ mes, dias }));
+  }, [dados, range]);
+
   const toggleMes = (chave: string) =>
     setMesesSel((prev) =>
       prev.includes(chave) ? prev.filter((m) => m !== chave) : [...prev, chave]
