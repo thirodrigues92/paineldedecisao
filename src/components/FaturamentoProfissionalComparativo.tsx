@@ -541,6 +541,125 @@ export function FaturamentoProfissionalComparativo() {
             </div>
 
             <div>
+              <h3 className="text-sm font-semibold mb-1">
+                Participação dos Procedimentos por Profissional
+              </h3>
+              <p className="text-xs text-muted-foreground mb-4">
+                Cada pizza mostra, em %, o que o profissional faturou por
+                procedimento.
+              </p>
+              <div
+                className={`grid gap-4 ${
+                  activeProfs.length === 1
+                    ? "grid-cols-1"
+                    : activeProfs.length === 2
+                      ? "grid-cols-1 md:grid-cols-2"
+                      : "grid-cols-1 md:grid-cols-2 xl:grid-cols-3"
+                }`}
+              >
+                {activeProfs.map((prof) => {
+                  const pieData = procDataPorProf[prof] || [];
+                  const totalProf = pieData.reduce((s, i) => s + i.value, 0);
+                  const profColor =
+                    PALETTE[
+                      treeData.findIndex((t) => t.name === prof) %
+                        PALETTE.length
+                    ];
+                  return (
+                    <div
+                      key={prof}
+                      className="rounded-lg border border-border/60 bg-muted/10 p-4"
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <p className="text-sm font-semibold truncate flex items-center gap-2">
+                          <span
+                            className="inline-block h-2.5 w-2.5 rounded-sm shrink-0"
+                            style={{ backgroundColor: profColor }}
+                          />
+                          {prof}
+                        </p>
+                        <p className="text-xs font-medium text-primary whitespace-nowrap">
+                          {brl(totalProf)}
+                        </p>
+                      </div>
+                      <div className="h-[240px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={pieData}
+                              dataKey="value"
+                              nameKey="name"
+                              innerRadius="45%"
+                              outerRadius="75%"
+                              paddingAngle={2}
+                              stroke="var(--background)"
+                              strokeWidth={1}
+                              label={({ percent }) =>
+                                percent && percent >= 0.04
+                                  ? `${(percent * 100).toFixed(0)}%`
+                                  : ""
+                              }
+                              labelLine={false}
+                              fontSize={10}
+                            >
+                              {pieData.map((_, idx) => (
+                                <Cell
+                                  key={idx}
+                                  fill={PALETTE[idx % PALETTE.length]}
+                                  fillOpacity={0.85}
+                                />
+                              ))}
+                            </Pie>
+                            <Tooltip
+                              {...tooltipProps}
+                              formatter={(val, name, props) => {
+                                const pct =
+                                  totalProf > 0
+                                    ? (Number(val) / totalProf) * 100
+                                    : 0;
+                                return [
+                                  `${brl(Number(val))} (${pct.toFixed(1)}%) — ${num(
+                                    props.payload.qtd
+                                  )} itens`,
+                                  name,
+                                ];
+                              }}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {pieData.map((p, idx) => (
+                          <span
+                            key={p.name}
+                            className="flex items-center gap-1 text-[10px] text-muted-foreground"
+                            title={`${p.name} — ${brl(p.value)} (${num(p.qtd)} itens)`}
+                          >
+                            <span
+                              className="inline-block h-2 w-2 rounded-sm shrink-0"
+                              style={{
+                                backgroundColor:
+                                  PALETTE[idx % PALETTE.length],
+                              }}
+                            />
+                            <span className="truncate max-w-[120px]">
+                              {p.name}
+                            </span>
+                            <span className="font-medium text-foreground/80">
+                              {totalProf > 0
+                                ? `${((p.value / totalProf) * 100).toFixed(0)}%`
+                                : "0%"}
+                            </span>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
                 <h3 className="text-sm font-semibold">Detalhamento</h3>
                 <div className="relative w-full sm:w-[280px]">
