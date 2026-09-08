@@ -43,7 +43,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Search, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Search, TrendingUp, TrendingDown, Minus, AlertTriangle } from "lucide-react";
 
 const PALETTE = [
   "#2563eb",
@@ -122,6 +122,31 @@ export function ComparativoMensal() {
       ticket: m.qtd > 0 ? m.valor / m.qtd : 0,
     }));
   }, [dados, janela]);
+
+  // Dias úteis (seg-sex) do período que não possuem nenhum registro gravado
+  const diasFaltantes = useMemo(() => {
+    const presentes = new Set<string>();
+    for (const r of dados) {
+      const d = (r.data_execucao || "").slice(0, 10);
+      if (d) presentes.add(d);
+    }
+    const hoje = new Date();
+    const hojeISO = format(hoje, "yyyy-MM-dd");
+    const faltas: Record<string, string[]> = {};
+    const cursor = new Date(range.from);
+    while (cursor <= range.to) {
+      const iso = format(cursor, "yyyy-MM-dd");
+      const dow = cursor.getDay();
+      if (iso < hojeISO && dow !== 0 && dow !== 6 && !presentes.has(iso)) {
+        const mes = iso.slice(0, 7);
+        (faltas[mes] ||= []).push(format(cursor, "dd/MM"));
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    return Object.entries(faltas)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([mes, dias]) => ({ mes, dias }));
+  }, [dados, range]);
 
   const toggleMes = (chave: string) =>
     setMesesSel((prev) =>
@@ -258,6 +283,23 @@ export function ComparativoMensal() {
       </CardHeader>
 
       <CardContent className="space-y-6">
+        {diasFaltantes.length > 0 && (
+          <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[11px] leading-relaxed">
+            <p className="font-medium text-amber-500 flex items-center gap-1.5">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              Alguns dias úteis não têm registros — os meses abaixo podem estar
+              incompletos
+            </p>
+            <ul className="mt-1 space-y-0.5 text-muted-foreground">
+              {diasFaltantes.map((f) => (
+                <li key={f.mes}>
+                  <span className="capitalize font-medium">{rotuloMes(f.mes)}</span>
+                  : {f.dias.join(", ")}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         {/* Linha do tempo mensal */}
         <div className="w-full h-[260px]">
           <ResponsiveContainer width="100%" height="100%">
