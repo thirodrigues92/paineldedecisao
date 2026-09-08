@@ -444,6 +444,61 @@ export function FaturamentoProfissionalComparativo() {
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
+        <div className="rounded-lg border border-border/50 bg-muted/20 p-3 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs font-semibold">
+              Filtrar por convênio
+              {conveniosSel.length > 0 && (
+                <span className="ml-2 text-primary font-medium">
+                  {conveniosSel.length} selecionado(s)
+                </span>
+              )}
+            </p>
+            {conveniosSel.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setConveniosSel([])}
+                className="text-[11px] text-muted-foreground hover:text-primary transition-colors underline underline-offset-2"
+              >
+                Limpar filtro
+              </button>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {listaConvenios.map((c) => {
+              const ativo = conveniosSel.includes(c.nome);
+              const dimmed = conveniosSel.length > 0 && !ativo;
+              return (
+                <button
+                  key={c.nome}
+                  type="button"
+                  onClick={() => toggleConvenio(c.nome)}
+                  className={`flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-medium transition-all hover:bg-muted/60 ${
+                    ativo
+                      ? "border-primary/60 bg-primary/15 text-primary"
+                      : "border-border/50 bg-muted/20"
+                  } ${dimmed ? "opacity-45" : ""}`}
+                  title={`${c.nome} — ${brl(c.total)}`}
+                >
+                  <span className="truncate max-w-[160px]">{c.nome}</span>
+                  <span
+                    className={`font-normal whitespace-nowrap ${
+                      ativo ? "text-primary/80" : "text-muted-foreground"
+                    }`}
+                  >
+                    {brl(c.total)}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            {conveniosSel.length === 0
+              ? "Nenhum filtro aplicado — todos os convênios (e particular) somados."
+              : "Treemap, pizzas e tabela abaixo refletem apenas o(s) convênio(s) marcado(s)."}
+          </p>
+        </div>
+
         <div className="w-full h-[240px] animate-in fade-in duration-500">
           <ResponsiveContainer width="100%" height="100%">
             <Treemap
