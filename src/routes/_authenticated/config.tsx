@@ -114,6 +114,12 @@ function ConfigPage() {
         </Card>
       </div>
 
+      <div>
+        <h2 className="text-lg font-semibold">Atualização automática & histórico</h2>
+        <p className="text-sm text-muted-foreground">Sincronização a cada 30 minutos e carga de períodos anteriores.</p>
+      </div>
+      <SyncAutomaticaPanel />
+
       <LastSyncCard />
     </div>
   );
