@@ -1,6 +1,9 @@
 {
   "communities": {
     "0": [
+      "ref_date_fns",
+      "ref_recharts",
+      "src_components_comparativomensal_comparativomensal",
       "src_components_dashboardchartcategoria",
       "src_components_dashboardchartcategoria_compactbrl",
       "src_components_dashboardchartcategoria_dashboardchartcategoria",
@@ -10,40 +13,35 @@
       "src_components_dashboardchartservico_compactbrl",
       "src_components_dashboardchartservico_dashboardchartservico",
       "src_components_faturamentocategoriacomparativo_faturamentocategoriacomparativo",
+      "src_components_faturamentoprofissionalcomparativo_faturamentoprofissionalcomparativo",
       "src_components_faturamentoxmedicoxdetalhado_faturamentoxmedicoxdetalhado",
-      "src_components_lastsynccard",
-      "src_components_lastsynccard_lastsynccard",
+      "src_components_globalfilters_globalfilters",
+      "src_components_graficomedicosporespecialidade_graficomedicosporespecialidade",
       "src_components_producaogapalert",
       "src_components_producaogapalert_producaogapalert",
-      "src_components_ui_card",
-      "src_components_ui_card_card",
-      "src_components_ui_card_cardcontent",
-      "src_components_ui_card_cardheader",
-      "src_components_ui_card_cardtitle",
       "src_components_ui_skeleton",
       "src_components_ui_skeleton_skeleton",
-      "src_lib_app_settings",
-      "src_lib_app_settings_appsettings",
-      "src_lib_app_settings_defaults",
       "src_lib_app_settings_useappsettings",
-      "src_lib_app_settings_useupdatesetting",
       "src_lib_chart_theme",
       "src_lib_chart_theme_axisprops",
       "src_lib_chart_theme_chartcolors",
       "src_lib_chart_theme_gridprops",
       "src_lib_chart_theme_tooltipprops",
       "src_lib_dashboard_data",
+      "src_lib_dashboard_data_dashboardappointment",
       "src_lib_dashboard_data_dashboardquerykey",
       "src_lib_dashboard_data_fetchdashboardappointments",
       "src_lib_dashboard_data_fetchfaturadoporagendamento",
       "src_lib_dashboard_data_fetchfinancialrows",
       "src_lib_dashboard_data_fetchlabproducaorows",
+      "src_lib_dashboard_data_fetchlabrepasserows",
       "src_lib_dashboard_data_fetchpacientenomes",
       "src_lib_dashboard_data_fetchpacientescontato",
       "src_lib_dashboard_data_fetchpacientesregioes",
       "src_lib_dashboard_data_fetchprocedimentonomes",
       "src_lib_dashboard_data_financialquerykey",
       "src_lib_dashboard_data_financialrow",
+      "src_lib_dashboard_data_labrepasserow",
       "src_lib_dashboard_data_pacientecontato",
       "src_lib_dashboard_data_pacienteregiao",
       "src_lib_dashboard_data_toiso",
@@ -64,21 +62,22 @@
       "src_lib_service_categories",
       "src_lib_service_categories_categorias_servico",
       "src_lib_service_categories_categoriaservico",
+      "src_routes_authenticated_analytics_aplicacoes",
       "src_routes_authenticated_analytics_aplicacoes_aplicacoespage",
       "src_routes_authenticated_analytics_aplicacoes_bullet",
       "src_routes_authenticated_analytics_aplicacoes_compactbrl",
+      "src_routes_authenticated_analytics_aplicacoes_kpi",
       "src_routes_authenticated_analytics_aplicacoes_meslabel",
+      "src_routes_authenticated_analytics_aplicacoes_ordenacao",
+      "src_routes_authenticated_analytics_aplicacoes_route",
+      "src_routes_authenticated_analytics_aplicacoes_vazio",
       "src_routes_authenticated_analytics_capacidade",
       "src_routes_authenticated_analytics_capacidade_capacidadepage",
       "src_routes_authenticated_analytics_comercial",
       "src_routes_authenticated_analytics_comercial_comercialpage",
       "src_routes_authenticated_analytics_previsoes",
       "src_routes_authenticated_analytics_previsoes_previsoespage",
-      "src_routes_authenticated_analytics_rentabilidade",
-      "src_routes_authenticated_analytics_rentabilidade_compactbrl",
       "src_routes_authenticated_analytics_rentabilidade_rentabilidadepage",
-      "src_routes_authenticated_config",
-      "src_routes_authenticated_config_configpage",
       "src_routes_authenticated_dashboard",
       "src_routes_authenticated_dashboard_compactbrl",
       "src_routes_authenticated_dashboard_dashboardpage",
@@ -90,19 +89,11 @@
       "src_routes_authenticated_financeiro_emptystate",
       "src_routes_authenticated_financeiro_finpage",
       "src_routes_authenticated_financeiro_kpi",
-      "src_routes_authenticated_heatmap",
-      "src_routes_authenticated_heatmap_dias",
       "src_routes_authenticated_heatmap_heatmappage",
-      "src_routes_authenticated_heatmap_horas",
       "src_routes_authenticated_no_show",
       "src_routes_authenticated_no_show_noshowpage",
       "src_routes_authenticated_profissionais",
       "src_routes_authenticated_profissionais_profpage",
-      "src_routes_authenticated_relatorio_atendimentos",
-      "src_routes_authenticated_relatorio_atendimentos_coluna",
-      "src_routes_authenticated_relatorio_atendimentos_colunas",
-      "src_routes_authenticated_relatorio_atendimentos_fmtdata",
-      "src_routes_authenticated_relatorio_atendimentos_linha",
       "src_routes_authenticated_relatorio_atendimentos_relatorioatendimentospage",
       "src_routes_authenticated_unidades",
       "src_routes_authenticated_unidades_unidadespage",
@@ -110,14 +101,40 @@
       "src_routes_public_dashboard_publicdashboardcontent"
     ],
     "1": [
+      "ref_lucide_react",
+      "ref_radix_ui_react_select",
+      "ref_radix_ui_react_tabs",
+      "src_components_comparativomensal",
+      "src_components_comparativomensal_dim_label",
+      "src_components_comparativomensal_dimensao",
+      "src_components_comparativomensal_janelas",
+      "src_components_comparativomensal_palette",
+      "src_components_comparativomensal_rotulomes",
       "src_components_faturamentocategoriacomparativo",
       "src_components_faturamentocategoriacomparativo_formatadatacurta",
       "src_components_faturamentocategoriacomparativo_palette",
+      "src_components_faturamentodinamico",
+      "src_components_faturamentodinamico_chart_colors",
+      "src_components_faturamentodinamico_dimensao",
+      "src_components_faturamentodinamico_dimensao_labels",
+      "src_components_faturamentodinamico_faturamentodinamicopage",
+      "src_components_faturamentodinamico_formatvalormetrica",
+      "src_components_faturamentodinamico_iskeymetrica",
+      "src_components_faturamentodinamico_metrica",
+      "src_components_faturamentodinamico_metrica_labels",
+      "src_components_faturamentodinamico_metrica_short_labels",
+      "src_components_faturamentodinamico_metricas_disponiveis",
+      "src_components_faturamentodinamico_multiselectfilter",
+      "src_components_faturamentoprofissionalcomparativo",
+      "src_components_faturamentoprofissionalcomparativo_formatadatacurta",
+      "src_components_faturamentoprofissionalcomparativo_kpi",
+      "src_components_faturamentoprofissionalcomparativo_palette",
       "src_components_faturamentoxmedicoxdetalhado",
       "src_components_faturamentoxmedicoxdetalhado_formatadatacurta",
+      "src_components_globalfilters",
+      "src_components_globalfilters_multipicker",
       "src_components_graficomedicosporespecialidade",
       "src_components_graficomedicosporespecialidade_formatadatacurta",
-      "src_components_graficomedicosporespecialidade_graficomedicosporespecialidade",
       "src_components_graficomedicosporespecialidade_graficomedicosporespecialidadeprops",
       "src_components_ui_badge",
       "src_components_ui_badge_badge",
@@ -125,82 +142,12 @@
       "src_components_ui_badge_badgevariants",
       "src_components_ui_breadcrumb",
       "src_components_ui_breadcrumb_breadcrumb",
-      "src_components_ui_breadcrumb_breadcrumbellipsis",
       "src_components_ui_breadcrumb_breadcrumbitem",
       "src_components_ui_breadcrumb_breadcrumblink",
       "src_components_ui_breadcrumb_breadcrumblist",
       "src_components_ui_breadcrumb_breadcrumbpage",
       "src_components_ui_breadcrumb_breadcrumbseparator",
-      "src_components_ui_button",
-      "src_components_ui_button_button",
-      "src_components_ui_button_buttonvariants",
-      "src_components_ui_calendar",
-      "src_components_ui_calendar_calendar",
-      "src_components_ui_calendar_calendardaybutton",
       "src_components_ui_card_carddescription",
-      "src_components_ui_date_picker_with_range",
-      "src_components_ui_date_picker_with_range_datepickerwithrange",
-      "src_components_ui_date_picker_with_range_datepickerwithrangeprops",
-      "src_components_ui_input",
-      "src_components_ui_input_input",
-      "src_components_ui_label",
-      "src_components_ui_label_label",
-      "src_components_ui_label_labelvariants",
-      "src_components_ui_progress",
-      "src_components_ui_progress_progress",
-      "src_components_ui_scroll_area",
-      "src_components_ui_scroll_area_scrollarea",
-      "src_components_ui_scroll_area_scrollbar",
-      "src_components_ui_table",
-      "src_components_ui_table_table",
-      "src_components_ui_table_tablebody",
-      "src_components_ui_table_tablecell",
-      "src_components_ui_table_tablehead",
-      "src_components_ui_table_tableheader",
-      "src_components_ui_table_tablerow",
-      "src_integrations_supabase_client_supabase",
-      "src_lib_dashboard_data_dashboardappointment",
-      "src_lib_dashboard_data_labproducaorow",
-      "src_lib_lab_faturamento_functions",
-      "src_lib_lab_faturamento_functions_clearlabdata",
-      "src_lib_lab_faturamento_functions_feegow_token",
-      "src_lib_lab_faturamento_functions_getlabconciliacao",
-      "src_lib_lab_faturamento_functions_getlabenrichmentstatus",
-      "src_lib_lab_faturamento_functions_getlabfaturamentoitems",
-      "src_lib_lab_faturamento_functions_getlabrelatorio",
-      "src_lib_lab_faturamento_functions_labdebugfeegow",
-      "src_lib_lab_faturamento_functions_labenrichfaturamento",
-      "src_lib_lab_faturamento_functions_labsyncagenda",
-      "src_lib_lab_faturamento_functions_labsyncconvenio",
-      "src_lib_lab_faturamento_functions_labsyncconveniocatalog",
-      "src_lib_lab_faturamento_functions_labsyncdimensoes",
-      "src_lib_lab_faturamento_functions_labsyncparticular",
-      "src_lib_lab_faturamento_functions_labsyncproducao",
-      "src_lib_lab_faturamento_functions_labsyncsafetynet",
-      "src_lib_lab_faturamento_functions_parsedatafeegow",
-      "src_lib_lab_faturamento_functions_parsevalorcentavos",
-      "src_lib_lab_faturamento_functions_syncagendaperiodo",
-      "src_lib_lab_faturamento_functions_tofeegowdate",
-      "src_routes_auth",
-      "src_routes_auth_authpage",
-      "src_routes_authenticated_analytics_aplicacoes",
-      "src_routes_authenticated_analytics_aplicacoes_kpi",
-      "src_routes_authenticated_analytics_aplicacoes_ordenacao",
-      "src_routes_authenticated_analytics_aplicacoes_vazio",
-      "src_routes_lab_conciliacao",
-      "src_routes_lab_conciliacao_labconciliacao",
-      "src_routes_lab_faturamento",
-      "src_routes_lab_faturamento_labfaturamento",
-      "src_routes_lab_relatorio",
-      "src_routes_lab_relatorio_labrelatorio",
-      "src_routes_public_login",
-      "src_routes_public_login_publicloginpage"
-    ],
-    "2": [
-      "src_components_appsidebar_appsidebar",
-      "src_components_globalfilters",
-      "src_components_globalfilters_globalfilters",
-      "src_components_globalfilters_multipicker",
       "src_components_ui_command",
       "src_components_ui_command_command",
       "src_components_ui_command_commanddialog",
@@ -211,6 +158,8 @@
       "src_components_ui_command_commandlist",
       "src_components_ui_command_commandseparator",
       "src_components_ui_command_commandshortcut",
+      "src_components_ui_scroll_area",
+      "src_components_ui_scroll_area_scrollarea",
       "src_components_ui_select",
       "src_components_ui_select_selectcontent",
       "src_components_ui_select_selectitem",
@@ -219,44 +168,273 @@
       "src_components_ui_select_selectscrollupbutton",
       "src_components_ui_select_selectseparator",
       "src_components_ui_select_selecttrigger",
-      "src_components_ui_sidebar_sidebarinset",
+      "src_components_ui_switch",
+      "src_components_ui_switch_switch",
+      "src_components_ui_table",
+      "src_components_ui_table_table",
+      "src_components_ui_table_tablebody",
+      "src_components_ui_table_tablecell",
+      "src_components_ui_table_tablehead",
+      "src_components_ui_table_tableheader",
+      "src_components_ui_table_tablerow",
       "src_components_ui_tabs",
       "src_components_ui_tabs_tabscontent",
       "src_components_ui_tabs_tabslist",
       "src_components_ui_tabs_tabstrigger",
+      "src_lib_dashboard_data_labproducaorow",
+      "src_routes_authenticated_analytics_rentabilidade",
+      "src_routes_authenticated_analytics_rentabilidade_compactbrl"
+    ],
+    "2": [
+      "ref_react",
+      "ref_sonner",
+      "ref_tanstack_react_query",
+      "ref_tanstack_react_router",
+      "src_components_lastsynccard",
+      "src_components_lastsynccard_lastsynccard",
+      "src_components_syncautomaticapanel",
+      "src_components_syncautomaticapanel_fmtdate",
+      "src_components_syncautomaticapanel_info",
+      "src_components_syncautomaticapanel_syncautomaticapanel",
+      "src_components_ui_button",
+      "src_components_ui_button_button",
+      "src_components_ui_card",
+      "src_components_ui_card_card",
+      "src_components_ui_card_cardcontent",
+      "src_components_ui_card_cardheader",
+      "src_components_ui_card_cardtitle",
+      "src_components_ui_date_picker_with_range",
+      "src_components_ui_date_picker_with_range_datepickerwithrange",
+      "src_components_ui_date_picker_with_range_datepickerwithrangeprops",
+      "src_components_ui_input",
+      "src_components_ui_input_input",
+      "src_components_ui_label",
+      "src_components_ui_label_label",
+      "src_components_ui_label_labelvariants",
+      "src_components_ui_progress",
+      "src_components_ui_progress_progress",
+      "src_integrations_supabase_client",
+      "src_integrations_supabase_client_createsupabaseclient",
+      "src_integrations_supabase_client_createsupabasefetch",
+      "src_integrations_supabase_client_isnewsupabaseapikey",
+      "src_integrations_supabase_client_supabase",
+      "src_integrations_supabase_previewauthstorage",
+      "src_integrations_supabase_previewauthstorage_brokeredpreviewstorage",
+      "src_lib_app_settings",
+      "src_lib_app_settings_appsettings",
+      "src_lib_app_settings_defaults",
+      "src_lib_app_settings_useupdatesetting",
+      "src_lib_geo_data",
+      "src_lib_geo_data_distancekm",
+      "src_lib_geo_data_fetchpacientesgeo",
+      "src_lib_geo_data_fetchunidadesgeo",
+      "src_lib_geo_data_idadede",
+      "src_lib_geo_data_imcde",
+      "src_lib_geo_data_normalizarcidade",
+      "src_lib_geo_data_pacientegeo",
+      "src_lib_geo_data_unidadegeo",
+      "src_routes_auth",
+      "src_routes_auth_authpage",
       "src_routes_authenticated_auditoria",
       "src_routes_authenticated_auditoria_auditoriapage",
       "src_routes_authenticated_auditoria_fetchaudit",
       "src_routes_authenticated_auditoria_fin",
-      "src_routes_authenticated_auditoria_route",
       "src_routes_authenticated_auditoria_tabelas",
-      "src_routes_authenticated_faturamento_dinamico",
-      "src_routes_authenticated_faturamento_dinamico_chart_colors",
-      "src_routes_authenticated_faturamento_dinamico_dimensao",
-      "src_routes_authenticated_faturamento_dinamico_dimensao_labels",
-      "src_routes_authenticated_faturamento_dinamico_faturamentodinamicopage",
-      "src_routes_authenticated_faturamento_dinamico_formatvalormetrica",
-      "src_routes_authenticated_faturamento_dinamico_iskeymetrica",
-      "src_routes_authenticated_faturamento_dinamico_metrica",
-      "src_routes_authenticated_faturamento_dinamico_metrica_labels",
-      "src_routes_authenticated_faturamento_dinamico_metrica_short_labels",
-      "src_routes_authenticated_faturamento_dinamico_metricas_disponiveis",
-      "src_routes_authenticated_faturamento_dinamico_multiselectfilter",
-      "src_routes_authenticated_faturamento_dinamico_route",
+      "src_routes_authenticated_config",
+      "src_routes_authenticated_config_configpage",
+      "src_routes_authenticated_heatmap",
+      "src_routes_authenticated_heatmap_dias",
+      "src_routes_authenticated_heatmap_horas",
+      "src_routes_authenticated_mapa",
+      "src_routes_authenticated_mapa_mapapage",
+      "src_routes_authenticated_mapa_metric",
+      "src_routes_authenticated_mapa_metricasuploader",
+      "src_routes_authenticated_relatorio_atendimentos",
+      "src_routes_authenticated_relatorio_atendimentos_coluna",
+      "src_routes_authenticated_relatorio_atendimentos_colunas",
+      "src_routes_authenticated_relatorio_atendimentos_fmtdata",
+      "src_routes_authenticated_relatorio_atendimentos_linha",
+      "src_routes_index",
+      "src_routes_lab_conciliacao",
+      "src_routes_lab_faturamento",
+      "src_routes_lab_relatorio",
+      "src_routes_public_login",
+      "src_routes_public_login_publicloginpage"
+    ],
+    "3": [
+      "package_dependencies",
+      "package_dependencies_class_variance_authority",
+      "package_dependencies_clsx",
+      "package_dependencies_cmdk",
+      "package_dependencies_date_fns",
+      "package_dependencies_embla_carousel_react",
+      "package_dependencies_hookform_resolvers",
+      "package_dependencies_input_otp",
+      "package_dependencies_leaflet",
+      "package_dependencies_leaflet_heat",
+      "package_dependencies_lucide_react",
+      "package_dependencies_radix_ui_react_accordion",
+      "package_dependencies_radix_ui_react_alert_dialog",
+      "package_dependencies_radix_ui_react_aspect_ratio",
+      "package_dependencies_radix_ui_react_avatar",
+      "package_dependencies_radix_ui_react_checkbox",
+      "package_dependencies_radix_ui_react_collapsible",
+      "package_dependencies_radix_ui_react_context_menu",
+      "package_dependencies_radix_ui_react_dialog",
+      "package_dependencies_radix_ui_react_dropdown_menu",
+      "package_dependencies_radix_ui_react_hover_card",
+      "package_dependencies_radix_ui_react_label",
+      "package_dependencies_radix_ui_react_menubar",
+      "package_dependencies_radix_ui_react_navigation_menu",
+      "package_dependencies_radix_ui_react_popover",
+      "package_dependencies_radix_ui_react_progress",
+      "package_dependencies_radix_ui_react_radio_group",
+      "package_dependencies_radix_ui_react_scroll_area",
+      "package_dependencies_radix_ui_react_select",
+      "package_dependencies_radix_ui_react_separator",
+      "package_dependencies_radix_ui_react_slider",
+      "package_dependencies_radix_ui_react_slot",
+      "package_dependencies_radix_ui_react_switch",
+      "package_dependencies_radix_ui_react_tabs",
+      "package_dependencies_radix_ui_react_toggle",
+      "package_dependencies_radix_ui_react_toggle_group",
+      "package_dependencies_radix_ui_react_tooltip",
+      "package_dependencies_react",
+      "package_dependencies_react_day_picker",
+      "package_dependencies_react_dom",
+      "package_dependencies_react_hook_form",
+      "package_dependencies_react_leaflet",
+      "package_dependencies_react_resizable_panels",
+      "package_dependencies_recharts",
+      "package_dependencies_sonner",
+      "package_dependencies_supabase_supabase_js",
+      "package_dependencies_tailwind_merge",
+      "package_dependencies_tailwindcss",
+      "package_dependencies_tailwindcss_vite",
+      "package_dependencies_tanstack_react_query",
+      "package_dependencies_tanstack_react_router",
+      "package_dependencies_tanstack_react_start",
+      "package_dependencies_tanstack_router_plugin",
+      "package_dependencies_tw_animate_css",
+      "package_dependencies_types_leaflet",
+      "package_dependencies_vaul",
+      "package_dependencies_vite_tsconfig_paths",
+      "package_dependencies_zod"
+    ],
+    "4": [
+      "ref_supabase_supabase_js",
+      "src_integrations_supabase_auth_middleware",
+      "src_integrations_supabase_auth_middleware_createsupabasefetch",
+      "src_integrations_supabase_auth_middleware_isnewsupabaseapikey",
+      "src_integrations_supabase_auth_middleware_requiresupabaseauth",
+      "src_integrations_supabase_client_server",
+      "src_integrations_supabase_client_server_createsupabaseadminclient",
+      "src_integrations_supabase_client_server_createsupabasefetch",
+      "src_integrations_supabase_client_server_isnewsupabaseapikey",
+      "src_integrations_supabase_client_server_supabaseadmin",
+      "src_integrations_supabase_types",
+      "src_integrations_supabase_types_compositetypes",
+      "src_integrations_supabase_types_constants",
+      "src_integrations_supabase_types_database",
+      "src_integrations_supabase_types_databasewithoutinternals",
+      "src_integrations_supabase_types_defaultschema",
+      "src_integrations_supabase_types_enums",
+      "src_integrations_supabase_types_json",
+      "src_integrations_supabase_types_tables",
+      "src_integrations_supabase_types_tablesinsert",
+      "src_integrations_supabase_types_tablesupdate",
+      "src_lib_lab_sync_admin_functions",
+      "src_lib_lab_sync_admin_functions_criarbackfilljob",
+      "src_lib_lab_sync_admin_functions_getsyncstatus",
+      "src_lib_lab_sync_admin_functions_isodate",
+      "src_lib_lab_sync_admin_functions_reprocessarblocoscomerro",
+      "src_lib_lab_sync_admin_functions_resetsyncjob",
+      "src_lib_lab_sync_admin_functions_runbackfilllote",
+      "src_lib_lab_sync_admin_functions_runrepassesync",
+      "src_lib_lab_sync_admin_functions_runsyncnow",
+      "src_lib_lab_sync_core_server",
+      "src_lib_lab_sync_core_server_acquirelock",
+      "src_lib_lab_sync_core_server_adddaysiso",
+      "src_lib_lab_sync_core_server_chunk",
+      "src_lib_lab_sync_core_server_criarbackfill",
+      "src_lib_lab_sync_core_server_enriquecer",
+      "src_lib_lab_sync_core_server_feegow_token",
+      "src_lib_lab_sync_core_server_fetchrepassejanela",
+      "src_lib_lab_sync_core_server_getjobstate",
+      "src_lib_lab_sync_core_server_hashtobigint",
+      "src_lib_lab_sync_core_server_lease_minutes",
+      "src_lib_lab_sync_core_server_logsync",
+      "src_lib_lab_sync_core_server_maprepasse",
+      "src_lib_lab_sync_core_server_max_falhas_antes_de_pausar",
+      "src_lib_lab_sync_core_server_max_itens_por_execucao",
+      "src_lib_lab_sync_core_server_parsedatafeegow",
+      "src_lib_lab_sync_core_server_parsevalorappoints",
+      "src_lib_lab_sync_core_server_parsevalorbr",
+      "src_lib_lab_sync_core_server_processarblocofatiado",
+      "src_lib_lab_sync_core_server_processbackfillqueue",
+      "src_lib_lab_sync_core_server_releaselock",
+      "src_lib_lab_sync_core_server_runincrementalsync",
+      "src_lib_lab_sync_core_server_syncproducaorange",
+      "src_lib_lab_sync_core_server_syncrepasserange",
+      "src_lib_lab_sync_core_server_syncsafetynetrange",
+      "src_lib_lab_sync_core_server_todayiso",
+      "src_lib_lab_sync_core_server_tofeegowdate"
+    ],
+    "5": [
+      "ref_radix_ui_react_separator",
+      "ref_radix_ui_react_tooltip",
+      "src_components_appsidebar",
+      "src_components_appsidebar_appsidebar",
+      "src_components_appsidebar_navanalytics",
+      "src_components_appsidebar_navfooter",
+      "src_components_appsidebar_navlab",
+      "src_components_appsidebar_navmain",
+      "src_components_ui_separator",
+      "src_components_ui_separator_separator",
+      "src_components_ui_sidebar",
+      "src_components_ui_sidebar_sidebar",
+      "src_components_ui_sidebar_sidebarcontent",
+      "src_components_ui_sidebar_sidebarcontext",
+      "src_components_ui_sidebar_sidebarcontextprops",
+      "src_components_ui_sidebar_sidebarfooter",
+      "src_components_ui_sidebar_sidebargroup",
+      "src_components_ui_sidebar_sidebargroupaction",
+      "src_components_ui_sidebar_sidebargroupcontent",
+      "src_components_ui_sidebar_sidebargrouplabel",
+      "src_components_ui_sidebar_sidebarheader",
+      "src_components_ui_sidebar_sidebarinput",
+      "src_components_ui_sidebar_sidebarinset",
+      "src_components_ui_sidebar_sidebarmenu",
+      "src_components_ui_sidebar_sidebarmenuaction",
+      "src_components_ui_sidebar_sidebarmenubadge",
+      "src_components_ui_sidebar_sidebarmenubutton",
+      "src_components_ui_sidebar_sidebarmenubuttonvariants",
+      "src_components_ui_sidebar_sidebarmenuitem",
+      "src_components_ui_sidebar_sidebarmenuskeleton",
+      "src_components_ui_sidebar_sidebarmenusub",
+      "src_components_ui_sidebar_sidebarmenusubbutton",
+      "src_components_ui_sidebar_sidebarmenusubitem",
+      "src_components_ui_sidebar_sidebarprovider",
+      "src_components_ui_sidebar_sidebarrail",
+      "src_components_ui_sidebar_sidebarseparator",
+      "src_components_ui_sidebar_sidebartrigger",
+      "src_components_ui_sidebar_usesidebar",
+      "src_components_ui_tooltip",
+      "src_components_ui_tooltip_tooltipcontent",
       "src_routes_authenticated_route",
       "src_routes_authenticated_route_authenticatedlayout",
       "src_routes_authenticated_route_route"
     ],
-    "3": [
-      "src_components_ui_accordion",
-      "src_components_ui_accordion_accordioncontent",
-      "src_components_ui_accordion_accordionitem",
-      "src_components_ui_accordion_accordiontrigger",
+    "6": [
+      "ref_radix_ui_react_avatar",
+      "ref_radix_ui_react_context_menu",
+      "ref_radix_ui_react_dialog",
+      "ref_radix_ui_react_dropdown_menu",
       "src_components_ui_avatar",
       "src_components_ui_avatar_avatar",
       "src_components_ui_avatar_avatarfallback",
       "src_components_ui_avatar_avatarimage",
-      "src_components_ui_button_buttonprops",
+      "src_components_ui_breadcrumb_breadcrumbellipsis",
       "src_components_ui_card_cardfooter",
       "src_components_ui_context_menu",
       "src_components_ui_context_menu_contextmenucheckboxitem",
@@ -285,107 +463,55 @@
       "src_components_ui_dropdown_menu_dropdownmenushortcut",
       "src_components_ui_dropdown_menu_dropdownmenusubcontent",
       "src_components_ui_dropdown_menu_dropdownmenusubtrigger",
-      "src_components_ui_pagination",
-      "src_components_ui_pagination_pagination",
-      "src_components_ui_pagination_paginationcontent",
-      "src_components_ui_pagination_paginationellipsis",
-      "src_components_ui_pagination_paginationitem",
-      "src_components_ui_pagination_paginationlink",
-      "src_components_ui_pagination_paginationlinkprops",
-      "src_components_ui_pagination_paginationnext",
-      "src_components_ui_pagination_paginationprevious",
+      "src_components_ui_scroll_area_scrollbar",
       "src_components_ui_table_tablecaption",
       "src_components_ui_table_tablefooter",
       "src_lib_utils_cn"
     ],
-    "4": [
-      "eslint",
-      "eslint_config_prettier",
-      "eslint_js",
-      "eslint_plugin_prettier",
-      "eslint_plugin_react_hooks",
-      "eslint_plugin_react_refresh",
-      "globals",
-      "lovable_dev_vite_tanstack_config",
-      "nitro",
-      "package",
-      "package_devdependencies",
-      "package_devdependencies_eslint",
-      "package_devdependencies_eslint_config_prettier",
-      "package_devdependencies_eslint_js",
-      "package_devdependencies_eslint_plugin_prettier",
-      "package_devdependencies_eslint_plugin_react_hooks",
-      "package_devdependencies_eslint_plugin_react_refresh",
-      "package_devdependencies_globals",
-      "package_devdependencies_lovable_dev_vite_tanstack_config",
-      "package_devdependencies_nitro",
-      "package_devdependencies_prettier",
-      "package_devdependencies_types_node",
-      "package_devdependencies_types_react",
-      "package_devdependencies_types_react_dom",
-      "package_devdependencies_typescript",
-      "package_devdependencies_typescript_eslint",
-      "package_devdependencies_vite",
-      "package_devdependencies_vitejs_plugin_react",
-      "package_name",
-      "package_private",
-      "package_scripts",
-      "package_scripts_build",
-      "package_scripts_build_dev",
-      "package_scripts_dev",
-      "package_scripts_format",
-      "package_scripts_lint",
-      "package_scripts_preview",
-      "package_sideeffects",
-      "package_type",
-      "prettier",
-      "types_node",
-      "types_react",
-      "types_react_dom",
-      "typescript",
-      "typescript_eslint",
-      "vite",
-      "vitejs_plugin_react"
+    "7": [
+      "ref_tanstack_react_start",
+      "src_integrations_supabase_auth_attacher",
+      "src_integrations_supabase_auth_attacher_attachsupabaseauth",
+      "src_lib_error_capture",
+      "src_lib_error_capture_consumelastcapturederror",
+      "src_lib_error_capture_record",
+      "src_lib_error_page",
+      "src_lib_error_page_rendererrorpage",
+      "src_lib_lab_faturamento_functions",
+      "src_lib_lab_faturamento_functions_clearlabdata",
+      "src_lib_lab_faturamento_functions_feegow_token",
+      "src_lib_lab_faturamento_functions_getlabconciliacao",
+      "src_lib_lab_faturamento_functions_getlabenrichmentstatus",
+      "src_lib_lab_faturamento_functions_getlabfaturamentoitems",
+      "src_lib_lab_faturamento_functions_getlabrelatorio",
+      "src_lib_lab_faturamento_functions_labdebugfeegow",
+      "src_lib_lab_faturamento_functions_labenrichfaturamento",
+      "src_lib_lab_faturamento_functions_labsyncagenda",
+      "src_lib_lab_faturamento_functions_labsyncconvenio",
+      "src_lib_lab_faturamento_functions_labsyncconveniocatalog",
+      "src_lib_lab_faturamento_functions_labsyncdimensoes",
+      "src_lib_lab_faturamento_functions_labsyncparticular",
+      "src_lib_lab_faturamento_functions_labsyncproducao",
+      "src_lib_lab_faturamento_functions_labsyncsafetynet",
+      "src_lib_lab_faturamento_functions_parsedatafeegow",
+      "src_lib_lab_faturamento_functions_parsevalorcentavos",
+      "src_lib_lab_faturamento_functions_syncagendaperiodo",
+      "src_lib_lab_faturamento_functions_tofeegowdate",
+      "src_routes_lab_conciliacao_labconciliacao",
+      "src_routes_lab_faturamento_labfaturamento",
+      "src_routes_lab_relatorio_labrelatorio",
+      "src_server",
+      "src_server_fetch",
+      "src_server_getserverentry",
+      "src_server_ish3swallowederrorbody",
+      "src_server_normalizecatastrophicssrresponse",
+      "src_server_serverentry",
+      "src_start",
+      "src_start_errormiddleware"
     ],
-    "5": [
-      "src_components_appsidebar",
-      "src_components_appsidebar_navanalytics",
-      "src_components_appsidebar_navfooter",
-      "src_components_appsidebar_navlab",
-      "src_components_appsidebar_navmain",
-      "src_components_ui_separator",
-      "src_components_ui_separator_separator",
-      "src_components_ui_sidebar",
-      "src_components_ui_sidebar_sidebar",
-      "src_components_ui_sidebar_sidebarcontent",
-      "src_components_ui_sidebar_sidebarcontext",
-      "src_components_ui_sidebar_sidebarcontextprops",
-      "src_components_ui_sidebar_sidebarfooter",
-      "src_components_ui_sidebar_sidebargroup",
-      "src_components_ui_sidebar_sidebargroupaction",
-      "src_components_ui_sidebar_sidebargroupcontent",
-      "src_components_ui_sidebar_sidebargrouplabel",
-      "src_components_ui_sidebar_sidebarheader",
-      "src_components_ui_sidebar_sidebarinput",
-      "src_components_ui_sidebar_sidebarmenu",
-      "src_components_ui_sidebar_sidebarmenuaction",
-      "src_components_ui_sidebar_sidebarmenubadge",
-      "src_components_ui_sidebar_sidebarmenubutton",
-      "src_components_ui_sidebar_sidebarmenubuttonvariants",
-      "src_components_ui_sidebar_sidebarmenuitem",
-      "src_components_ui_sidebar_sidebarmenuskeleton",
-      "src_components_ui_sidebar_sidebarmenusub",
-      "src_components_ui_sidebar_sidebarmenusubbutton",
-      "src_components_ui_sidebar_sidebarmenusubitem",
-      "src_components_ui_sidebar_sidebarrail",
-      "src_components_ui_sidebar_sidebarseparator",
-      "src_components_ui_sidebar_sidebartrigger",
-      "src_components_ui_sidebar_usesidebar",
-      "src_components_ui_tooltip",
-      "src_components_ui_tooltip_tooltipcontent"
-    ],
-    "6": [
+    "8": [
       "src_routetree_gen",
+      "src_routetree_gen_apipublichookssyncfeegowroute",
       "src_routetree_gen_authenticatedanalyticsaplicacoesroute",
       "src_routetree_gen_authenticatedanalyticscapacidaderoute",
       "src_routetree_gen_authenticatedanalyticscomercialroute",
@@ -420,7 +546,7 @@
       "src_routetree_gen_tanstack_react_router",
       "src_routetree_gen_tanstack_react_start"
     ],
-    "7": [
+    "9": [
       "supabase_functions_sync_feegow_index",
       "supabase_functions_sync_feegow_index_asarray",
       "supabase_functions_sync_feegow_index_calcularvaloragendamento",
@@ -454,98 +580,95 @@
       "supabase_functions_sync_feegow_index_tofeegowdate",
       "supabase_functions_sync_feegow_index_withretry"
     ],
-    "8": [
-      "ref_dom",
-      "ref_dom_iterable",
-      "ref_es2022",
-      "ref_eslint_config_js",
-      "ref_src_ts",
-      "ref_src_tsx",
-      "ref_vite_client",
-      "ref_vite_config_ts",
-      "tsconfig",
-      "tsconfig_compileroptions",
-      "tsconfig_compileroptions_allowimportingtsextensions",
-      "tsconfig_compileroptions_jsx",
-      "tsconfig_compileroptions_lib",
-      "tsconfig_compileroptions_module",
-      "tsconfig_compileroptions_moduleresolution",
-      "tsconfig_compileroptions_noemit",
-      "tsconfig_compileroptions_nofallthroughcasesinswitch",
-      "tsconfig_compileroptions_nouncheckedsideeffectimports",
-      "tsconfig_compileroptions_nounusedlocals",
-      "tsconfig_compileroptions_nounusedparameters",
-      "tsconfig_compileroptions_paths",
-      "tsconfig_compileroptions_skiplibcheck",
-      "tsconfig_compileroptions_strict",
-      "tsconfig_compileroptions_target",
-      "tsconfig_compileroptions_types",
-      "tsconfig_compileroptions_verbatimmodulesyntax",
-      "tsconfig_include"
-    ],
-    "9": [
-      "src_components_patientmap",
-      "src_components_patientmap_bairropoint",
-      "src_components_patientmap_citypoint",
-      "src_components_patientmap_fitbounds",
-      "src_components_patientmap_heatlayer",
-      "src_components_patientmap_patientmap",
-      "src_components_patientmap_unidadepoint",
-      "src_components_patientmap_uniticon",
-      "src_components_ui_slider",
-      "src_components_ui_slider_slider",
-      "src_components_ui_switch",
-      "src_components_ui_switch_switch",
-      "src_lib_geo_data",
-      "src_lib_geo_data_distancekm",
-      "src_lib_geo_data_fetchpacientesgeo",
-      "src_lib_geo_data_fetchunidadesgeo",
-      "src_lib_geo_data_idadede",
-      "src_lib_geo_data_imcde",
-      "src_lib_geo_data_normalizarcidade",
-      "src_lib_geo_data_pacientegeo",
-      "src_lib_geo_data_unidadegeo",
-      "src_routes_authenticated_mapa",
-      "src_routes_authenticated_mapa_mapapage",
-      "src_routes_authenticated_mapa_metric",
-      "src_routes_authenticated_mapa_metricasuploader",
-      "src_routes_authenticated_mapa_patientmap"
-    ],
     "10": [
-      "src_integrations_supabase_auth_middleware",
-      "src_integrations_supabase_auth_middleware_createsupabasefetch",
-      "src_integrations_supabase_auth_middleware_isnewsupabaseapikey",
-      "src_integrations_supabase_auth_middleware_requiresupabaseauth",
-      "src_integrations_supabase_client",
-      "src_integrations_supabase_client_createsupabaseclient",
-      "src_integrations_supabase_client_createsupabasefetch",
-      "src_integrations_supabase_client_isnewsupabaseapikey",
-      "src_integrations_supabase_client_server",
-      "src_integrations_supabase_client_server_createsupabaseadminclient",
-      "src_integrations_supabase_client_server_createsupabasefetch",
-      "src_integrations_supabase_client_server_isnewsupabaseapikey",
-      "src_integrations_supabase_client_server_supabaseadmin",
-      "src_integrations_supabase_previewauthstorage",
-      "src_integrations_supabase_previewauthstorage_brokeredpreviewstorage",
-      "src_integrations_supabase_types",
-      "src_integrations_supabase_types_compositetypes",
-      "src_integrations_supabase_types_constants",
-      "src_integrations_supabase_types_database",
-      "src_integrations_supabase_types_databasewithoutinternals",
-      "src_integrations_supabase_types_defaultschema",
-      "src_integrations_supabase_types_enums",
-      "src_integrations_supabase_types_json",
-      "src_integrations_supabase_types_tables",
-      "src_integrations_supabase_types_tablesinsert",
-      "src_integrations_supabase_types_tablesupdate"
+      "package",
+      "package_name",
+      "package_private",
+      "package_sideeffects",
+      "package_type",
+      "ref_cmdk",
+      "ref_eslint",
+      "ref_eslint_config_prettier",
+      "ref_eslint_plugin_prettier",
+      "ref_hookform_resolvers",
+      "ref_nitro",
+      "ref_prettier",
+      "ref_radix_ui_react_menubar",
+      "ref_radix_ui_react_progress",
+      "ref_radix_ui_react_scroll_area",
+      "ref_radix_ui_react_switch",
+      "ref_react_dom",
+      "ref_tailwindcss",
+      "ref_tailwindcss_vite",
+      "ref_tanstack_router_plugin",
+      "ref_tw_animate_css",
+      "ref_types_leaflet",
+      "ref_types_node",
+      "ref_types_react",
+      "ref_types_react_dom",
+      "ref_typescript",
+      "ref_vite",
+      "ref_vite_tsconfig_paths",
+      "ref_vitejs_plugin_react",
+      "ref_zod"
     ],
     "11": [
+      "ref_clsx",
+      "ref_input_otp",
+      "ref_radix_ui_react_checkbox",
+      "ref_radix_ui_react_hover_card",
+      "ref_radix_ui_react_slider",
+      "ref_react_resizable_panels",
+      "ref_tailwind_merge",
+      "src_components_ui_checkbox",
+      "src_components_ui_checkbox_checkbox",
+      "src_components_ui_hover_card",
+      "src_components_ui_hover_card_hovercardcontent",
+      "src_components_ui_input_otp",
+      "src_components_ui_input_otp_inputotp",
+      "src_components_ui_input_otp_inputotpgroup",
+      "src_components_ui_input_otp_inputotpseparator",
+      "src_components_ui_input_otp_inputotpslot",
+      "src_components_ui_resizable",
+      "src_components_ui_resizable_resizablehandle",
+      "src_components_ui_resizable_resizablepanelgroup",
+      "src_components_ui_slider",
+      "src_components_ui_slider_slider",
+      "src_components_ui_textarea",
+      "src_components_ui_textarea_textarea",
+      "src_lib_utils"
+    ],
+    "12": [
+      "ref_radix_ui_react_popover",
+      "ref_react_day_picker",
+      "ref_vaul",
+      "src_components_dashboarddatefilter",
+      "src_components_dashboarddatefilter_dashboarddatefilter",
+      "src_components_dashboarddatefilter_presets",
+      "src_components_ui_calendar",
+      "src_components_ui_calendar_calendar",
+      "src_components_ui_calendar_calendardaybutton",
+      "src_components_ui_drawer",
+      "src_components_ui_drawer_drawer",
+      "src_components_ui_drawer_drawercontent",
+      "src_components_ui_drawer_drawerdescription",
+      "src_components_ui_drawer_drawerfooter",
+      "src_components_ui_drawer_drawerheader",
+      "src_components_ui_drawer_draweroverlay",
+      "src_components_ui_drawer_drawertitle",
+      "src_components_ui_popover",
+      "src_components_ui_popover_popovercontent",
+      "src_hooks_use_mobile",
+      "src_hooks_use_mobile_useismobile",
+      "src_lib_filters_context_presetperiod"
+    ],
+    "13": [
       "src_routes_auth_route",
-      "src_routes_authenticated_analytics_aplicacoes_route",
       "src_routes_authenticated_analytics_capacidade_route",
       "src_routes_authenticated_analytics_comercial_route",
       "src_routes_authenticated_analytics_previsoes_route",
       "src_routes_authenticated_analytics_rentabilidade_route",
+      "src_routes_authenticated_auditoria_route",
       "src_routes_authenticated_config_route",
       "src_routes_authenticated_dashboard_route",
       "src_routes_authenticated_financeiro_route",
@@ -555,6 +678,7 @@
       "src_routes_authenticated_profissionais_route",
       "src_routes_authenticated_relatorio_atendimentos_route",
       "src_routes_authenticated_unidades_route",
+      "src_routes_index_route",
       "src_routes_lab_conciliacao_route",
       "src_routes_lab_faturamento_route",
       "src_routes_lab_relatorio_route",
@@ -562,29 +686,30 @@
       "src_routes_public_login_route",
       "src_routetree_gen_fileroutesbypath"
     ],
-    "12": [
-      "src_components_ui_checkbox",
-      "src_components_ui_checkbox_checkbox",
-      "src_components_ui_hover_card",
-      "src_components_ui_hover_card_hovercardcontent",
-      "src_components_ui_radio_group",
-      "src_components_ui_radio_group_radiogroup",
-      "src_components_ui_radio_group_radiogroupitem",
-      "src_components_ui_resizable",
-      "src_components_ui_resizable_resizablehandle",
-      "src_components_ui_resizable_resizablepanelgroup",
-      "src_components_ui_textarea",
-      "src_components_ui_textarea_textarea",
-      "src_components_ui_toggle",
-      "src_components_ui_toggle_group",
-      "src_components_ui_toggle_group_togglegroup",
-      "src_components_ui_toggle_group_togglegroupcontext",
-      "src_components_ui_toggle_group_togglegroupitem",
-      "src_components_ui_toggle_toggle",
-      "src_components_ui_toggle_togglevariants",
-      "src_lib_utils"
+    "14": [
+      "ref_radix_ui_react_alert_dialog",
+      "src_components_ui_alert_dialog",
+      "src_components_ui_alert_dialog_alertdialogaction",
+      "src_components_ui_alert_dialog_alertdialogcancel",
+      "src_components_ui_alert_dialog_alertdialogcontent",
+      "src_components_ui_alert_dialog_alertdialogdescription",
+      "src_components_ui_alert_dialog_alertdialogfooter",
+      "src_components_ui_alert_dialog_alertdialogheader",
+      "src_components_ui_alert_dialog_alertdialogoverlay",
+      "src_components_ui_alert_dialog_alertdialogtitle",
+      "src_components_ui_button_buttonprops",
+      "src_components_ui_button_buttonvariants",
+      "src_components_ui_pagination",
+      "src_components_ui_pagination_pagination",
+      "src_components_ui_pagination_paginationcontent",
+      "src_components_ui_pagination_paginationellipsis",
+      "src_components_ui_pagination_paginationitem",
+      "src_components_ui_pagination_paginationlink",
+      "src_components_ui_pagination_paginationlinkprops",
+      "src_components_ui_pagination_paginationnext",
+      "src_components_ui_pagination_paginationprevious"
     ],
-    "13": [
+    "15": [
       "components",
       "components_aliases",
       "components_aliases_components",
@@ -605,7 +730,7 @@
       "components_tailwind_prefix",
       "components_tsx"
     ],
-    "14": [
+    "16": [
       "src_components_hojepanel",
       "src_components_hojepanel_cards",
       "src_components_hojepanel_drill",
@@ -626,26 +751,48 @@
       "src_lib_hoje_data_hojerow",
       "src_lib_hoje_data_hojesnapshot"
     ],
-    "15": [
-      "src_components_dashboarddatefilter",
-      "src_components_dashboarddatefilter_dashboarddatefilter",
-      "src_components_dashboarddatefilter_presets",
-      "src_components_ui_drawer",
-      "src_components_ui_drawer_drawer",
-      "src_components_ui_drawer_drawercontent",
-      "src_components_ui_drawer_drawerdescription",
-      "src_components_ui_drawer_drawerfooter",
-      "src_components_ui_drawer_drawerheader",
-      "src_components_ui_drawer_draweroverlay",
-      "src_components_ui_drawer_drawertitle",
-      "src_components_ui_popover",
-      "src_components_ui_popover_popovercontent",
-      "src_components_ui_sidebar_sidebarprovider",
-      "src_hooks_use_mobile",
-      "src_hooks_use_mobile_useismobile",
-      "src_lib_filters_context_presetperiod"
+    "17": [
+      "tsconfig",
+      "tsconfig_compileroptions",
+      "tsconfig_compileroptions_allowimportingtsextensions",
+      "tsconfig_compileroptions_jsx",
+      "tsconfig_compileroptions_lib",
+      "tsconfig_compileroptions_module",
+      "tsconfig_compileroptions_moduleresolution",
+      "tsconfig_compileroptions_noemit",
+      "tsconfig_compileroptions_nofallthroughcasesinswitch",
+      "tsconfig_compileroptions_nouncheckedsideeffectimports",
+      "tsconfig_compileroptions_nounusedlocals",
+      "tsconfig_compileroptions_nounusedparameters",
+      "tsconfig_compileroptions_paths",
+      "tsconfig_compileroptions_skiplibcheck",
+      "tsconfig_compileroptions_strict",
+      "tsconfig_compileroptions_target",
+      "tsconfig_compileroptions_types",
+      "tsconfig_compileroptions_verbatimmodulesyntax",
+      "tsconfig_include"
     ],
-    "16": [
+    "18": [
+      "package_devdependencies",
+      "package_devdependencies_eslint",
+      "package_devdependencies_eslint_config_prettier",
+      "package_devdependencies_eslint_js",
+      "package_devdependencies_eslint_plugin_prettier",
+      "package_devdependencies_eslint_plugin_react_hooks",
+      "package_devdependencies_eslint_plugin_react_refresh",
+      "package_devdependencies_globals",
+      "package_devdependencies_lovable_dev_vite_tanstack_config",
+      "package_devdependencies_nitro",
+      "package_devdependencies_prettier",
+      "package_devdependencies_types_node",
+      "package_devdependencies_types_react",
+      "package_devdependencies_types_react_dom",
+      "package_devdependencies_typescript",
+      "package_devdependencies_typescript_eslint",
+      "package_devdependencies_vite",
+      "package_devdependencies_vitejs_plugin_react"
+    ],
+    "19": [
       "src_components_ui_menubar",
       "src_components_ui_menubar_menubar",
       "src_components_ui_menubar_menubarcheckboxitem",
@@ -664,42 +811,58 @@
       "src_components_ui_menubar_menubarsubtrigger",
       "src_components_ui_menubar_menubartrigger"
     ],
-    "17": [
-      "server_entry",
-      "src_integrations_supabase_auth_attacher",
-      "src_integrations_supabase_auth_attacher_attachsupabaseauth",
-      "src_lib_error_capture",
-      "src_lib_error_capture_consumelastcapturederror",
-      "src_lib_error_capture_record",
-      "src_lib_error_page",
-      "src_lib_error_page_rendererrorpage",
-      "src_server",
-      "src_server_fetch",
-      "src_server_getserverentry",
-      "src_server_ish3swallowederrorbody",
-      "src_server_normalizecatastrophicssrresponse",
-      "src_server_serverentry",
-      "src_start",
-      "src_start_errormiddleware"
+    "20": [
+      "ref_class_variance_authority",
+      "ref_radix_ui_react_toggle",
+      "ref_radix_ui_react_toggle_group",
+      "src_components_ui_alert",
+      "src_components_ui_alert_alert",
+      "src_components_ui_alert_alertdescription",
+      "src_components_ui_alert_alerttitle",
+      "src_components_ui_alert_alertvariants",
+      "src_components_ui_toggle",
+      "src_components_ui_toggle_group",
+      "src_components_ui_toggle_group_togglegroup",
+      "src_components_ui_toggle_group_togglegroupcontext",
+      "src_components_ui_toggle_group_togglegroupitem",
+      "src_components_ui_toggle_toggle",
+      "src_components_ui_toggle_togglevariants"
     ],
-    "18": [
-      "class_variance_authority",
-      "input_otp",
-      "package_dependencies",
-      "package_dependencies_class_variance_authority",
-      "package_dependencies_input_otp",
-      "package_dependencies_radix_ui_react_alert_dialog",
-      "package_dependencies_radix_ui_react_scroll_area",
-      "package_dependencies_radix_ui_react_select",
-      "package_dependencies_radix_ui_react_slider",
-      "package_dependencies_react_day_picker",
-      "radix_ui_react_alert_dialog",
-      "radix_ui_react_scroll_area",
-      "radix_ui_react_select",
-      "radix_ui_react_slider",
-      "react_day_picker"
+    "21": [
+      "ref_embla_carousel_react",
+      "src_components_ui_carousel",
+      "src_components_ui_carousel_carousel",
+      "src_components_ui_carousel_carouselapi",
+      "src_components_ui_carousel_carouselcontent",
+      "src_components_ui_carousel_carouselcontext",
+      "src_components_ui_carousel_carouselcontextprops",
+      "src_components_ui_carousel_carouselitem",
+      "src_components_ui_carousel_carouselnext",
+      "src_components_ui_carousel_carouseloptions",
+      "src_components_ui_carousel_carouselplugin",
+      "src_components_ui_carousel_carouselprevious",
+      "src_components_ui_carousel_carouselprops",
+      "src_components_ui_carousel_usecarousel",
+      "src_components_ui_carousel_usecarouselparameters"
     ],
-    "19": [
+    "22": [
+      "ref_radix_ui_react_label",
+      "ref_radix_ui_react_slot",
+      "ref_react_hook_form",
+      "src_components_ui_form",
+      "src_components_ui_form_formcontrol",
+      "src_components_ui_form_formdescription",
+      "src_components_ui_form_formfield",
+      "src_components_ui_form_formfieldcontext",
+      "src_components_ui_form_formfieldcontextvalue",
+      "src_components_ui_form_formitem",
+      "src_components_ui_form_formitemcontext",
+      "src_components_ui_form_formitemcontextvalue",
+      "src_components_ui_form_formlabel",
+      "src_components_ui_form_formmessage",
+      "src_components_ui_form_useformfield"
+    ],
+    "23": [
       "src_components_ui_sonner",
       "src_components_ui_sonner_toaster",
       "src_components_ui_sonner_toasterprops",
@@ -716,37 +879,21 @@
       "src_routes_root_route",
       "src_routetree_gen_fileroutesbyid"
     ],
-    "20": [
-      "src_components_ui_carousel",
-      "src_components_ui_carousel_carousel",
-      "src_components_ui_carousel_carouselapi",
-      "src_components_ui_carousel_carouselcontent",
-      "src_components_ui_carousel_carouselcontext",
-      "src_components_ui_carousel_carouselcontextprops",
-      "src_components_ui_carousel_carouselitem",
-      "src_components_ui_carousel_carouselnext",
-      "src_components_ui_carousel_carouseloptions",
-      "src_components_ui_carousel_carouselplugin",
-      "src_components_ui_carousel_carouselprevious",
-      "src_components_ui_carousel_carouselprops",
-      "src_components_ui_carousel_usecarousel",
-      "src_components_ui_carousel_usecarouselparameters"
+    "24": [
+      "ref_leaflet",
+      "ref_leaflet_heat",
+      "ref_react_leaflet",
+      "src_components_patientmap",
+      "src_components_patientmap_bairropoint",
+      "src_components_patientmap_citypoint",
+      "src_components_patientmap_fitbounds",
+      "src_components_patientmap_heatlayer",
+      "src_components_patientmap_patientmap",
+      "src_components_patientmap_unidadepoint",
+      "src_components_patientmap_uniticon",
+      "src_routes_authenticated_mapa_patientmap"
     ],
-    "21": [
-      "src_components_ui_form",
-      "src_components_ui_form_formcontrol",
-      "src_components_ui_form_formdescription",
-      "src_components_ui_form_formfield",
-      "src_components_ui_form_formfieldcontext",
-      "src_components_ui_form_formfieldcontextvalue",
-      "src_components_ui_form_formitem",
-      "src_components_ui_form_formitemcontext",
-      "src_components_ui_form_formitemcontextvalue",
-      "src_components_ui_form_formlabel",
-      "src_components_ui_form_formmessage",
-      "src_components_ui_form_useformfield"
-    ],
-    "22": [
+    "25": [
       "src_components_ui_chart",
       "src_components_ui_chart_chartconfig",
       "src_components_ui_chart_chartcontainer",
@@ -759,18 +906,8 @@
       "src_components_ui_chart_themes",
       "src_components_ui_chart_usechart"
     ],
-    "23": [
-      "src_components_ui_alert_dialog",
-      "src_components_ui_alert_dialog_alertdialogaction",
-      "src_components_ui_alert_dialog_alertdialogcancel",
-      "src_components_ui_alert_dialog_alertdialogcontent",
-      "src_components_ui_alert_dialog_alertdialogdescription",
-      "src_components_ui_alert_dialog_alertdialogfooter",
-      "src_components_ui_alert_dialog_alertdialogheader",
-      "src_components_ui_alert_dialog_alertdialogoverlay",
-      "src_components_ui_alert_dialog_alertdialogtitle"
-    ],
-    "24": [
+    "26": [
+      "ref_radix_ui_react_navigation_menu",
       "src_components_ui_navigation_menu",
       "src_components_ui_navigation_menu_navigationmenu",
       "src_components_ui_navigation_menu_navigationmenucontent",
@@ -780,397 +917,217 @@
       "src_components_ui_navigation_menu_navigationmenutriggerstyle",
       "src_components_ui_navigation_menu_navigationmenuviewport"
     ],
-    "25": [
-      "src_components_ui_alert",
-      "src_components_ui_alert_alert",
-      "src_components_ui_alert_alertdescription",
-      "src_components_ui_alert_alerttitle",
-      "src_components_ui_alert_alertvariants"
-    ],
-    "26": [
-      "src_components_ui_input_otp",
-      "src_components_ui_input_otp_inputotp",
-      "src_components_ui_input_otp_inputotpgroup",
-      "src_components_ui_input_otp_inputotpseparator",
-      "src_components_ui_input_otp_inputotpslot"
-    ],
     "27": [
+      "package_scripts",
+      "package_scripts_build",
+      "package_scripts_build_dev",
+      "package_scripts_dev",
+      "package_scripts_format",
+      "package_scripts_lint",
+      "package_scripts_preview"
+    ],
+    "28": [
+      "eslint_config",
+      "ref_eslint_js",
+      "ref_eslint_plugin_react_hooks",
+      "ref_eslint_plugin_react_refresh",
+      "ref_globals",
+      "ref_typescript_eslint"
+    ],
+    "29": [
+      "ref_radix_ui_react_accordion",
+      "src_components_ui_accordion",
+      "src_components_ui_accordion_accordioncontent",
+      "src_components_ui_accordion_accordionitem",
+      "src_components_ui_accordion_accordiontrigger"
+    ],
+    "30": [
       "src_router",
       "src_router_getrouter",
       "src_routetree_gen_register",
       "src_routetree_gen_routetree",
       "src_start_startinstance"
     ],
-    "28": [
+    "31": [
+      "ref_radix_ui_react_radio_group",
+      "src_components_ui_radio_group",
+      "src_components_ui_radio_group_radiogroup",
+      "src_components_ui_radio_group_radiogroupitem"
+    ],
+    "32": [
       "supabase_functions_geocode_pacientes_index",
       "supabase_functions_geocode_pacientes_index_corsheaders",
       "supabase_functions_geocode_pacientes_index_geocodecep",
       "supabase_functions_geocode_pacientes_index_sleep"
     ],
-    "29": [
+    "33": [
       "src_routes_authenticated_hoje",
       "src_routes_authenticated_hoje_hojepage",
       "src_routes_authenticated_hoje_route"
     ],
-    "30": [
-      "clsx",
-      "package_dependencies_clsx"
-    ],
-    "31": [
-      "cmdk",
-      "package_dependencies_cmdk"
-    ],
-    "32": [
-      "date_fns",
-      "package_dependencies_date_fns"
-    ],
-    "33": [
-      "embla_carousel_react",
-      "package_dependencies_embla_carousel_react"
-    ],
     "34": [
-      "hookform_resolvers",
-      "package_dependencies_hookform_resolvers"
+      "ref_lovable_dev_vite_tanstack_config",
+      "vite_config"
     ],
     "35": [
-      "leaflet",
-      "package_dependencies_leaflet"
+      "ref_radix_ui_react_aspect_ratio",
+      "src_components_ui_aspect_ratio"
     ],
     "36": [
-      "leaflet_heat",
-      "package_dependencies_leaflet_heat"
+      "ref_radix_ui_react_collapsible",
+      "src_components_ui_collapsible"
     ],
     "37": [
-      "lucide_react",
-      "package_dependencies_lucide_react"
+      "src_routes_api_public_hooks_sync_feegow",
+      "src_routes_api_public_hooks_sync_feegow_route"
     ],
     "38": [
-      "package_dependencies_radix_ui_react_accordion",
-      "radix_ui_react_accordion"
+      "src_routes_authenticated_faturamento_dinamico",
+      "src_routes_authenticated_faturamento_dinamico_route"
     ],
     "39": [
-      "package_dependencies_radix_ui_react_aspect_ratio",
-      "radix_ui_react_aspect_ratio"
-    ],
-    "40": [
-      "package_dependencies_radix_ui_react_avatar",
-      "radix_ui_react_avatar"
-    ],
-    "41": [
-      "package_dependencies_radix_ui_react_checkbox",
-      "radix_ui_react_checkbox"
-    ],
-    "42": [
-      "package_dependencies_radix_ui_react_collapsible",
-      "radix_ui_react_collapsible"
-    ],
-    "43": [
-      "package_dependencies_radix_ui_react_context_menu",
-      "radix_ui_react_context_menu"
-    ],
-    "44": [
-      "package_dependencies_radix_ui_react_dialog",
-      "radix_ui_react_dialog"
-    ],
-    "45": [
-      "package_dependencies_radix_ui_react_dropdown_menu",
-      "radix_ui_react_dropdown_menu"
-    ],
-    "46": [
-      "package_dependencies_radix_ui_react_hover_card",
-      "radix_ui_react_hover_card"
-    ],
-    "47": [
-      "package_dependencies_radix_ui_react_label",
-      "radix_ui_react_label"
-    ],
-    "48": [
-      "package_dependencies_radix_ui_react_menubar",
-      "radix_ui_react_menubar"
-    ],
-    "49": [
-      "package_dependencies_radix_ui_react_navigation_menu",
-      "radix_ui_react_navigation_menu"
-    ],
-    "50": [
-      "package_dependencies_radix_ui_react_popover",
-      "radix_ui_react_popover"
-    ],
-    "51": [
-      "package_dependencies_radix_ui_react_progress",
-      "radix_ui_react_progress"
-    ],
-    "52": [
-      "package_dependencies_radix_ui_react_radio_group",
-      "radix_ui_react_radio_group"
-    ],
-    "53": [
-      "package_dependencies_radix_ui_react_separator",
-      "radix_ui_react_separator"
-    ],
-    "54": [
-      "package_dependencies_radix_ui_react_slot",
-      "radix_ui_react_slot"
-    ],
-    "55": [
-      "package_dependencies_radix_ui_react_switch",
-      "radix_ui_react_switch"
-    ],
-    "56": [
-      "package_dependencies_radix_ui_react_tabs",
-      "radix_ui_react_tabs"
-    ],
-    "57": [
-      "package_dependencies_radix_ui_react_toggle",
-      "radix_ui_react_toggle"
-    ],
-    "58": [
-      "package_dependencies_radix_ui_react_toggle_group",
-      "radix_ui_react_toggle_group"
-    ],
-    "59": [
-      "package_dependencies_radix_ui_react_tooltip",
-      "radix_ui_react_tooltip"
-    ],
-    "60": [
-      "package_dependencies_react",
-      "react"
-    ],
-    "61": [
-      "package_dependencies_react_dom",
-      "react_dom"
-    ],
-    "62": [
-      "package_dependencies_react_hook_form",
-      "react_hook_form"
-    ],
-    "63": [
-      "package_dependencies_react_leaflet",
-      "react_leaflet"
-    ],
-    "64": [
-      "package_dependencies_react_resizable_panels",
-      "react_resizable_panels"
-    ],
-    "65": [
-      "package_dependencies_recharts",
-      "recharts"
-    ],
-    "66": [
-      "package_dependencies_sonner",
-      "sonner"
-    ],
-    "67": [
-      "package_dependencies_supabase_supabase_js",
-      "supabase_supabase_js"
-    ],
-    "68": [
-      "package_dependencies_tailwind_merge",
-      "tailwind_merge"
-    ],
-    "69": [
-      "package_dependencies_tailwindcss",
-      "tailwindcss"
-    ],
-    "70": [
-      "package_dependencies_tailwindcss_vite",
-      "tailwindcss_vite"
-    ],
-    "71": [
-      "package_dependencies_tanstack_react_query",
-      "tanstack_react_query"
-    ],
-    "72": [
-      "package_dependencies_tanstack_react_router",
-      "tanstack_react_router"
-    ],
-    "73": [
-      "package_dependencies_tanstack_react_start",
-      "tanstack_react_start"
-    ],
-    "74": [
-      "package_dependencies_tanstack_router_plugin",
-      "tanstack_router_plugin"
-    ],
-    "75": [
-      "package_dependencies_tw_animate_css",
-      "tw_animate_css"
-    ],
-    "76": [
-      "package_dependencies_types_leaflet",
-      "types_leaflet"
-    ],
-    "77": [
-      "package_dependencies_vaul",
-      "vaul"
-    ],
-    "78": [
-      "package_dependencies_vite_tsconfig_paths",
-      "vite_tsconfig_paths"
-    ],
-    "79": [
-      "package_dependencies_zod",
-      "zod"
-    ],
-    "80": [
-      "src_routes_index",
-      "src_routes_index_route"
-    ],
-    "81": [
       "src_types_leaflet_heat_d",
       "src_types_leaflet_heat_d_leaflet_heat"
     ],
-    "82": [
+    "40": [
       "test_feegow",
       "test_feegow_test"
     ],
-    "83": [
+    "41": [
       "test_feegow_all",
       "test_feegow_all_test"
     ],
-    "84": [
+    "42": [
       "test_feegow_all_units",
       "test_feegow_all_units_test"
     ],
-    "85": [
+    "43": [
       "test_feegow_atend",
       "test_feegow_atend_test"
     ],
-    "86": [
+    "44": [
       "test_feegow_detail",
       "test_feegow_detail_test"
     ],
-    "87": [
+    "45": [
       "test_feegow_dual",
       "test_feegow_dual_test"
     ],
-    "88": [
+    "46": [
       "test_feegow_error",
       "test_feegow_error_test"
     ],
-    "89": [
+    "47": [
       "test_feegow_filters",
       "test_feegow_filters_test"
     ],
-    "90": [
+    "48": [
       "test_feegow_inclusive",
       "test_feegow_inclusive_test"
     ],
-    "91": [
+    "49": [
       "test_feegow_letters",
       "test_feegow_letters_test"
     ],
-    "92": [
+    "50": [
       "test_feegow_merge",
       "test_feegow_merge_test"
     ],
-    "93": [
+    "51": [
       "test_feegow_more",
       "test_feegow_more_test"
     ],
-    "94": [
+    "52": [
       "test_feegow_n_sits",
       "test_feegow_n_sits_test"
     ],
-    "95": [
+    "53": [
       "test_feegow_n_units",
       "test_feegow_n_units_test"
     ],
-    "96": [
+    "54": [
       "test_feegow_n_val",
       "test_feegow_n_val_test"
     ],
-    "97": [
+    "55": [
       "test_feegow_nf",
       "test_feegow_nf_test"
     ],
-    "98": [
+    "56": [
       "test_feegow_nulls",
       "test_feegow_nulls_test"
     ],
-    "99": [
+    "57": [
       "test_feegow_reports",
       "test_feegow_reports_test"
     ],
-    "100": [
+    "58": [
       "test_feegow_situations",
       "test_feegow_situations_test"
     ],
-    "101": [
+    "59": [
       "test_feegow_sna",
       "test_feegow_sna_test"
     ],
-    "102": [
+    "60": [
       "test_feegow_units",
       "test_feegow_units_test"
     ],
-    "103": [
+    "61": [
       "test_final_validation",
       "test_final_validation_test"
     ],
-    "104": [
-      "eslint_config"
-    ],
-    "105": [
-      "src_components_ui_aspect_ratio"
-    ],
-    "106": [
-      "src_components_ui_collapsible"
-    ],
-    "107": [
+    "62": [
       "test_feegow_production"
     ],
-    "108": [
+    "63": [
       "test_feegow_report"
     ],
-    "109": [
+    "64": [
       "test_feegow_report_v2"
     ],
-    "110": [
+    "65": [
       "test_feegow_report_v3"
     ],
-    "111": [
+    "66": [
       "test_feegow_report_v4"
-    ],
-    "112": [
-      "vite_config"
     ]
   },
   "cohesion": {
-    "0": 0.08746252865455828,
-    "1": 0.0761904761904762,
-    "2": 0.061224489795918366,
-    "3": 0.07227891156462585,
-    "4": 0.0425531914893617,
-    "5": 0.08571428571428572,
-    "6": 0.058823529411764705,
-    "7": 0.17338709677419356,
-    "8": 0.07407407407407407,
-    "9": 0.13230769230769232,
-    "10": 0.11076923076923077,
-    "11": 0.09523809523809523,
-    "12": 0.12105263157894737,
-    "13": 0.10526315789473684,
-    "14": 0.17543859649122806,
-    "15": 0.16911764705882354,
-    "16": 0.11764705882352941,
-    "17": 0.21666666666666667,
-    "18": 0.13333333333333333,
-    "19": 0.1619047619047619,
-    "20": 0.18681318681318682,
-    "21": 0.22727272727272727,
-    "22": 0.2545454545454545,
-    "23": 0.2222222222222222,
-    "24": 0.2857142857142857,
-    "25": 0.5,
-    "26": 0.4,
-    "27": 0.4,
-    "28": 0.5,
-    "29": 0.6666666666666666,
-    "30": 1.0,
-    "31": 1.0,
-    "32": 1.0,
-    "33": 1.0,
+    "0": 0.0858405217757206,
+    "1": 0.06435498089920658,
+    "2": 0.09700111069974084,
+    "3": 0.034482758620689655,
+    "4": 0.07205513784461152,
+    "5": 0.07087486157253599,
+    "6": 0.08170731707317073,
+    "7": 0.11336032388663968,
+    "8": 0.05714285714285714,
+    "9": 0.17338709677419356,
+    "10": 0.06666666666666667,
+    "11": 0.08333333333333333,
+    "12": 0.1341991341991342,
+    "13": 0.09090909090909091,
+    "14": 0.10952380952380952,
+    "15": 0.10526315789473684,
+    "16": 0.17543859649122806,
+    "17": 0.10526315789473684,
+    "18": 0.1111111111111111,
+    "19": 0.11764705882352941,
+    "20": 0.18095238095238095,
+    "21": 0.17142857142857143,
+    "22": 0.17142857142857143,
+    "23": 0.1619047619047619,
+    "24": 0.16666666666666666,
+    "25": 0.2545454545454545,
+    "26": 0.25,
+    "27": 0.2857142857142857,
+    "28": 0.3333333333333333,
+    "29": 0.4,
+    "30": 0.4,
+    "31": 0.5,
+    "32": 0.5,
+    "33": 0.6666666666666666,
     "34": 1.0,
     "35": 1.0,
     "36": 1.0,
@@ -1203,53 +1160,7 @@
     "63": 1.0,
     "64": 1.0,
     "65": 1.0,
-    "66": 1.0,
-    "67": 1.0,
-    "68": 1.0,
-    "69": 1.0,
-    "70": 1.0,
-    "71": 1.0,
-    "72": 1.0,
-    "73": 1.0,
-    "74": 1.0,
-    "75": 1.0,
-    "76": 1.0,
-    "77": 1.0,
-    "78": 1.0,
-    "79": 1.0,
-    "80": 1.0,
-    "81": 1.0,
-    "82": 1.0,
-    "83": 1.0,
-    "84": 1.0,
-    "85": 1.0,
-    "86": 1.0,
-    "87": 1.0,
-    "88": 1.0,
-    "89": 1.0,
-    "90": 1.0,
-    "91": 1.0,
-    "92": 1.0,
-    "93": 1.0,
-    "94": 1.0,
-    "95": 1.0,
-    "96": 1.0,
-    "97": 1.0,
-    "98": 1.0,
-    "99": 1.0,
-    "100": 1.0,
-    "101": 1.0,
-    "102": 1.0,
-    "103": 1.0,
-    "104": 1.0,
-    "105": 1.0,
-    "106": 1.0,
-    "107": 1.0,
-    "108": 1.0,
-    "109": 1.0,
-    "110": 1.0,
-    "111": 1.0,
-    "112": 1.0
+    "66": 1.0
   },
   "gods": [
     {
@@ -1258,73 +1169,95 @@
       "degree": 232
     },
     {
+      "id": "ref_react",
+      "label": "react",
+      "degree": 68
+    },
+    {
       "id": "src_lib_format_num",
       "label": "num()",
-      "degree": 42
+      "degree": 46
     },
     {
       "id": "src_lib_filters_context_usefilters",
       "label": "useFilters()",
-      "degree": 39
+      "degree": 43
     },
     {
       "id": "src_lib_format_brl",
       "label": "brl()",
-      "degree": 39
+      "degree": 43
+    },
+    {
+      "id": "ref_lucide_react",
+      "label": "lucide-react",
+      "degree": 42
     },
     {
       "id": "src_components_ui_card_card",
       "label": "Card",
-      "degree": 31
+      "degree": 34
     },
     {
       "id": "src_components_ui_card_cardheader",
       "label": "CardHeader",
-      "degree": 31
+      "degree": 34
     },
     {
       "id": "src_components_ui_card_cardtitle",
       "label": "CardTitle",
-      "degree": 31
+      "degree": 34
     },
     {
       "id": "src_components_ui_card_cardcontent",
       "label": "CardContent",
-      "degree": 31
-    },
-    {
-      "id": "src_lib_dashboard_data_dashboardquerykey",
-      "label": "dashboardQueryKey()",
-      "degree": 28
-    },
-    {
-      "id": "src_routetree_gen_fileroutesbypath",
-      "label": "FileRoutesByPath",
-      "degree": 27
+      "degree": 34
     }
   ],
   "surprises": [
     {
-      "source": "feegow()",
-      "target": "FEEGOW_TOKEN()",
+      "source": "MultiSelectFilter()",
+      "target": "cn()",
       "source_files": [
-        "supabase/functions/sync-feegow/index.ts",
-        "src/lib/lab-faturamento.functions.ts"
+        "src/components/FaturamentoDinamico.tsx",
+        "src/lib/utils.ts"
       ],
-      "confidence": "INFERRED",
-      "relation": "indirect_call",
-      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; bridges separate communities"
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "bridges separate communities; peripheral node `MultiSelectFilter()` unexpectedly reaches hub `cn()`"
     },
     {
-      "source": "feegowCore()",
-      "target": "FEEGOW_TOKEN()",
+      "source": "AccordionItem",
+      "target": "cn()",
       "source_files": [
-        "supabase/functions/sync-feegow/index.ts",
-        "src/lib/lab-faturamento.functions.ts"
+        "src/components/ui/accordion.tsx",
+        "src/lib/utils.ts"
       ],
-      "confidence": "INFERRED",
-      "relation": "indirect_call",
-      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; bridges separate communities"
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "bridges separate communities; peripheral node `AccordionItem` unexpectedly reaches hub `cn()`"
+    },
+    {
+      "source": "AccordionTrigger",
+      "target": "cn()",
+      "source_files": [
+        "src/components/ui/accordion.tsx",
+        "src/lib/utils.ts"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "bridges separate communities; peripheral node `AccordionTrigger` unexpectedly reaches hub `cn()`"
+    },
+    {
+      "source": "AccordionContent",
+      "target": "cn()",
+      "source_files": [
+        "src/components/ui/accordion.tsx",
+        "src/lib/utils.ts"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "bridges separate communities; peripheral node `AccordionContent` unexpectedly reaches hub `cn()`"
     },
     {
       "source": "AlertDialogOverlay",
@@ -1336,28 +1269,6 @@
       "confidence": "EXTRACTED",
       "relation": "calls",
       "why": "bridges separate communities; peripheral node `AlertDialogOverlay` unexpectedly reaches hub `cn()`"
-    },
-    {
-      "source": "AlertDialogContent",
-      "target": "cn()",
-      "source_files": [
-        "src/components/ui/alert-dialog.tsx",
-        "src/lib/utils.ts"
-      ],
-      "confidence": "EXTRACTED",
-      "relation": "calls",
-      "why": "bridges separate communities; peripheral node `AlertDialogContent` unexpectedly reaches hub `cn()`"
-    },
-    {
-      "source": "AlertDialogHeader()",
-      "target": "cn()",
-      "source_files": [
-        "src/components/ui/alert-dialog.tsx",
-        "src/lib/utils.ts"
-      ],
-      "confidence": "EXTRACTED",
-      "relation": "calls",
-      "why": "bridges separate communities; peripheral node `AlertDialogHeader()` unexpectedly reaches hub `cn()`"
     }
   ],
   "tokens": {
