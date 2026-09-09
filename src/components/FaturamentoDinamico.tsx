@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from "recharts";
-import { RefreshCw, LayoutGrid, BarChart2, SlidersHorizontal, Filter, FilterX, Check } from "lucide-react";
+import { RefreshCw, LayoutGrid, BarChart2, SlidersHorizontal, Filter, FilterX, Check, Users, CalendarX } from "lucide-react";
 import { GlobalFilters } from "@/components/GlobalFilters";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -473,6 +473,9 @@ export function FaturamentoDinamicoPage() {
               <TabsTrigger value="chart" className="flex items-center gap-2">
                 <BarChart2 className="w-4 h-4" /> Gráfico
               </TabsTrigger>
+              <TabsTrigger value="ausentes" className="flex items-center gap-2">
+                <Users className="w-4 h-4" /> Ausentes (+90 dias)
+              </TabsTrigger>
             </TabsList>
             {isLoading && <span className="text-sm text-muted-foreground font-mono flex items-center gap-2"><RefreshCw className="w-4 h-4 animate-spin" /> Calculando...</span>}
           </div>
@@ -694,7 +697,42 @@ export function FaturamentoDinamicoPage() {
             <FaturamentoCategoriaComparativo />
             <FaturamentoProfissionalComparativo />
             <ComparativoMensal />
+          </TabsContent>
 
+          <TabsContent value="ausentes" className="p-0 outline-none">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CalendarX className="w-5 h-5 text-muted-foreground" />
+                  Clientes Ausentes (+90 dias)
+                </CardTitle>
+                <CardDescription>
+                  Lista de clientes com faturamento no passado, mas sem retorno registrado há mais de 90 dias.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="border rounded-md">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/50">
+                        <TableHead>Nome do Cliente</TableHead>
+                        <TableHead>Último Faturamento</TableHead>
+                        <TableHead className="text-right">Dias Ausente</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell colSpan={3} className="text-center py-10 text-muted-foreground">
+                          <Users className="w-10 h-10 mx-auto mb-3 opacity-20" />
+                          <p>A estrutura do banco de dados não pôde ser lida desta vez para executar a consulta.</p>
+                          <p className="text-sm mt-1">Você pode pedir de novo agora mesmo para conectar esta listagem aos dados reais!</p>
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>
