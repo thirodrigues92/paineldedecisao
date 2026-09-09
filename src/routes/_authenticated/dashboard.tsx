@@ -295,7 +295,10 @@ function DashboardPage() {
       bucket.valor += valor;
       bucket.qtd += 1;
       
-      const itemNome = (nomeProc ?? "").trim() || "Sem descrição";
+      const itemNome = detalheNovos 
+        ? ((r.paciente_nome ?? "").trim() || "Paciente não informado")
+        : ((nomeProc ?? "").trim() || "Sem descrição");
+
       const it: ItemServico = bucket.itens.get(itemNome) ?? { nome: itemNome, valor: 0, qtd: 0, lancamentos: [] };
       it.valor += valor;
       it.qtd += 1;
@@ -303,7 +306,7 @@ function DashboardPage() {
       it.lancamentos.push({
         pacienteId: r.paciente_id ? Number(r.paciente_id) : null,
         pacienteNome: r.paciente_nome || null,
-        nome: itemNome,
+        nome: detalheNovos ? nomeProc : itemNome,
         valor,
         data: r.data_execucao,
         status: r.situacao || null,
