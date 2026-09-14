@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { DashboardDateFilter } from "@/components/DashboardDateFilter";
 import { useFilters } from "@/lib/filters-context";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -72,6 +73,14 @@ function isKeyMetrica(key: string): key is Metrica {
 
 export function FaturamentoDinamicoPage() {
   const filters = useFilters();
+  const mesPadraoAplicado = useRef(false);
+
+  useEffect(() => {
+    if (mesPadraoAplicado.current) return;
+    mesPadraoAplicado.current = true;
+    filters.setPreset("month");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [linha, setLinha] = useState<Dimensao>("profissional");
   const [coluna, setColuna] = useState<Dimensao | "none">("none");
   const [metricas, setMetricas] = useState<Metrica[]>(["valor_faturado"]);
@@ -335,7 +344,7 @@ export function FaturamentoDinamicoPage() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <div className="p-6 space-y-6 flex-1 max-w-7xl mx-auto w-full">
-        <div>
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
               <SlidersHorizontal className="w-8 h-8" />
@@ -345,6 +354,7 @@ export function FaturamentoDinamicoPage() {
               Análise flexível tipo "Tabela Dinâmica" (Pivot) sobre a produção da clínica.
             </p>
           </div>
+          <DashboardDateFilter />
         </div>
 
         <div className="grid grid-cols-1 gap-4">
