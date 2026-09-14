@@ -312,6 +312,17 @@ function MapaPage() {
             </Select>
           </div>
 
+          <div className="w-[230px]">
+            <Label className="text-xs text-muted-foreground">Calor por categoria de faturamento</Label>
+            <Select value={categoria} onValueChange={setCategoria}>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectContent className="max-h-72">
+                <SelectItem value="__all__">Todas as categorias</SelectItem>
+                {categoriasDisponiveis.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="ml-auto text-xs text-muted-foreground">
             {totalPacientes} pacientes no filtro · {bairrosView.length} bairros
             {cidadeFoco !== "__all__" && <> em {cidadeFoco}</>}
