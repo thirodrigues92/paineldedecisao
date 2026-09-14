@@ -260,8 +260,20 @@ function MapaPage() {
             </Label>
           </div>
 
+          <div className="w-[200px]">
+            <Label className="text-xs text-muted-foreground">Cidade em foco</Label>
+            <Select value={cidadeFoco} onValueChange={setCidadeFoco}>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectContent className="max-h-72">
+                {cidadesDisponiveis.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                <SelectItem value="__all__">Todas as cidades</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="ml-auto text-xs text-muted-foreground">
-            {totalPacientes} pacientes no filtro · {bairros.length} bairros
+            {totalPacientes} pacientes no filtro · {bairrosView.length} bairros
+            {cidadeFoco !== "__all__" && <> em {cidadeFoco}</>}
             {semGeo > 0 && <> · {semGeo} sem coordenada</>}
           </div>
         </CardContent>
@@ -272,7 +284,7 @@ function MapaPage() {
           <CardContent className="p-3">
             {loading || !mounted ? (
               <Skeleton className="h-[520px] w-full" />
-            ) : bairros.length === 0 ? (
+            ) : bairrosView.length === 0 ? (
               <div className="h-[520px] grid place-items-center text-center gap-2">
                 <MapPinned className="h-8 w-8 text-primary" />
                 <p className="text-sm text-muted-foreground max-w-sm">
@@ -284,12 +296,13 @@ function MapaPage() {
               <Suspense fallback={<Skeleton className="h-[520px] w-full" />}>
                 <PatientMap
                    mode={mode}
-                   bairros={bairros}
+                   bairros={bairrosView}
                    metric={metric}
                   unidades={unidadePoints}
                   showUnits={showUnits}
                   selectedKey={selected}
                   onSelect={setSelected}
+                  focusCity={cidadeFoco === "__all__" ? "Rio Verde" : cidadeFoco}
                 />
               </Suspense>
             )}
@@ -297,9 +310,9 @@ function MapaPage() {
         </Card>
 
         <Card className="max-h-[560px] overflow-auto">
-          <CardHeader><CardTitle className="text-base">Rio Verde — bairros por {metric === "faturamento" ? "faturamento" : "pacientes"}</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-base">{cidadeFoco === "__all__" ? "Todas as cidades" : cidadeFoco} — bairros por {metric === "faturamento" ? "faturamento" : "pacientes"}</CardTitle></CardHeader>
           <CardContent className="space-y-1 p-3">
-            {loading ? <Skeleton className="h-64 w-full" /> : bairros.filter((b) => b.cidade === "Rio Verde").sort((a, b) => (metric === "faturamento" ? b.faturamento - a.faturamento : b.pacientes - a.pacientes)).slice(0, 10).map((b, i) => (
+            {loading ? <Skeleton className="h-64 w-full" /> : bairrosView.slice().sort((a, b) => (metric === "faturamento" ? b.faturamento - a.faturamento : b.pacientes - a.pacientes)).slice(0, 10).map((b, i) => (
               <button
                 key={b.key}
                 onClick={() => setSelected(b.key)}
