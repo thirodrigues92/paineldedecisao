@@ -42,6 +42,7 @@ function MapaPage() {
   const [especialidade, setEspecialidade] = useState<string>("__all__");
   const [faixa, setFaixa] = useState<[number, number]>([0, 100]);
   const [convenio, setConvenio] = useState<"todos" | "convenio" | "particular">("todos");
+  const [cidadeFoco, setCidadeFoco] = useState<string>("Rio Verde");
   const [showUnits, setShowUnits] = useState(true);
   const [somenteObesos, setSomenteObesos] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
@@ -174,6 +175,17 @@ function MapaPage() {
     if (distantes) out.push(`${distantes.bairro} está a ${distantes.distanciaKm!.toFixed(1)} km da unidade e ainda gera ${distantes.demanda} agendamentos — potencial para telemedicina ou ponto avançado.`);
     return out;
   }, [bairros]);
+
+  const cidadesDisponiveis = useMemo(() => {
+    const set = new Set(bairros.map((b) => b.cidade));
+    set.add("Rio Verde");
+    return [...set].sort((a, b) => (a === "Rio Verde" ? -1 : b === "Rio Verde" ? 1 : a.localeCompare(b)));
+  }, [bairros]);
+
+  const bairrosView = useMemo(
+    () => (cidadeFoco === "__all__" ? bairros : bairros.filter((b) => b.cidade === cidadeFoco)),
+    [bairros, cidadeFoco],
+  );
 
   const detalhe = bairros.find((b) => b.key === selected) ?? null;
 
