@@ -20,7 +20,26 @@ import { Badge } from "@/components/ui/badge";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Upload, MapPinned, Lightbulb } from "lucide-react";
+
+const brl = (v: number) =>
+  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+
+function RankRow({ pos, bairro, valor, onClick, ativo }: { pos?: number; bairro: string; valor: string; onClick: () => void; ativo: boolean }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-left transition-colors ${
+        ativo ? "border border-primary/40 bg-primary/15" : "border border-transparent hover:bg-muted/50"
+      }`}
+    >
+      {pos != null && <span className="w-4 text-xs text-muted-foreground">{pos}</span>}
+      <span className="flex-1 truncate text-sm font-medium">{bairro}</span>
+      <Badge variant="secondary">{valor}</Badge>
+    </button>
+  );
+}
 import type { BairroPoint, UnidadePoint } from "@/components/PatientMap";
 
 const PatientMap = lazy(() => import("@/components/PatientMap"));
