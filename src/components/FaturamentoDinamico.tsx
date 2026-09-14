@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { DashboardDateFilter } from "@/components/DashboardDateFilter";
 import { useFilters } from "@/lib/filters-context";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
