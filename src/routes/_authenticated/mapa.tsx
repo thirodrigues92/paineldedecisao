@@ -247,6 +247,14 @@ function MapaPage() {
     [bairros, cidadeFoco],
   );
 
+  const rankingBairros = useMemo(
+    () =>
+      bairrosView
+        .slice()
+        .sort((a, b) => (metric === "faturamento" ? b.faturamento - a.faturamento : b.pacientes - a.pacientes)),
+    [bairrosView, metric],
+  );
+
   const detalhe = bairros.find((b) => b.key === selected) ?? null;
 
   return (
