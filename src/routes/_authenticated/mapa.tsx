@@ -331,6 +331,14 @@ function MapaPage() {
         </CardContent>
       </Card>
 
+      <Tabs value={aba} onValueChange={(v) => setAba(v as typeof aba)} className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="mapa">Mapa de calor</TabsTrigger>
+          <TabsTrigger value="bairros">Por bairro</TabsTrigger>
+          <TabsTrigger value="categoria">Faturamento por categoria</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="mapa" className="mt-0">
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-4">
         <Card>
           <CardContent className="p-3">
