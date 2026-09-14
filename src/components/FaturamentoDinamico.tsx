@@ -73,6 +73,14 @@ function isKeyMetrica(key: string): key is Metrica {
 
 export function FaturamentoDinamicoPage() {
   const filters = useFilters();
+  const mesPadraoAplicado = useRef(false);
+
+  useEffect(() => {
+    if (mesPadraoAplicado.current) return;
+    mesPadraoAplicado.current = true;
+    filters.setPreset("month");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [linha, setLinha] = useState<Dimensao>("profissional");
   const [coluna, setColuna] = useState<Dimensao | "none">("none");
   const [metricas, setMetricas] = useState<Metrica[]>(["valor_faturado"]);
