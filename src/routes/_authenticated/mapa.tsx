@@ -43,6 +43,8 @@ function MapaPage() {
   const [faixa, setFaixa] = useState<[number, number]>([0, 100]);
   const [convenio, setConvenio] = useState<"todos" | "convenio" | "particular">("todos");
   const [cidadeFoco, setCidadeFoco] = useState<string>("Rio Verde");
+  const [categoria, setCategoria] = useState<string>("__all__");
+  const [aba, setAba] = useState<"mapa" | "bairros" | "categoria">("mapa");
   const [showUnits, setShowUnits] = useState(true);
   const [somenteObesos, setSomenteObesos] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
@@ -80,6 +82,27 @@ function MapaPage() {
     return [...m.keys()].sort();
   }, [ags.data]);
 
+  /** Faturamento por paciente, separado por categoria (grupo_nome da produção). */
+  const { porPaciente, categoriasDisponiveis } = useMemo(() => {
+    const porPaciente = new Map<number, { total: number; cat: Map<string, number> }>();
+    const cats = new Map<string, number>();
+    for (const r of producao.data ?? []) {
+      const pid = Number(r.paciente_id);
+      if (!pid) continue;
+      const categoria = (r.grupo_nome || "Não classificado").trim();
+      const valor = Number(r.valor || 0);
+      cats.set(categoria, (cats.get(categoria) ?? 0) + valor);
+      let e = porPaciente.get(pid);
+      if (!e) { e = { total: 0, cat: new Map() }; porPaciente.set(pid, e); }
+      e.total += valor;
+      e.cat.set(categoria, (e.cat.get(categoria) ?? 0) + valor);
+    }
+    return {
+      porPaciente,
+      categoriasDisponiveis: [...cats.entries()].sort((a, b) => b[1] - a[1]).map(([nome]) => nome),
+    };
+  }, [producao.data]);
+
   const { bairros, semGeo, totalPacientes } = useMemo(() => {
     const pacMap = new Map<number, PacienteGeo>();
     for (const p of pacientes.data ?? []) pacMap.set(p.paciente_id, p);
@@ -93,14 +116,23 @@ function MapaPage() {
       return true;
     };
 
+    const catAtiva = categoria !== "__all__";
+    const valorDoPaciente = (pid: number) => {
+      const e = porPaciente.get(pid);
+      if (!e) return 0;
+      return catAtiva ? (e.cat.get(categoria) ?? 0) : e.total;
+    };
+    const pacienteNaCategoria = (pid: number) => !catAtiva || (porPaciente.get(pid)?.cat.has(categoria) ?? false);
+
     type Acc = {
       bairro: string; cidade: string; lat: number; lng: number;
       pacientes: Set<number>; demanda: number; faturamento: number; noShow: number;
-      esp: Map<string, number>;
+      esp: Map<string, number>; cat: Map<string, number>;
     };
     const acc = new Map<string, Acc>();
     let semCoord = 0;
     const contados = new Set<number>();
+    const jaSomado = new Set<string>();
 
     for (const a of ags.data ?? []) {
       if (especialidade !== "__all__" && a.especialidades?.nome !== especialidade) continue;
@@ -108,6 +140,7 @@ function MapaPage() {
       if (!pid) continue;
       const p = pacMap.get(pid);
       if (!p || !passaPerfil(p)) continue;
+      if (!pacienteNaCategoria(pid)) continue;
       contados.add(pid);
       if (p.latitude == null || p.longitude == null) { semCoord++; continue; }
       const cidade = normalizarCidade(p.cidade);
@@ -118,33 +151,41 @@ function MapaPage() {
         e = {
           bairro, cidade,
           lat: Number(p.latitude), lng: Number(p.longitude),
-          pacientes: new Set(), demanda: 0, faturamento: 0, noShow: 0, esp: new Map(),
+          pacientes: new Set(), demanda: 0, faturamento: 0, noShow: 0, esp: new Map(), cat: new Map(),
         };
         acc.set(key, e);
       }
       e.pacientes.add(pid);
       e.demanda += 1;
-      e.faturamento += (producao.data ?? []).filter((r) => r.paciente_id === pid).reduce((sum, r) => sum + Number(r.valor || 0), 0);
+      const somaKey = `${key}#${pid}`;
+      if (!jaSomado.has(somaKey)) {
+        jaSomado.add(somaKey);
+        e.faturamento += valorDoPaciente(pid);
+        const det = porPaciente.get(pid);
+        if (det) for (const [c, v] of det.cat) e.cat.set(c, (e.cat.get(c) ?? 0) + v);
+      }
       if (a.status_agendamento?.categoria === "no_show") e.noShow += 1;
       const nome = a.especialidades?.nome ?? "Sem especialidade";
       e.esp.set(nome, (e.esp.get(nome) ?? 0) + 1);
     }
 
-    const list: (BairroPoint & { noShowPct: number })[] = [...acc.entries()].map(([key, e]) => {
-      const top = [...e.esp.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? "—";
-      const dist = unidadePoints.length
-        ? Math.min(...unidadePoints.map((u) => distanceKm(e.lat, e.lng, u.lat, u.lng)))
-        : null;
-      return {
-        key, bairro: e.bairro, cidade: e.cidade, lat: e.lat, lng: e.lng,
-        pacientes: e.pacientes.size, demanda: e.demanda, faturamento: e.faturamento,
-        topEspecialidade: top, distanciaKm: dist,
-        noShowPct: e.demanda ? (e.noShow / e.demanda) * 100 : 0,
-      };
-    }).sort((a, b) => (metric === "faturamento" ? b.faturamento - a.faturamento : b.pacientes - a.pacientes));
+    const list: (BairroPoint & { noShowPct: number; categorias: Array<[string, number]> })[] =
+      [...acc.entries()].map(([key, e]) => {
+        const top = [...e.esp.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? "—";
+        const dist = unidadePoints.length
+          ? Math.min(...unidadePoints.map((u) => distanceKm(e.lat, e.lng, u.lat, u.lng)))
+          : null;
+        return {
+          key, bairro: e.bairro, cidade: e.cidade, lat: e.lat, lng: e.lng,
+          pacientes: e.pacientes.size, demanda: e.demanda, faturamento: e.faturamento,
+          topEspecialidade: top, distanciaKm: dist,
+          noShowPct: e.demanda ? (e.noShow / e.demanda) * 100 : 0,
+          categorias: [...e.cat.entries()].sort((a, b) => b[1] - a[1]),
+        };
+      }).sort((a, b) => (metric === "faturamento" ? b.faturamento - a.faturamento : b.pacientes - a.pacientes));
 
     return { bairros: list, semGeo: semCoord, totalPacientes: contados.size };
-  }, [ags.data, pacientes.data, producao.data, especialidade, faixa, convenio, somenteObesos, unidadePoints]);
+  }, [ags.data, pacientes.data, porPaciente, categoria, especialidade, faixa, convenio, somenteObesos, unidadePoints, metric]);
 
   const insights = useMemo(() => {
     const out: string[] = [];
