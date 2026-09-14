@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect, useRouterState } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -16,6 +16,9 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 function AuthenticatedLayout() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const exibirFiltrosGlobais = pathname !== "/faturamento-dinamico";
+
   return (
     <FiltersProvider>
       <SidebarProvider>
@@ -26,7 +29,7 @@ function AuthenticatedLayout() {
               <SidebarTrigger />
               <span className="text-sm text-muted-foreground">Painel de Decisão Clínica</span>
             </header>
-            <GlobalFilters />
+            {exibirFiltrosGlobais && <GlobalFilters />}
             <main className="flex-1 p-6">
               <Outlet />
             </main>

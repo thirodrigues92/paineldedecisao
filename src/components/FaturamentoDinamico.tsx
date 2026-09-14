@@ -9,8 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from "recharts";
-import { RefreshCw, LayoutGrid, BarChart2, SlidersHorizontal, Filter, FilterX, Check, Users, CalendarX } from "lucide-react";
-import { GlobalFilters } from "@/components/GlobalFilters";
+import { RefreshCw, LayoutGrid, BarChart2, SlidersHorizontal, Filter, FilterX, Check, Users, CalendarX, CalendarRange, Shapes } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Badge } from "@/components/ui/badge";
@@ -336,7 +335,7 @@ export function FaturamentoDinamicoPage() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <div className="p-6 space-y-6 flex-1 max-w-7xl mx-auto w-full">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div>
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
               <SlidersHorizontal className="w-8 h-8" />
@@ -345,9 +344,6 @@ export function FaturamentoDinamicoPage() {
             <p className="text-muted-foreground mt-1">
               Análise flexível tipo "Tabela Dinâmica" (Pivot) sobre a produção da clínica.
             </p>
-          </div>
-          <div className="shrink-0">
-            <GlobalFilters />
           </div>
         </div>
 
@@ -609,94 +605,122 @@ export function FaturamentoDinamicoPage() {
           </TabsContent>
 
           <TabsContent value="chart" className="p-0 outline-none">
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  {!umaMetrica
-                    ? `Comparativo de métricas por ${DIMENSAO_LABELS[linha]}`
-                    : `${METRICA_LABELS[metricaUnica as Metrica]} por ${DIMENSAO_LABELS[linha]}`}
-                </CardTitle>
-                <CardDescription>
-                  {coluna !== "none" && umaMetrica ? (
-                    <>Segmentado por {DIMENSAO_LABELS[coluna as Dimensao]}</>
-                  ) : coluna !== "none" ? (
-                    <>Barras agrupadas representam os totais de cada métrica. O detalhamento por {DIMENSAO_LABELS[coluna as Dimensao]} está na aba Tabela.</>
-                  ) : (
-                    <>Métricas: {metricas.map((m) => METRICA_LABELS[m]).join(" • ")}</>
-                  )}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pt-4">
-                {graficoData.length === 0 ? (
-                  <div className="h-[400px] flex items-center justify-center text-muted-foreground">
-                    Sem dados para plotar o gráfico.
-                  </div>
-                ) : (
-                  <div className="h-[500px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={graficoData.slice(0, 50)}
-                        margin={{ top: 20, right: 30, left: 40, bottom: 80 }}
-                        barCategoryGap="18%"
-                      >
-                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
-                        <XAxis
-                          dataKey="name"
-                          tick={{ fontSize: 11 }}
-                          angle={-45}
-                          textAnchor="end"
-                          interval={0}
-                          height={80}
-                          className="fill-muted-foreground"
-                        />
-                        <YAxis
-                          domain={[0, "auto"]}
-                          tickFormatter={(value: number) => formatEixo(value)}
-                          className="fill-muted-foreground"
-                          tick={{ fontSize: 11 }}
-                          width={70}
-                        />
-                        <RechartsTooltip
-                          formatter={(value: any, name: any) => tooltipFormatter(value, name)}
-                          cursor={{ fill: "var(--accent)", opacity: 0.2 }}
-                          contentStyle={{ backgroundColor: "var(--background)", borderColor: "var(--border)", borderRadius: "6px" }}
-                        />
-                        <Legend
-                          onClick={(payload: any) => toggleSerie(payload)}
-                          wrapperStyle={{ cursor: "pointer", paddingTop: "16px" }}
-                        />
-                        {barKeys.map((k, i) => {
-                          const cor = CHART_COLORS[i % CHART_COLORS.length];
-                          const rotulo = isKeyMetrica(k) ? METRICA_LABELS[k] : k;
-                          return (
-                            <Bar
-                              key={k}
-                              dataKey={k}
-                              name={rotulo}
-                              fill={cor}
-                              stackId={stacked ? "a" : undefined}
-                              radius={[4, 4, 0, 0]}
-                              hide={hiddenSeries.has(k)}
+            <Tabs defaultValue="categoria" className="w-full">
+              <TabsList className="mb-4 grid h-auto w-full grid-cols-1 gap-1 p-1 sm:grid-cols-2 xl:grid-cols-4">
+                <TabsTrigger value="categoria" className="min-h-10 gap-2 whitespace-normal py-2">
+                  <Shapes className="h-4 w-4 shrink-0" /> Faturamento por categoria
+                </TabsTrigger>
+                <TabsTrigger value="profissional" className="min-h-10 gap-2 whitespace-normal py-2">
+                  <Users className="h-4 w-4 shrink-0" /> Faturamento por profissional
+                </TabsTrigger>
+                <TabsTrigger value="mensal" className="min-h-10 gap-2 whitespace-normal py-2">
+                  <CalendarRange className="h-4 w-4 shrink-0" /> Comparativo mensal
+                </TabsTrigger>
+                <TabsTrigger value="dinamico" className="min-h-10 gap-2 whitespace-normal py-2">
+                  <BarChart2 className="h-4 w-4 shrink-0" /> Gráfico da tabela dinâmica
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="categoria" className="m-0 outline-none">
+                <FaturamentoCategoriaComparativo />
+              </TabsContent>
+
+              <TabsContent value="profissional" className="m-0 outline-none">
+                <FaturamentoProfissionalComparativo />
+              </TabsContent>
+
+              <TabsContent value="mensal" className="m-0 outline-none">
+                <ComparativoMensal />
+              </TabsContent>
+
+              <TabsContent value="dinamico" className="m-0 outline-none">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>
+                      {!umaMetrica
+                        ? `Comparativo de métricas por ${DIMENSAO_LABELS[linha]}`
+                        : `${METRICA_LABELS[metricaUnica as Metrica]} por ${DIMENSAO_LABELS[linha]}`}
+                    </CardTitle>
+                    <CardDescription>
+                      {coluna !== "none" && umaMetrica ? (
+                        <>Segmentado por {DIMENSAO_LABELS[coluna as Dimensao]}</>
+                      ) : coluna !== "none" ? (
+                        <>Barras agrupadas representam os totais de cada métrica. O detalhamento por {DIMENSAO_LABELS[coluna as Dimensao]} está na aba Tabela.</>
+                      ) : (
+                        <>Métricas: {metricas.map((m) => METRICA_LABELS[m]).join(" • ")}</>
+                      )}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    {graficoData.length === 0 ? (
+                      <div className="h-[400px] flex items-center justify-center text-muted-foreground">
+                        Sem dados para plotar o gráfico.
+                      </div>
+                    ) : (
+                      <div className="h-[500px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
+                            data={graficoData.slice(0, 50)}
+                            margin={{ top: 20, right: 30, left: 40, bottom: 80 }}
+                            barCategoryGap="18%"
+                          >
+                            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
+                            <XAxis
+                              dataKey="name"
+                              tick={{ fontSize: 11 }}
+                              angle={-45}
+                              textAnchor="end"
+                              interval={0}
+                              height={80}
+                              className="fill-muted-foreground"
                             />
-                          );
-                        })}
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                )}
-                {graficoData.length > 50 && (
-                  <p className="text-xs text-muted-foreground text-center mt-4">
-                    *O gráfico exibe os top 50 registros principais. Ajuste os filtros detalhados para refinar sua análise.
-                  </p>
-                )}
-                <p className="text-xs text-muted-foreground text-center mt-2">
-                  Dica: clique nos itens da legenda para mostrar ou ocultar séries do gráfico.
-                </p>
-              </CardContent>
-            </Card>
-            <FaturamentoCategoriaComparativo />
-            <FaturamentoProfissionalComparativo />
-            <ComparativoMensal />
+                            <YAxis
+                              domain={[0, "auto"]}
+                              tickFormatter={(value: number) => formatEixo(value)}
+                              className="fill-muted-foreground"
+                              tick={{ fontSize: 11 }}
+                              width={70}
+                            />
+                            <RechartsTooltip
+                              formatter={(value: any, name: any) => tooltipFormatter(value, name)}
+                              cursor={{ fill: "var(--accent)", opacity: 0.2 }}
+                              contentStyle={{ backgroundColor: "var(--background)", borderColor: "var(--border)", borderRadius: "6px" }}
+                            />
+                            <Legend
+                              onClick={(payload: any) => toggleSerie(payload)}
+                              wrapperStyle={{ cursor: "pointer", paddingTop: "16px" }}
+                            />
+                            {barKeys.map((k, i) => {
+                              const cor = CHART_COLORS[i % CHART_COLORS.length];
+                              const rotulo = isKeyMetrica(k) ? METRICA_LABELS[k] : k;
+                              return (
+                                <Bar
+                                  key={k}
+                                  dataKey={k}
+                                  name={rotulo}
+                                  fill={cor}
+                                  stackId={stacked ? "a" : undefined}
+                                  radius={[4, 4, 0, 0]}
+                                  hide={hiddenSeries.has(k)}
+                                />
+                              );
+                            })}
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
+                    {graficoData.length > 50 && (
+                      <p className="text-xs text-muted-foreground text-center mt-4">
+                        *O gráfico exibe os top 50 registros principais. Ajuste os filtros detalhados para refinar sua análise.
+                      </p>
+                    )}
+                    <p className="text-xs text-muted-foreground text-center mt-2">
+                      Dica: clique nos itens da legenda para mostrar ou ocultar séries do gráfico.
+                    </p>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
           </TabsContent>
 
           <TabsContent value="ausentes" className="p-0 outline-none">
