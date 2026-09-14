@@ -729,9 +729,6 @@ export const Route = createFileRoute("/public-dashboard")({
   component: () => (
     <FiltersProvider>
       <div className="min-h-screen bg-background p-4 md:p-8">
-        <header className="mb-8 border-b pb-4">
-          <GlobalFilters />
-        </header>
         <main className="max-w-7xl mx-auto">
           <Tabs defaultValue="visao-executiva" className="w-full">
             <TabsList className="grid grid-cols-2 w-full max-w-md mb-6">
@@ -743,6 +740,9 @@ export const Route = createFileRoute("/public-dashboard")({
               </TabsTrigger>
             </TabsList>
             <TabsContent value="visao-executiva" className="p-0 outline-none">
+              <div className="mb-6 border-b pb-4">
+                <GlobalFilters />
+              </div>
               <PublicDashboardContent />
             </TabsContent>
             <TabsContent value="faturamento-dinamico" className="p-0 outline-none">
