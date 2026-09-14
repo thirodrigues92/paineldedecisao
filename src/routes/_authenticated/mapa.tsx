@@ -20,7 +20,26 @@ import { Badge } from "@/components/ui/badge";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Upload, MapPinned, Lightbulb } from "lucide-react";
+
+const brl = (v: number) =>
+  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+
+function RankRow({ pos, bairro, valor, onClick, ativo }: { pos?: number; bairro: string; valor: string; onClick: () => void; ativo: boolean }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-left transition-colors ${
+        ativo ? "border border-primary/40 bg-primary/15" : "border border-transparent hover:bg-muted/50"
+      }`}
+    >
+      {pos != null && <span className="w-4 text-xs text-muted-foreground">{pos}</span>}
+      <span className="flex-1 truncate text-sm font-medium">{bairro}</span>
+      <Badge variant="secondary">{valor}</Badge>
+    </button>
+  );
+}
 import type { BairroPoint, UnidadePoint } from "@/components/PatientMap";
 
 const PatientMap = lazy(() => import("@/components/PatientMap"));
@@ -43,6 +62,8 @@ function MapaPage() {
   const [faixa, setFaixa] = useState<[number, number]>([0, 100]);
   const [convenio, setConvenio] = useState<"todos" | "convenio" | "particular">("todos");
   const [cidadeFoco, setCidadeFoco] = useState<string>("Rio Verde");
+  const [categoria, setCategoria] = useState<string>("__all__");
+  const [aba, setAba] = useState<"mapa" | "bairros" | "categoria">("mapa");
   const [showUnits, setShowUnits] = useState(true);
   const [somenteObesos, setSomenteObesos] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
@@ -80,6 +101,27 @@ function MapaPage() {
     return [...m.keys()].sort();
   }, [ags.data]);
 
+  /** Faturamento por paciente, separado por categoria (grupo_nome da produção). */
+  const { porPaciente, categoriasDisponiveis } = useMemo(() => {
+    const porPaciente = new Map<number, { total: number; cat: Map<string, number> }>();
+    const cats = new Map<string, number>();
+    for (const r of producao.data ?? []) {
+      const pid = Number(r.paciente_id);
+      if (!pid) continue;
+      const categoria = (r.grupo_nome || "Não classificado").trim();
+      const valor = Number(r.valor || 0);
+      cats.set(categoria, (cats.get(categoria) ?? 0) + valor);
+      let e = porPaciente.get(pid);
+      if (!e) { e = { total: 0, cat: new Map() }; porPaciente.set(pid, e); }
+      e.total += valor;
+      e.cat.set(categoria, (e.cat.get(categoria) ?? 0) + valor);
+    }
+    return {
+      porPaciente,
+      categoriasDisponiveis: [...cats.entries()].sort((a, b) => b[1] - a[1]).map(([nome]) => nome),
+    };
+  }, [producao.data]);
+
   const { bairros, semGeo, totalPacientes } = useMemo(() => {
     const pacMap = new Map<number, PacienteGeo>();
     for (const p of pacientes.data ?? []) pacMap.set(p.paciente_id, p);
@@ -93,14 +135,23 @@ function MapaPage() {
       return true;
     };
 
+    const catAtiva = categoria !== "__all__";
+    const valorDoPaciente = (pid: number) => {
+      const e = porPaciente.get(pid);
+      if (!e) return 0;
+      return catAtiva ? (e.cat.get(categoria) ?? 0) : e.total;
+    };
+    const pacienteNaCategoria = (pid: number) => !catAtiva || (porPaciente.get(pid)?.cat.has(categoria) ?? false);
+
     type Acc = {
       bairro: string; cidade: string; lat: number; lng: number;
       pacientes: Set<number>; demanda: number; faturamento: number; noShow: number;
-      esp: Map<string, number>;
+      esp: Map<string, number>; cat: Map<string, number>;
     };
     const acc = new Map<string, Acc>();
     let semCoord = 0;
     const contados = new Set<number>();
+    const jaSomado = new Set<string>();
 
     for (const a of ags.data ?? []) {
       if (especialidade !== "__all__" && a.especialidades?.nome !== especialidade) continue;
@@ -108,6 +159,7 @@ function MapaPage() {
       if (!pid) continue;
       const p = pacMap.get(pid);
       if (!p || !passaPerfil(p)) continue;
+      if (!pacienteNaCategoria(pid)) continue;
       contados.add(pid);
       if (p.latitude == null || p.longitude == null) { semCoord++; continue; }
       const cidade = normalizarCidade(p.cidade);
@@ -118,33 +170,41 @@ function MapaPage() {
         e = {
           bairro, cidade,
           lat: Number(p.latitude), lng: Number(p.longitude),
-          pacientes: new Set(), demanda: 0, faturamento: 0, noShow: 0, esp: new Map(),
+          pacientes: new Set(), demanda: 0, faturamento: 0, noShow: 0, esp: new Map(), cat: new Map(),
         };
         acc.set(key, e);
       }
       e.pacientes.add(pid);
       e.demanda += 1;
-      e.faturamento += (producao.data ?? []).filter((r) => r.paciente_id === pid).reduce((sum, r) => sum + Number(r.valor || 0), 0);
+      const somaKey = `${key}#${pid}`;
+      if (!jaSomado.has(somaKey)) {
+        jaSomado.add(somaKey);
+        e.faturamento += valorDoPaciente(pid);
+        const det = porPaciente.get(pid);
+        if (det) for (const [c, v] of det.cat) e.cat.set(c, (e.cat.get(c) ?? 0) + v);
+      }
       if (a.status_agendamento?.categoria === "no_show") e.noShow += 1;
       const nome = a.especialidades?.nome ?? "Sem especialidade";
       e.esp.set(nome, (e.esp.get(nome) ?? 0) + 1);
     }
 
-    const list: (BairroPoint & { noShowPct: number })[] = [...acc.entries()].map(([key, e]) => {
-      const top = [...e.esp.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? "—";
-      const dist = unidadePoints.length
-        ? Math.min(...unidadePoints.map((u) => distanceKm(e.lat, e.lng, u.lat, u.lng)))
-        : null;
-      return {
-        key, bairro: e.bairro, cidade: e.cidade, lat: e.lat, lng: e.lng,
-        pacientes: e.pacientes.size, demanda: e.demanda, faturamento: e.faturamento,
-        topEspecialidade: top, distanciaKm: dist,
-        noShowPct: e.demanda ? (e.noShow / e.demanda) * 100 : 0,
-      };
-    }).sort((a, b) => (metric === "faturamento" ? b.faturamento - a.faturamento : b.pacientes - a.pacientes));
+    const list: (BairroPoint & { noShowPct: number; categorias: Array<[string, number]> })[] =
+      [...acc.entries()].map(([key, e]) => {
+        const top = [...e.esp.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? "—";
+        const dist = unidadePoints.length
+          ? Math.min(...unidadePoints.map((u) => distanceKm(e.lat, e.lng, u.lat, u.lng)))
+          : null;
+        return {
+          key, bairro: e.bairro, cidade: e.cidade, lat: e.lat, lng: e.lng,
+          pacientes: e.pacientes.size, demanda: e.demanda, faturamento: e.faturamento,
+          topEspecialidade: top, distanciaKm: dist,
+          noShowPct: e.demanda ? (e.noShow / e.demanda) * 100 : 0,
+          categorias: [...e.cat.entries()].sort((a, b) => b[1] - a[1]),
+        };
+      }).sort((a, b) => (metric === "faturamento" ? b.faturamento - a.faturamento : b.pacientes - a.pacientes));
 
     return { bairros: list, semGeo: semCoord, totalPacientes: contados.size };
-  }, [ags.data, pacientes.data, producao.data, especialidade, faixa, convenio, somenteObesos, unidadePoints]);
+  }, [ags.data, pacientes.data, porPaciente, categoria, especialidade, faixa, convenio, somenteObesos, unidadePoints, metric]);
 
   const insights = useMemo(() => {
     const out: string[] = [];
@@ -185,6 +245,14 @@ function MapaPage() {
   const bairrosView = useMemo(
     () => (cidadeFoco === "__all__" ? bairros : bairros.filter((b) => b.cidade === cidadeFoco)),
     [bairros, cidadeFoco],
+  );
+
+  const rankingBairros = useMemo(
+    () =>
+      bairrosView
+        .slice()
+        .sort((a, b) => (metric === "faturamento" ? b.faturamento - a.faturamento : b.pacientes - a.pacientes)),
+    [bairrosView, metric],
   );
 
   const detalhe = bairros.find((b) => b.key === selected) ?? null;
@@ -271,6 +339,17 @@ function MapaPage() {
             </Select>
           </div>
 
+          <div className="w-[230px]">
+            <Label className="text-xs text-muted-foreground">Calor por categoria de faturamento</Label>
+            <Select value={categoria} onValueChange={setCategoria}>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectContent className="max-h-72">
+                <SelectItem value="__all__">Todas as categorias</SelectItem>
+                {categoriasDisponiveis.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="ml-auto text-xs text-muted-foreground">
             {totalPacientes} pacientes no filtro · {bairrosView.length} bairros
             {cidadeFoco !== "__all__" && <> em {cidadeFoco}</>}
@@ -279,6 +358,14 @@ function MapaPage() {
         </CardContent>
       </Card>
 
+      <Tabs value={aba} onValueChange={(v) => setAba(v as typeof aba)} className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="mapa">Mapa de calor</TabsTrigger>
+          <TabsTrigger value="bairros">Por bairro</TabsTrigger>
+          <TabsTrigger value="categoria">Faturamento por categoria</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="mapa" className="mt-0">
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-4">
         <Card>
           <CardContent className="p-3">
@@ -336,17 +423,160 @@ function MapaPage() {
         </Card>
       </div>
 
-      {detalhe && (
-        <Card>
-          <CardHeader><CardTitle className="text-base">{detalhe.bairro} — {detalhe.cidade}</CardTitle></CardHeader>
-          <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-            <Metric label="Pacientes" value={String(detalhe.pacientes)} />
-            <Metric label="Agendamentos" value={String(detalhe.demanda)} />
-            <Metric label="Especialidade líder" value={detalhe.topEspecialidade} />
-            <Metric label="Distância da unidade" value={detalhe.distanciaKm != null ? `${detalhe.distanciaKm.toFixed(1)} km` : "—"} />
-          </CardContent>
-        </Card>
-      )}
+          {detalhe && (
+            <Card className="mt-4">
+              <CardHeader><CardTitle className="text-base">{detalhe.bairro} — {detalhe.cidade}</CardTitle></CardHeader>
+              <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <Metric label="Pacientes" value={String(detalhe.pacientes)} />
+                <Metric label="Agendamentos" value={String(detalhe.demanda)} />
+                <Metric label="Especialidade líder" value={detalhe.topEspecialidade} />
+                <Metric label="Distância da unidade" value={detalhe.distanciaKm != null ? `${detalhe.distanciaKm.toFixed(1)} km` : "—"} />
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* ---------- Janela: Por bairro ---------- */}
+        <TabsContent value="bairros" className="mt-0">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">
+                Bairros de {cidadeFoco === "__all__" ? "todas as cidades" : cidadeFoco}
+                {categoria !== "__all__" && <> · categoria {categoria}</>}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              {loading ? <Skeleton className="m-4 h-64" /> : (
+                <div className="max-h-[600px] overflow-auto">
+                  <table className="w-full text-sm">
+                    <thead className="sticky top-0 bg-muted/60 backdrop-blur">
+                      <tr className="text-left">
+                        <th className="px-3 py-2">#</th>
+                        <th className="px-3 py-2">Bairro</th>
+                        <th className="px-3 py-2">Cidade</th>
+                        <th className="px-3 py-2 text-right">Pacientes</th>
+                        <th className="px-3 py-2 text-right">Atendimentos</th>
+                        <th className="px-3 py-2 text-right">Faturamento</th>
+                        <th className="px-3 py-2">Especialidade líder</th>
+                        <th className="px-3 py-2 text-right">Distância</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rankingBairros.map((b, i) => (
+                        <tr
+                          key={b.key}
+                          onClick={() => { setSelected(b.key); setAba("mapa"); }}
+                          className="cursor-pointer border-t border-border hover:bg-muted/40"
+                        >
+                          <td className="px-3 py-2 text-muted-foreground">{i + 1}</td>
+                          <td className="px-3 py-2 font-medium">{b.bairro}</td>
+                          <td className="px-3 py-2 text-muted-foreground">{b.cidade}</td>
+                          <td className="px-3 py-2 text-right">{b.pacientes}</td>
+                          <td className="px-3 py-2 text-right">{b.demanda}</td>
+                          <td className="px-3 py-2 text-right">{brl(b.faturamento)}</td>
+                          <td className="px-3 py-2 text-muted-foreground">{b.topEspecialidade}</td>
+                          <td className="px-3 py-2 text-right text-muted-foreground">
+                            {b.distanciaKm != null ? `${b.distanciaKm.toFixed(1)} km` : "—"}
+                          </td>
+                        </tr>
+                      ))}
+                      {!rankingBairros.length && (
+                        <tr><td colSpan={8} className="px-3 py-6 text-center text-muted-foreground">Sem dados.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ---------- Janela: Faturamento por categoria ---------- */}
+        <TabsContent value="categoria" className="mt-0 space-y-4">
+          <Card>
+            <CardContent className="flex flex-wrap items-end gap-4 p-4">
+              <div className="w-[260px]">
+                <Label className="text-xs text-muted-foreground">Categoria de faturamento</Label>
+                <Select value={categoria} onValueChange={setCategoria}>
+                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    <SelectItem value="__all__">Todas as categorias</SelectItem>
+                    {categoriasDisponiveis.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <p className="text-xs text-muted-foreground max-w-md">
+                Escolha uma categoria (ex.: Cardiologia) para ver o mapa de calor e os bairros com mais e com
+                menos pacientes dessa categoria.
+              </p>
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-4">
+            <Card>
+              <CardContent className="p-3">
+                {loading || !mounted ? (
+                  <Skeleton className="h-[520px] w-full" />
+                ) : rankingBairros.length === 0 ? (
+                  <div className="h-[520px] grid place-items-center text-sm text-muted-foreground">
+                    Nenhum paciente dessa categoria com endereço geocodificado no período.
+                  </div>
+                ) : (
+                  <Suspense fallback={<Skeleton className="h-[520px] w-full" />}>
+                    <PatientMap
+                      mode="heat"
+                      bairros={rankingBairros}
+                      metric={metric}
+                      unidades={unidadePoints}
+                      showUnits={showUnits}
+                      selectedKey={selected}
+                      onSelect={setSelected}
+                      focusCity={cidadeFoco === "__all__" ? "Rio Verde" : cidadeFoco}
+                    />
+                  </Suspense>
+                )}
+              </CardContent>
+            </Card>
+
+            <div className="space-y-4">
+              <Card>
+                <CardHeader><CardTitle className="text-base">Onde há mais</CardTitle></CardHeader>
+                <CardContent className="space-y-1 p-3">
+                  {rankingBairros.slice(0, 8).map((b, i) => (
+                    <RankRow key={b.key} pos={i + 1} bairro={b.bairro} valor={metric === "faturamento" ? brl(b.faturamento) : `${b.pacientes} pac.`} onClick={() => setSelected(b.key)} ativo={selected === b.key} />
+                  ))}
+                  {!rankingBairros.length && <p className="text-sm text-muted-foreground">Sem dados.</p>}
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader><CardTitle className="text-base">Onde há menos</CardTitle></CardHeader>
+                <CardContent className="space-y-1 p-3">
+                  {rankingBairros.slice(-5).reverse().map((b) => (
+                    <RankRow key={b.key} bairro={b.bairro} valor={metric === "faturamento" ? brl(b.faturamento) : `${b.pacientes} pac.`} onClick={() => setSelected(b.key)} ativo={selected === b.key} />
+                  ))}
+                  {!rankingBairros.length && <p className="text-sm text-muted-foreground">Sem dados.</p>}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {detalhe && (
+            <Card>
+              <CardHeader><CardTitle className="text-base">{detalhe.bairro} — categorias faturadas</CardTitle></CardHeader>
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                {(detalhe.categorias ?? []).slice(0, 10).map(([c, v]) => (
+                  <div key={c} className="flex justify-between rounded-md border border-border bg-muted/30 px-3 py-2">
+                    <span className="truncate">{c}</span>
+                    <strong>{brl(v)}</strong>
+                  </div>
+                ))}
+                {!(detalhe.categorias ?? []).length && <p className="text-muted-foreground">Sem faturamento registrado.</p>}
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
+
 
       <Card>
         <CardHeader><CardTitle className="text-base flex items-center gap-2"><Lightbulb className="h-4 w-4 text-warning" /> Insights automáticos</CardTitle></CardHeader>
