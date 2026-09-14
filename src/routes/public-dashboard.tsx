@@ -30,8 +30,9 @@ import { GlobalFilters } from "@/components/GlobalFilters";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Eye, SlidersHorizontal } from "lucide-react";
+import { Eye, SlidersHorizontal, MapPinned } from "lucide-react";
 import { FaturamentoDinamicoPage } from "@/components/FaturamentoDinamico";
+import { MapaPacientes } from "@/components/MapaPacientes";
 
 
 function PublicDashboardContent() {
@@ -731,12 +732,15 @@ export const Route = createFileRoute("/public-dashboard")({
       <div className="min-h-screen bg-background p-4 md:p-8">
         <main className="max-w-7xl mx-auto">
           <Tabs defaultValue="visao-executiva" className="w-full">
-            <TabsList className="grid grid-cols-2 w-full max-w-md mb-6">
+            <TabsList className="grid grid-cols-3 w-full max-w-2xl mb-6">
               <TabsTrigger value="visao-executiva" className="flex items-center gap-2">
                 <Eye className="w-4 h-4" /> Visão Executiva
               </TabsTrigger>
               <TabsTrigger value="faturamento-dinamico" className="flex items-center gap-2">
                 <SlidersHorizontal className="w-4 h-4" /> Faturamento Dinâmico
+              </TabsTrigger>
+              <TabsTrigger value="mapa-pacientes" className="flex items-center gap-2">
+                <MapPinned className="w-4 h-4" /> Mapa de Pacientes
               </TabsTrigger>
             </TabsList>
             <TabsContent value="visao-executiva" className="p-0 outline-none">
@@ -747,6 +751,9 @@ export const Route = createFileRoute("/public-dashboard")({
             </TabsContent>
             <TabsContent value="faturamento-dinamico" className="p-0 outline-none">
               <FaturamentoDinamicoPage />
+            </TabsContent>
+            <TabsContent value="mapa-pacientes" className="p-0 outline-none">
+              <MapaPacientes showUploader={false} />
             </TabsContent>
           </Tabs>
         </main>
