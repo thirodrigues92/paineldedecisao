@@ -396,17 +396,160 @@ function MapaPage() {
         </Card>
       </div>
 
-      {detalhe && (
-        <Card>
-          <CardHeader><CardTitle className="text-base">{detalhe.bairro} — {detalhe.cidade}</CardTitle></CardHeader>
-          <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-            <Metric label="Pacientes" value={String(detalhe.pacientes)} />
-            <Metric label="Agendamentos" value={String(detalhe.demanda)} />
-            <Metric label="Especialidade líder" value={detalhe.topEspecialidade} />
-            <Metric label="Distância da unidade" value={detalhe.distanciaKm != null ? `${detalhe.distanciaKm.toFixed(1)} km` : "—"} />
-          </CardContent>
-        </Card>
-      )}
+          {detalhe && (
+            <Card className="mt-4">
+              <CardHeader><CardTitle className="text-base">{detalhe.bairro} — {detalhe.cidade}</CardTitle></CardHeader>
+              <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <Metric label="Pacientes" value={String(detalhe.pacientes)} />
+                <Metric label="Agendamentos" value={String(detalhe.demanda)} />
+                <Metric label="Especialidade líder" value={detalhe.topEspecialidade} />
+                <Metric label="Distância da unidade" value={detalhe.distanciaKm != null ? `${detalhe.distanciaKm.toFixed(1)} km` : "—"} />
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* ---------- Janela: Por bairro ---------- */}
+        <TabsContent value="bairros" className="mt-0">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">
+                Bairros de {cidadeFoco === "__all__" ? "todas as cidades" : cidadeFoco}
+                {categoria !== "__all__" && <> · categoria {categoria}</>}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              {loading ? <Skeleton className="m-4 h-64" /> : (
+                <div className="max-h-[600px] overflow-auto">
+                  <table className="w-full text-sm">
+                    <thead className="sticky top-0 bg-muted/60 backdrop-blur">
+                      <tr className="text-left">
+                        <th className="px-3 py-2">#</th>
+                        <th className="px-3 py-2">Bairro</th>
+                        <th className="px-3 py-2">Cidade</th>
+                        <th className="px-3 py-2 text-right">Pacientes</th>
+                        <th className="px-3 py-2 text-right">Atendimentos</th>
+                        <th className="px-3 py-2 text-right">Faturamento</th>
+                        <th className="px-3 py-2">Especialidade líder</th>
+                        <th className="px-3 py-2 text-right">Distância</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rankingBairros.map((b, i) => (
+                        <tr
+                          key={b.key}
+                          onClick={() => { setSelected(b.key); setAba("mapa"); }}
+                          className="cursor-pointer border-t border-border hover:bg-muted/40"
+                        >
+                          <td className="px-3 py-2 text-muted-foreground">{i + 1}</td>
+                          <td className="px-3 py-2 font-medium">{b.bairro}</td>
+                          <td className="px-3 py-2 text-muted-foreground">{b.cidade}</td>
+                          <td className="px-3 py-2 text-right">{b.pacientes}</td>
+                          <td className="px-3 py-2 text-right">{b.demanda}</td>
+                          <td className="px-3 py-2 text-right">{brl(b.faturamento)}</td>
+                          <td className="px-3 py-2 text-muted-foreground">{b.topEspecialidade}</td>
+                          <td className="px-3 py-2 text-right text-muted-foreground">
+                            {b.distanciaKm != null ? `${b.distanciaKm.toFixed(1)} km` : "—"}
+                          </td>
+                        </tr>
+                      ))}
+                      {!rankingBairros.length && (
+                        <tr><td colSpan={8} className="px-3 py-6 text-center text-muted-foreground">Sem dados.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ---------- Janela: Faturamento por categoria ---------- */}
+        <TabsContent value="categoria" className="mt-0 space-y-4">
+          <Card>
+            <CardContent className="flex flex-wrap items-end gap-4 p-4">
+              <div className="w-[260px]">
+                <Label className="text-xs text-muted-foreground">Categoria de faturamento</Label>
+                <Select value={categoria} onValueChange={setCategoria}>
+                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    <SelectItem value="__all__">Todas as categorias</SelectItem>
+                    {categoriasDisponiveis.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <p className="text-xs text-muted-foreground max-w-md">
+                Escolha uma categoria (ex.: Cardiologia) para ver o mapa de calor e os bairros com mais e com
+                menos pacientes dessa categoria.
+              </p>
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-4">
+            <Card>
+              <CardContent className="p-3">
+                {loading || !mounted ? (
+                  <Skeleton className="h-[520px] w-full" />
+                ) : rankingBairros.length === 0 ? (
+                  <div className="h-[520px] grid place-items-center text-sm text-muted-foreground">
+                    Nenhum paciente dessa categoria com endereço geocodificado no período.
+                  </div>
+                ) : (
+                  <Suspense fallback={<Skeleton className="h-[520px] w-full" />}>
+                    <PatientMap
+                      mode="heat"
+                      bairros={rankingBairros}
+                      metric={metric}
+                      unidades={unidadePoints}
+                      showUnits={showUnits}
+                      selectedKey={selected}
+                      onSelect={setSelected}
+                      focusCity={cidadeFoco === "__all__" ? "Rio Verde" : cidadeFoco}
+                    />
+                  </Suspense>
+                )}
+              </CardContent>
+            </Card>
+
+            <div className="space-y-4">
+              <Card>
+                <CardHeader><CardTitle className="text-base">Onde há mais</CardTitle></CardHeader>
+                <CardContent className="space-y-1 p-3">
+                  {rankingBairros.slice(0, 8).map((b, i) => (
+                    <RankRow key={b.key} pos={i + 1} bairro={b.bairro} valor={metric === "faturamento" ? brl(b.faturamento) : `${b.pacientes} pac.`} onClick={() => setSelected(b.key)} ativo={selected === b.key} />
+                  ))}
+                  {!rankingBairros.length && <p className="text-sm text-muted-foreground">Sem dados.</p>}
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader><CardTitle className="text-base">Onde há menos</CardTitle></CardHeader>
+                <CardContent className="space-y-1 p-3">
+                  {rankingBairros.slice(-5).reverse().map((b) => (
+                    <RankRow key={b.key} bairro={b.bairro} valor={metric === "faturamento" ? brl(b.faturamento) : `${b.pacientes} pac.`} onClick={() => setSelected(b.key)} ativo={selected === b.key} />
+                  ))}
+                  {!rankingBairros.length && <p className="text-sm text-muted-foreground">Sem dados.</p>}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {detalhe && (
+            <Card>
+              <CardHeader><CardTitle className="text-base">{detalhe.bairro} — categorias faturadas</CardTitle></CardHeader>
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                {(detalhe.categorias ?? []).slice(0, 10).map(([c, v]) => (
+                  <div key={c} className="flex justify-between rounded-md border border-border bg-muted/30 px-3 py-2">
+                    <span className="truncate">{c}</span>
+                    <strong>{brl(v)}</strong>
+                  </div>
+                ))}
+                {!(detalhe.categorias ?? []).length && <p className="text-muted-foreground">Sem faturamento registrado.</p>}
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
+
 
       <Card>
         <CardHeader><CardTitle className="text-base flex items-center gap-2"><Lightbulb className="h-4 w-4 text-warning" /> Insights automáticos</CardTitle></CardHeader>
