@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { FaturamentoCategoriaComparativo } from "@/components/FaturamentoCategoriaComparativo";
 import { FaturamentoProfissionalComparativo } from "@/components/FaturamentoProfissionalComparativo";
 import { ComparativoMensal } from "@/components/ComparativoMensal";
+import { ComparativoPeriodosProfissionalCategoria } from "@/components/ComparativoPeriodosProfissionalCategoria";
 
 type Dimensao = "profissional" | "convenio" | "grupo_procedimento" | "procedimento" | "mes_ano";
 type Metrica = "valor_faturado" | "valor_recebido" | "quantidade";
