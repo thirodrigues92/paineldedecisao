@@ -62,8 +62,9 @@ export function DashboardDateFilter() {
   };
 
   const diff = differenceInDays(f.to, f.from) + 1;
-  const prevFrom = subDays(f.from, diff);
-  const prevTo = subDays(f.to, diff);
+  const isCustomCompare = Boolean(f.compareFrom && f.compareTo);
+  const prevFrom = f.compareFrom ?? subDays(f.from, diff);
+  const prevTo = f.compareTo ?? subDays(f.to, diff);
   
   const isRangeTooLarge = tempRange?.from && tempRange?.to && differenceInDays(tempRange.to, tempRange.from) > 180;
 
