@@ -626,6 +626,9 @@ export function FaturamentoDinamicoPage() {
                 <TabsTrigger value="mensal" className="min-h-10 gap-2 whitespace-normal py-2">
                   <CalendarRange className="h-4 w-4 shrink-0" /> Comparativo mensal
                 </TabsTrigger>
+                <TabsTrigger value="periodos" className="min-h-10 gap-2 whitespace-normal py-2">
+                  <TrendingUp className="h-4 w-4 shrink-0" /> Comparativo de períodos
+                </TabsTrigger>
                 <TabsTrigger value="dinamico" className="min-h-10 gap-2 whitespace-normal py-2">
                   <BarChart2 className="h-4 w-4 shrink-0" /> Gráfico da tabela dinâmica
                 </TabsTrigger>
