@@ -74,6 +74,9 @@ function DashboardPage() {
   const [detalheNovos, setDetalheNovos] = useState<boolean>(false);
   const [detalheNoShow, setDetalheNoShow] = useState<boolean>(false);
   const [detalheEspecialidade, setDetalheEspecialidade] = useState<string | null>(null);
+  const [comparacaoKpi, setComparacaoKpi] = useState<
+    "agendamentos" | "ocupacao" | "no_show" | "faturado" | "ticket" | "novos" | null
+  >(null);
 
   const diff = differenceInDays(f.to, f.from) + 1;
   const prevFrom = f.compareFrom ?? subDays(f.from, diff);
