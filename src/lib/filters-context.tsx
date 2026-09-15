@@ -22,6 +22,8 @@ export interface DashboardFilters {
   profissionalIds: number[];
   especialidadeIds: number[];
   convenioTipo: "todos" | "particular" | "convenio";
+  compareFrom?: Date;
+  compareTo?: Date;
 }
 
 function computeRange(preset: PresetPeriod): { from: Date; to: Date } {
@@ -69,6 +71,7 @@ interface Ctx extends DashboardFilters {
   setEspecialidades: (ids: number[]) => void;
   setConvenioTipo: (v: DashboardFilters["convenioTipo"]) => void;
   setRange: (from: Date, to: Date) => void;
+  setCompareRange: (from?: Date, to?: Date) => void;
 }
 
 const FiltersContext = createContext<Ctx | null>(null);
@@ -105,6 +108,8 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
   const [profissionalIds, setProfissionais] = useState<number[]>([]);
   const [especialidadeIds, setEspecialidades] = useState<number[]>([]);
   const [convenioTipo, setConvenioTipo] = useState<DashboardFilters["convenioTipo"]>("todos");
+  const [compareFrom, setCompareFrom] = useState<Date | undefined>(undefined);
+  const [compareTo, setCompareTo] = useState<Date | undefined>(undefined);
 
   // Sync to URL
   useEffect(() => {
@@ -138,11 +143,26 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const setCompareRange = (cf?: Date, ct?: Date) => {
+    if (!cf || !ct) {
+      setCompareFrom(undefined);
+      setCompareTo(undefined);
+      return;
+    }
+    const a = cf > ct ? ct : cf;
+    const b = cf > ct ? cf : ct;
+    const start = new Date(a); start.setHours(0, 0, 0, 0);
+    const end = new Date(b); end.setHours(23, 59, 59, 999);
+    setCompareFrom(start);
+    setCompareTo(end);
+  };
+
   return (
     <FiltersContext.Provider value={{
       preset, from, to, unidadeIds, profissionalIds, especialidadeIds, convenioTipo,
+      compareFrom, compareTo,
       setPreset, setUnidades, setProfissionais, setEspecialidades, setConvenioTipo,
-      setRange,
+      setRange, setCompareRange,
     }}>
       {children}
     </FiltersContext.Provider>

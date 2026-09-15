@@ -44,6 +44,10 @@ export function DashboardDateFilter() {
     from: f.from,
     to: f.to,
   });
+  const [compareOpen, setCompareOpen] = useState(false);
+  const [tempCompare, setTempCompare] = useState<DateRange | undefined>(
+    f.compareFrom && f.compareTo ? { from: f.compareFrom, to: f.compareTo } : undefined
+  );
 
   const activeLabel = presets.find((p) => p.value === f.preset)?.label || "Personalizado";
 
@@ -62,8 +66,9 @@ export function DashboardDateFilter() {
   };
 
   const diff = differenceInDays(f.to, f.from) + 1;
-  const prevFrom = subDays(f.from, diff);
-  const prevTo = subDays(f.to, diff);
+  const isCustomCompare = Boolean(f.compareFrom && f.compareTo);
+  const prevFrom = f.compareFrom ?? subDays(f.from, diff);
+  const prevTo = f.compareTo ?? subDays(f.to, diff);
   
   const isRangeTooLarge = tempRange?.from && tempRange?.to && differenceInDays(tempRange.to, tempRange.from) > 180;
 
@@ -170,12 +175,58 @@ export function DashboardDateFilter() {
         </Popover>
       )}
 
-      <div className="flex flex-col leading-tight hidden sm:flex">
-        <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Comparativo anterior</span>
-        <span className="text-xs text-muted-foreground whitespace-nowrap">
-          vs {format(prevFrom, "dd/MM")} a {format(prevTo, "dd/MM")}
-        </span>
-      </div>
+      <Popover open={compareOpen} onOpenChange={setCompareOpen}>
+        <PopoverTrigger asChild>
+          <button className="flex flex-col leading-tight text-left rounded-md px-2 py-1 hover:bg-accent/50 transition-colors">
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+              Comparar com {isCustomCompare ? "(personalizado)" : "(automático)"}
+            </span>
+            <span className="text-xs text-muted-foreground whitespace-nowrap">
+              vs {format(prevFrom, "dd/MM/yy")} a {format(prevTo, "dd/MM/yy")}
+            </span>
+          </button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-3 space-y-3" align="start">
+          <p className="text-xs text-muted-foreground max-w-[260px]">
+            Escolha o período usado como comparação nas variações (%). Sem escolha, usamos o período imediatamente anterior.
+          </p>
+          <Calendar
+            mode="range"
+            defaultMonth={prevFrom}
+            selected={tempCompare}
+            onSelect={setTempCompare}
+            numberOfMonths={isMobile ? 1 : 2}
+            locale={ptBR}
+            className="p-0 pointer-events-auto"
+            disabled={(date) => date > new Date()}
+          />
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                f.setCompareRange(undefined, undefined);
+                setTempCompare(undefined);
+                setCompareOpen(false);
+              }}
+            >
+              Automático
+            </Button>
+            <Button
+              size="sm"
+              disabled={!tempCompare?.from || !tempCompare?.to}
+              onClick={() => {
+                if (tempCompare?.from && tempCompare?.to) {
+                  f.setCompareRange(tempCompare.from, tempCompare.to);
+                  setCompareOpen(false);
+                }
+              }}
+            >
+              Aplicar
+            </Button>
+          </div>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }
