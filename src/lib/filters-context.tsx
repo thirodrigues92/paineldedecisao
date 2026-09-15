@@ -143,11 +143,26 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const setCompareRange = (cf?: Date, ct?: Date) => {
+    if (!cf || !ct) {
+      setCompareFrom(undefined);
+      setCompareTo(undefined);
+      return;
+    }
+    const a = cf > ct ? ct : cf;
+    const b = cf > ct ? cf : ct;
+    const start = new Date(a); start.setHours(0, 0, 0, 0);
+    const end = new Date(b); end.setHours(23, 59, 59, 999);
+    setCompareFrom(start);
+    setCompareTo(end);
+  };
+
   return (
     <FiltersContext.Provider value={{
       preset, from, to, unidadeIds, profissionalIds, especialidadeIds, convenioTipo,
+      compareFrom, compareTo,
       setPreset, setUnidades, setProfissionais, setEspecialidades, setConvenioTipo,
-      setRange,
+      setRange, setCompareRange,
     }}>
       {children}
     </FiltersContext.Provider>
