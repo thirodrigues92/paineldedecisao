@@ -71,6 +71,7 @@ interface Ctx extends DashboardFilters {
   setEspecialidades: (ids: number[]) => void;
   setConvenioTipo: (v: DashboardFilters["convenioTipo"]) => void;
   setRange: (from: Date, to: Date) => void;
+  setCompareRange: (from?: Date, to?: Date) => void;
 }
 
 const FiltersContext = createContext<Ctx | null>(null);
