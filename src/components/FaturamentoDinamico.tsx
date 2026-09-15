@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from "recharts";
-import { RefreshCw, LayoutGrid, BarChart2, SlidersHorizontal, Filter, FilterX, Check, Users, CalendarX, CalendarRange, Shapes } from "lucide-react";
+import { RefreshCw, LayoutGrid, BarChart2, SlidersHorizontal, Filter, FilterX, Check, Users, CalendarX, CalendarRange, Shapes, TrendingUp } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { FaturamentoCategoriaComparativo } from "@/components/FaturamentoCategoriaComparativo";
 import { FaturamentoProfissionalComparativo } from "@/components/FaturamentoProfissionalComparativo";
 import { ComparativoMensal } from "@/components/ComparativoMensal";
+import { ComparativoPeriodosProfissionalCategoria } from "@/components/ComparativoPeriodosProfissionalCategoria";
 
 type Dimensao = "profissional" | "convenio" | "grupo_procedimento" | "procedimento" | "mes_ano";
 type Metrica = "valor_faturado" | "valor_recebido" | "quantidade";
@@ -616,7 +617,7 @@ export function FaturamentoDinamicoPage() {
 
           <TabsContent value="chart" className="p-0 outline-none">
             <Tabs defaultValue="categoria" className="w-full">
-              <TabsList className="mb-4 grid h-auto w-full grid-cols-1 gap-1 p-1 sm:grid-cols-2 xl:grid-cols-4">
+              <TabsList className="mb-4 grid h-auto w-full grid-cols-1 gap-1 p-1 sm:grid-cols-2 xl:grid-cols-5">
                 <TabsTrigger value="categoria" className="min-h-10 gap-2 whitespace-normal py-2">
                   <Shapes className="h-4 w-4 shrink-0" /> Faturamento por categoria
                 </TabsTrigger>
@@ -625,6 +626,9 @@ export function FaturamentoDinamicoPage() {
                 </TabsTrigger>
                 <TabsTrigger value="mensal" className="min-h-10 gap-2 whitespace-normal py-2">
                   <CalendarRange className="h-4 w-4 shrink-0" /> Comparativo mensal
+                </TabsTrigger>
+                <TabsTrigger value="periodos" className="min-h-10 gap-2 whitespace-normal py-2">
+                  <TrendingUp className="h-4 w-4 shrink-0" /> Comparativo de períodos
                 </TabsTrigger>
                 <TabsTrigger value="dinamico" className="min-h-10 gap-2 whitespace-normal py-2">
                   <BarChart2 className="h-4 w-4 shrink-0" /> Gráfico da tabela dinâmica
@@ -641,6 +645,10 @@ export function FaturamentoDinamicoPage() {
 
               <TabsContent value="mensal" className="m-0 outline-none">
                 <ComparativoMensal />
+              </TabsContent>
+
+              <TabsContent value="periodos" className="m-0 outline-none">
+                <ComparativoPeriodosProfissionalCategoria />
               </TabsContent>
 
               <TabsContent value="dinamico" className="m-0 outline-none">
