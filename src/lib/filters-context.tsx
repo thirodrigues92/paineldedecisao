@@ -108,6 +108,8 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
   const [profissionalIds, setProfissionais] = useState<number[]>([]);
   const [especialidadeIds, setEspecialidades] = useState<number[]>([]);
   const [convenioTipo, setConvenioTipo] = useState<DashboardFilters["convenioTipo"]>("todos");
+  const [compareFrom, setCompareFrom] = useState<Date | undefined>(undefined);
+  const [compareTo, setCompareTo] = useState<Date | undefined>(undefined);
 
   // Sync to URL
   useEffect(() => {
