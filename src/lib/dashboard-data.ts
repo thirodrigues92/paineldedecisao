@@ -54,6 +54,8 @@ export function dashboardQueryKey(scope: string, f: DashboardFilters) {
     f.profissionalIds,
     f.especialidadeIds,
     f.convenioTipo,
+    f.compareFrom?.toISOString() ?? null,
+    f.compareTo?.toISOString() ?? null,
   ];
 }
 
