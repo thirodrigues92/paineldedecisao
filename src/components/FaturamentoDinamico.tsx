@@ -647,6 +647,10 @@ export function FaturamentoDinamicoPage() {
                 <ComparativoMensal />
               </TabsContent>
 
+              <TabsContent value="periodos" className="m-0 outline-none">
+                <ComparativoPeriodosProfissionalCategoria />
+              </TabsContent>
+
               <TabsContent value="dinamico" className="m-0 outline-none">
                 <Card>
                   <CardHeader>
