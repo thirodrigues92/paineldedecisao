@@ -83,6 +83,11 @@ export async function syncProducaoRange(start: string, end: string) {
 
   if (!res.ok) throw new Error(`Feegow HTTP ${res.status} em reports/generate (${ds} a ${de})`);
   const body = await res.json();
+  // A Feegow responde success:true com data:false quando o período não tem
+  // nenhum atendimento (dias sem movimento). Isso não é erro: é zero registros.
+  if (body?.success && !Array.isArray(body.data)) {
+    return resumo;
+  }
   if (!body?.success || !Array.isArray(body.data)) {
     throw new Error(`Feegow retornou resposta inválida: ${JSON.stringify(body).slice(0, 300)}`);
   }
