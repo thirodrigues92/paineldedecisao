@@ -616,7 +616,7 @@ export function FaturamentoDinamicoPage() {
 
           <TabsContent value="chart" className="p-0 outline-none">
             <Tabs defaultValue="categoria" className="w-full">
-              <TabsList className="mb-4 grid h-auto w-full grid-cols-1 gap-1 p-1 sm:grid-cols-2 xl:grid-cols-4">
+              <TabsList className="mb-4 grid h-auto w-full grid-cols-1 gap-1 p-1 sm:grid-cols-2 xl:grid-cols-5">
                 <TabsTrigger value="categoria" className="min-h-10 gap-2 whitespace-normal py-2">
                   <Shapes className="h-4 w-4 shrink-0" /> Faturamento por categoria
                 </TabsTrigger>
