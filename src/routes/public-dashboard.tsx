@@ -779,6 +779,127 @@ function PublicDashboardContent() {
           </div>
         </SheetContent>
       </Sheet>
+
+      <Sheet open={!!kpiAberto} onOpenChange={(o) => !o && setComparacaoKpi(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+          {kpiAberto && (() => {
+            const delta = kpiAberto.atual - kpiAberto.anterior;
+            const positivo = kpiAberto.invertTrend ? delta < 0 : delta > 0;
+            const linhas = comparativoDiario(kpiAberto.key);
+            const categorias = kpiAberto.key === "faturado" ? comparativoCategoria().slice(0, 12) : [];
+            return (
+              <>
+                <SheetHeader>
+                  <SheetTitle>{kpiAberto.label} — comparação de períodos</SheetTitle>
+                  <SheetDescription>
+                    Período atual: {format(f.from, "dd/MM/yyyy")} a {format(f.to, "dd/MM/yyyy")} · Comparado com:{" "}
+                    {format(prevFrom, "dd/MM/yyyy")} a {format(prevTo, "dd/MM/yyyy")}
+                  </SheetDescription>
+                </SheetHeader>
+
+                <div className="mt-4 grid grid-cols-3 gap-3">
+                  <div className="rounded-lg border border-border p-3">
+                    <div className="text-xs text-muted-foreground">Período atual</div>
+                    <div className="mt-1 text-lg font-semibold">{formatKpi(kpiAberto.key, kpiAberto.atual)}</div>
+                  </div>
+                  <div className="rounded-lg border border-border p-3">
+                    <div className="text-xs text-muted-foreground">Período comparado</div>
+                    <div className="mt-1 text-lg font-semibold">{formatKpi(kpiAberto.key, kpiAberto.anterior)}</div>
+                  </div>
+                  <div className="rounded-lg border border-border p-3">
+                    <div className="text-xs text-muted-foreground">Diferença</div>
+                    <div className={cn("mt-1 text-lg font-semibold", positivo ? "text-emerald-500" : "text-rose-500")}>
+                      {delta >= 0 ? "+" : "-"}{formatKpi(kpiAberto.key, Math.abs(delta))}
+                    </div>
+                    {kpiAberto.trend !== null && (
+                      <div className={cn("text-[11px]", positivo ? "text-emerald-500" : "text-rose-500")}>
+                        {kpiAberto.trend > 0 ? "+" : ""}{kpiAberto.trend.toFixed(1)}%
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {categorias.length > 0 && (
+                  <div className="mt-6">
+                    <h4 className="mb-2 text-sm font-semibold">O que explica a diferença (por especialidade)</h4>
+                    <div className="overflow-hidden rounded-lg border border-border">
+                      <table className="w-full text-sm">
+                        <thead className="bg-muted/50 text-xs text-muted-foreground">
+                          <tr>
+                            <th className="p-2 text-left">Especialidade</th>
+                            <th className="p-2 text-right">Atual</th>
+                            <th className="p-2 text-right">Comparado</th>
+                            <th className="p-2 text-right">Diferença</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {categorias.map((c) => (
+                            <tr key={c.nome} className="border-t border-border">
+                              <td className="p-2">{c.nome}</td>
+                              <td className="p-2 text-right tabular-nums">{brl(c.atual)}</td>
+                              <td className="p-2 text-right tabular-nums">{brl(c.prev)}</td>
+                              <td className={cn("p-2 text-right tabular-nums", c.delta >= 0 ? "text-emerald-500" : "text-rose-500")}>
+                                {c.delta >= 0 ? "+" : "-"}{brl(Math.abs(c.delta))}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                <div className="mt-6">
+                  <h4 className="mb-2 text-sm font-semibold">Dia a dia</h4>
+                  <div className="overflow-hidden rounded-lg border border-border">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted/50 text-xs text-muted-foreground">
+                        <tr>
+                          <th className="p-2 text-left">Dia atual</th>
+                          <th className="p-2 text-right">Valor</th>
+                          <th className="p-2 text-left">Dia comparado</th>
+                          <th className="p-2 text-right">Valor</th>
+                          <th className="p-2 text-right">Diferença</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {linhas.map((l, i) => {
+                          const d = (l.vA ?? 0) - (l.vP ?? 0);
+                          return (
+                            <tr key={i} className="border-t border-border">
+                              <td className="p-2">{l.atual ? format(new Date(`${l.atual}T00:00:00`), "dd/MM") : "—"}</td>
+                              <td className="p-2 text-right tabular-nums">{l.vA === null ? "—" : formatKpi(kpiAberto.key, l.vA)}</td>
+                              <td className="p-2">{l.prev ? format(new Date(`${l.prev}T00:00:00`), "dd/MM") : "—"}</td>
+                              <td className="p-2 text-right tabular-nums">{l.vP === null ? "—" : formatKpi(kpiAberto.key, l.vP)}</td>
+                              <td className={cn("p-2 text-right tabular-nums", d >= 0 ? "text-emerald-500" : "text-rose-500")}>
+                                {d >= 0 ? "+" : "-"}{formatKpi(kpiAberto.key, Math.abs(d))}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {(kpiAberto.key === "novos" || kpiAberto.key === "no_show") && (
+                  <button
+                    type="button"
+                    className="mt-4 w-full rounded-lg border border-border p-2 text-sm hover:bg-muted/50"
+                    onClick={() => {
+                      setComparacaoKpi(null);
+                      if (kpiAberto.key === "novos") setDetalheNovos(true);
+                      else setDetalheNoShow(true);
+                    }}
+                  >
+                    Ver lista detalhada do período atual
+                  </button>
+                )}
+              </>
+            );
+          })()}
+        </SheetContent>
+      </Sheet>
     </div>
 
   );
