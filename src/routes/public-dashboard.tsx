@@ -357,14 +357,19 @@ function PublicDashboardContent() {
         .filter((x: any) => x !== null)
     : detalheItens;
 
-  const kpis = [
-    { label: "Agendamentos", value: num(total), icon: Calendar, trend: getDiff(total, prevTotal) },
-    { label: "Ocupação", value: pct(ocupacao), icon: Activity, trend: getDiff(ocupacao, prevOcupacao) },
-    { label: "Taxa de no-show", value: pct(taxaNoShow), icon: UserX, warn: taxaNoShow > 15, trend: getDiff(taxaNoShow, prevTaxaNoShow), invertTrend: true },
-    { label: "Faturado", value: brl(faturadoReal), icon: DollarSign, trend: getDiff(faturadoReal, prevFaturado) },
-    { label: "Ticket médio", value: brl(ticket), icon: TrendingUp, trend: getDiff(ticket, prevTicket) },
-    { label: "Pacientes novos", value: num(novos), icon: UserPlus, trend: getDiff(novos, prevNovos) },
+  const kpis: Array<{
+    key: KpiKey; label: string; value: string; icon: any; trend: number | null;
+    atual: number; anterior: number; warn?: boolean; invertTrend?: boolean;
+  }> = [
+    { key: "agendamentos", label: "Agendamentos", value: num(total), icon: Calendar, trend: getDiff(total, prevTotal), atual: total, anterior: prevTotal },
+    { key: "ocupacao", label: "Ocupação", value: pct(ocupacao), icon: Activity, trend: getDiff(ocupacao, prevOcupacao), atual: ocupacao, anterior: prevOcupacao },
+    { key: "no_show", label: "Taxa de no-show", value: pct(taxaNoShow), icon: UserX, warn: taxaNoShow > 15, trend: getDiff(taxaNoShow, prevTaxaNoShow), invertTrend: true, atual: taxaNoShow, anterior: prevTaxaNoShow },
+    { key: "faturado", label: "Faturado", value: brl(faturadoReal), icon: DollarSign, trend: getDiff(faturadoReal, prevFaturado), atual: faturadoReal, anterior: prevFaturado },
+    { key: "ticket", label: "Ticket médio", value: brl(ticket), icon: TrendingUp, trend: getDiff(ticket, prevTicket), atual: ticket, anterior: prevTicket },
+    { key: "novos", label: "Pacientes novos", value: num(novos), icon: UserPlus, trend: getDiff(novos, prevNovos), atual: novos, anterior: prevNovos },
   ];
+
+  const kpiAberto = kpis.find((k) => k.key === comparacaoKpi) ?? null;
 
   const compactBrl = (n: number) =>
     Math.abs(n) >= 1000 ? `R$ ${(n / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 0 })}k` : brl(n);
