@@ -150,6 +150,69 @@ function DashboardPage() {
   const prevTicket = prevTotalItens > 0 ? prevFaturado / prevTotalItens : 0;
   const prevNovos = prevData?.appointments.filter((r: any) => r.primeiro_agendamento).length ?? 0;
 
+  // ---- comparação detalhada por indicador -------------------------------
+  type KpiKey = "agendamentos" | "ocupacao" | "no_show" | "faturado" | "ticket" | "novos";
+
+  const metricaDia = (key: KpiKey, appts: any[], labs: any[]) => {
+    const realizadosD = appts.filter((r: any) => r.status_agendamento?.categoria === "realizado").length;
+    const noShowD = appts.filter((r: any) => r.status_agendamento?.categoria === "no_show").length;
+    const valorD = labs.reduce((s: number, r: any) => s + Number(r.valor || 0), 0);
+    switch (key) {
+      case "agendamentos": return appts.length;
+      case "ocupacao": return appts.length > 0 ? (realizadosD * 100) / appts.length : 0;
+      case "no_show": return realizadosD + noShowD > 0 ? (noShowD * 100) / (realizadosD + noShowD) : 0;
+      case "faturado": return valorD;
+      case "ticket": return labs.length > 0 ? valorD / labs.length : 0;
+      case "novos": return appts.filter((r: any) => r.primeiro_agendamento).length;
+    }
+  };
+
+  const formatKpi = (key: KpiKey, v: number) =>
+    key === "ocupacao" || key === "no_show" ? pct(v) : key === "faturado" || key === "ticket" ? brl(v) : num(Math.round(v));
+
+  const diasAtual = eachDayOfInterval({ start: f.from, end: f.to });
+  const diasPrev = eachDayOfInterval({ start: prevFrom, end: prevTo });
+
+  const comparativoDiario = (key: KpiKey) => {
+    const n = Math.max(diasAtual.length, diasPrev.length);
+    const linhas = [];
+    for (let i = 0; i < n; i++) {
+      const dA = diasAtual[i];
+      const dP = diasPrev[i];
+      const kA = dA ? format(dA, "yyyy-MM-dd") : null;
+      const kP = dP ? format(dP, "yyyy-MM-dd") : null;
+      const vA = kA ? metricaDia(key, rows.filter((r: any) => r.data === kA), labRows.filter((r: any) => r.data_execucao === kA)) : null;
+      const vP = kP
+        ? metricaDia(
+            key,
+            (prevData?.appointments ?? []).filter((r: any) => r.data === kP),
+            (prevData?.labProducao ?? []).filter((r: any) => r.data_execucao === kP),
+          )
+        : null;
+      linhas.push({ atual: kA, prev: kP, vA, vP });
+    }
+    return linhas;
+  };
+
+  const comparativoCategoria = () => {
+    const mapa = new Map<string, { atual: number; prev: number }>();
+    for (const r of labRows) {
+      const k = (r.grupo_nome ?? "").trim() || "Sem especialidade";
+      const cur = mapa.get(k) ?? { atual: 0, prev: 0 };
+      cur.atual += Number(r.valor || 0);
+      mapa.set(k, cur);
+    }
+    for (const r of prevData?.labProducao ?? []) {
+      const k = (r.grupo_nome ?? "").trim() || "Sem especialidade";
+      const cur = mapa.get(k) ?? { atual: 0, prev: 0 };
+      cur.prev += Number(r.valor || 0);
+      mapa.set(k, cur);
+    }
+    return Array.from(mapa.entries())
+      .map(([nome, v]) => ({ nome, ...v, delta: v.atual - v.prev }))
+      .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+  };
+
   // CORREÇÃO 3: Evolução diária com preenchimento de zeros (dias sem movimento)
   const days = eachDayOfInterval({ start: f.from, end: f.to });
   const daily = days.map(day => {
