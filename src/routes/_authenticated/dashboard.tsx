@@ -491,23 +491,18 @@ function DashboardPage() {
         {kpis.map((k) => {
           const TrendIcon = k.trend && k.trend > 0 ? ArrowUpRight : ArrowDownRight;
           const isGood = k.invertTrend ? (k.trend ?? 0) < 0 : (k.trend ?? 0) > 0;
-          const isClickable = k.label === "Pacientes novos" || k.label === "Taxa de no-show";
-          
           return (
             <Card 
               key={k.label} 
-              className={cn(isClickable && "cursor-pointer hover:bg-muted/50 transition-colors ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2")}
-              onClick={() => {
-                if (k.label === "Pacientes novos") setDetalheNovos(true);
-                if (k.label === "Taxa de no-show") setDetalheNoShow(true);
-              }}
+              className="cursor-pointer hover:bg-muted/50 transition-colors ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              onClick={() => setComparacaoKpi(k.key)}
             >
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 text-muted-foreground text-xs">
                   <k.icon className="h-3.5 w-3.5" /> {k.label}
-                  {k.label === "Pacientes novos" && !query.isLoading && (
+                  {!query.isLoading && (
                     <span className="ml-auto inline-flex items-center rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
-                      Ver detalhes
+                      Comparar
                     </span>
                   )}
                 </div>
