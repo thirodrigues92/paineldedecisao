@@ -46,10 +46,13 @@ function PublicDashboardContent() {
   const [detalheNovos, setDetalheNovos] = useState<boolean>(false);
   const [detalheNoShow, setDetalheNoShow] = useState<boolean>(false);
   const [detalheEspecialidade, setDetalheEspecialidade] = useState<string | null>(null);
+  const [comparacaoKpi, setComparacaoKpi] = useState<
+    "agendamentos" | "ocupacao" | "no_show" | "faturado" | "ticket" | "novos" | null
+  >(null);
 
   const diff = differenceInDays(f.to, f.from) + 1;
-  const prevFrom = subDays(f.from, diff);
-  const prevTo = subDays(f.to, diff);
+  const prevFrom = f.compareFrom ?? subDays(f.from, diff);
+  const prevTo = f.compareTo ?? subDays(f.to, diff);
 
   const query = useQuery({
     queryKey: dashboardQueryKey("public-dashboard", f),
@@ -114,6 +117,69 @@ function PublicDashboardContent() {
   const prevTotalItens = prevData?.labProducao.length ?? 0;
   const prevTicket = prevTotalItens > 0 ? prevFaturado / prevTotalItens : 0;
   const prevNovos = prevData?.appointments.filter((r: any) => r.primeiro_agendamento).length ?? 0;
+
+  // ---- comparação detalhada por indicador -------------------------------
+  type KpiKey = "agendamentos" | "ocupacao" | "no_show" | "faturado" | "ticket" | "novos";
+
+  const metricaDia = (key: KpiKey, appts: any[], labs: any[]) => {
+    const realizadosD = appts.filter((r: any) => r.status_agendamento?.categoria === "realizado").length;
+    const noShowD = appts.filter((r: any) => r.status_agendamento?.categoria === "no_show").length;
+    const valorD = labs.reduce((s: number, r: any) => s + Number(r.valor || 0), 0);
+    switch (key) {
+      case "agendamentos": return appts.length;
+      case "ocupacao": return appts.length > 0 ? (realizadosD * 100) / appts.length : 0;
+      case "no_show": return realizadosD + noShowD > 0 ? (noShowD * 100) / (realizadosD + noShowD) : 0;
+      case "faturado": return valorD;
+      case "ticket": return labs.length > 0 ? valorD / labs.length : 0;
+      case "novos": return appts.filter((r: any) => r.primeiro_agendamento).length;
+    }
+  };
+
+  const formatKpi = (key: KpiKey, v: number) =>
+    key === "ocupacao" || key === "no_show" ? pct(v) : key === "faturado" || key === "ticket" ? brl(v) : num(Math.round(v));
+
+  const diasAtual = eachDayOfInterval({ start: f.from, end: f.to });
+  const diasPrev = eachDayOfInterval({ start: prevFrom, end: prevTo });
+
+  const comparativoDiario = (key: KpiKey) => {
+    const n = Math.max(diasAtual.length, diasPrev.length);
+    const linhas = [];
+    for (let i = 0; i < n; i++) {
+      const dA = diasAtual[i];
+      const dP = diasPrev[i];
+      const kA = dA ? format(dA, "yyyy-MM-dd") : null;
+      const kP = dP ? format(dP, "yyyy-MM-dd") : null;
+      const vA = kA ? metricaDia(key, rows.filter((r: any) => r.data === kA), labRows.filter((r: any) => r.data_execucao === kA)) : null;
+      const vP = kP
+        ? metricaDia(
+            key,
+            (prevData?.appointments ?? []).filter((r: any) => r.data === kP),
+            (prevData?.labProducao ?? []).filter((r: any) => r.data_execucao === kP),
+          )
+        : null;
+      linhas.push({ atual: kA, prev: kP, vA, vP });
+    }
+    return linhas;
+  };
+
+  const comparativoCategoria = () => {
+    const mapa = new Map<string, { atual: number; prev: number }>();
+    for (const r of labRows) {
+      const k = (r.grupo_nome ?? "").trim() || "Sem especialidade";
+      const cur = mapa.get(k) ?? { atual: 0, prev: 0 };
+      cur.atual += Number(r.valor || 0);
+      mapa.set(k, cur);
+    }
+    for (const r of prevData?.labProducao ?? []) {
+      const k = (r.grupo_nome ?? "").trim() || "Sem especialidade";
+      const cur = mapa.get(k) ?? { atual: 0, prev: 0 };
+      cur.prev += Number(r.valor || 0);
+      mapa.set(k, cur);
+    }
+    return Array.from(mapa.entries())
+      .map(([nome, v]) => ({ nome, ...v, delta: v.atual - v.prev }))
+      .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+  };
 
   const byEsp = new Map<string, { total: number; valor: number }>();
   for (const r of labRows) {
@@ -291,14 +357,19 @@ function PublicDashboardContent() {
         .filter((x: any) => x !== null)
     : detalheItens;
 
-  const kpis = [
-    { label: "Agendamentos", value: num(total), icon: Calendar, trend: getDiff(total, prevTotal) },
-    { label: "Ocupação", value: pct(ocupacao), icon: Activity, trend: getDiff(ocupacao, prevOcupacao) },
-    { label: "Taxa de no-show", value: pct(taxaNoShow), icon: UserX, warn: taxaNoShow > 15, trend: getDiff(taxaNoShow, prevTaxaNoShow), invertTrend: true },
-    { label: "Faturado", value: brl(faturadoReal), icon: DollarSign, trend: getDiff(faturadoReal, prevFaturado) },
-    { label: "Ticket médio", value: brl(ticket), icon: TrendingUp, trend: getDiff(ticket, prevTicket) },
-    { label: "Pacientes novos", value: num(novos), icon: UserPlus, trend: getDiff(novos, prevNovos) },
+  const kpis: Array<{
+    key: KpiKey; label: string; value: string; icon: any; trend: number | null;
+    atual: number; anterior: number; warn?: boolean; invertTrend?: boolean;
+  }> = [
+    { key: "agendamentos", label: "Agendamentos", value: num(total), icon: Calendar, trend: getDiff(total, prevTotal), atual: total, anterior: prevTotal },
+    { key: "ocupacao", label: "Ocupação", value: pct(ocupacao), icon: Activity, trend: getDiff(ocupacao, prevOcupacao), atual: ocupacao, anterior: prevOcupacao },
+    { key: "no_show", label: "Taxa de no-show", value: pct(taxaNoShow), icon: UserX, warn: taxaNoShow > 15, trend: getDiff(taxaNoShow, prevTaxaNoShow), invertTrend: true, atual: taxaNoShow, anterior: prevTaxaNoShow },
+    { key: "faturado", label: "Faturado", value: brl(faturadoReal), icon: DollarSign, trend: getDiff(faturadoReal, prevFaturado), atual: faturadoReal, anterior: prevFaturado },
+    { key: "ticket", label: "Ticket médio", value: brl(ticket), icon: TrendingUp, trend: getDiff(ticket, prevTicket), atual: ticket, anterior: prevTicket },
+    { key: "novos", label: "Pacientes novos", value: num(novos), icon: UserPlus, trend: getDiff(novos, prevNovos), atual: novos, anterior: prevNovos },
   ];
+
+  const kpiAberto = kpis.find((k) => k.key === comparacaoKpi) ?? null;
 
   const compactBrl = (n: number) =>
     Math.abs(n) >= 1000 ? `R$ ${(n / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 0 })}k` : brl(n);
@@ -328,24 +399,20 @@ function PublicDashboardContent() {
         {kpis.map((k) => {
           const TrendIcon = k.trend && k.trend > 0 ? ArrowUpRight : ArrowDownRight;
           const isGood = k.invertTrend ? (k.trend ?? 0) < 0 : (k.trend ?? 0) > 0;
-          const isClickable = k.label === "Pacientes novos" || k.label === "Taxa de no-show";
-          
+
           return (
-            <Card 
-              key={k.label} 
-              className={cn(isClickable && "cursor-pointer hover:bg-muted/50 transition-colors ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2")}
-              onClick={() => {
-                if (k.label === "Pacientes novos") setDetalheNovos(true);
-                if (k.label === "Taxa de no-show") setDetalheNoShow(true);
-              }}
+            <Card
+              key={k.label}
+              className="cursor-pointer hover:bg-muted/50 transition-colors ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              onClick={() => setComparacaoKpi(k.key)}
             >
 
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 text-muted-foreground text-xs">
                   <k.icon className="h-3.5 w-3.5" /> {k.label}
-                  {k.label === "Pacientes novos" && !query.isLoading && (
+                  {!query.isLoading && (
                     <span className="ml-auto inline-flex items-center rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
-                      Ver detalhes
+                      Comparar
                     </span>
                   )}
 
@@ -710,6 +777,127 @@ function PublicDashboardContent() {
               );
             })}
           </div>
+        </SheetContent>
+      </Sheet>
+
+      <Sheet open={!!kpiAberto} onOpenChange={(o) => !o && setComparacaoKpi(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+          {kpiAberto && (() => {
+            const delta = kpiAberto.atual - kpiAberto.anterior;
+            const positivo = kpiAberto.invertTrend ? delta < 0 : delta > 0;
+            const linhas = comparativoDiario(kpiAberto.key);
+            const categorias = kpiAberto.key === "faturado" ? comparativoCategoria().slice(0, 12) : [];
+            return (
+              <>
+                <SheetHeader>
+                  <SheetTitle>{kpiAberto.label} — comparação de períodos</SheetTitle>
+                  <SheetDescription>
+                    Período atual: {format(f.from, "dd/MM/yyyy")} a {format(f.to, "dd/MM/yyyy")} · Comparado com:{" "}
+                    {format(prevFrom, "dd/MM/yyyy")} a {format(prevTo, "dd/MM/yyyy")}
+                  </SheetDescription>
+                </SheetHeader>
+
+                <div className="mt-4 grid grid-cols-3 gap-3">
+                  <div className="rounded-lg border border-border p-3">
+                    <div className="text-xs text-muted-foreground">Período atual</div>
+                    <div className="mt-1 text-lg font-semibold">{formatKpi(kpiAberto.key, kpiAberto.atual)}</div>
+                  </div>
+                  <div className="rounded-lg border border-border p-3">
+                    <div className="text-xs text-muted-foreground">Período comparado</div>
+                    <div className="mt-1 text-lg font-semibold">{formatKpi(kpiAberto.key, kpiAberto.anterior)}</div>
+                  </div>
+                  <div className="rounded-lg border border-border p-3">
+                    <div className="text-xs text-muted-foreground">Diferença</div>
+                    <div className={cn("mt-1 text-lg font-semibold", positivo ? "text-emerald-500" : "text-rose-500")}>
+                      {delta >= 0 ? "+" : "-"}{formatKpi(kpiAberto.key, Math.abs(delta))}
+                    </div>
+                    {kpiAberto.trend !== null && (
+                      <div className={cn("text-[11px]", positivo ? "text-emerald-500" : "text-rose-500")}>
+                        {kpiAberto.trend > 0 ? "+" : ""}{kpiAberto.trend.toFixed(1)}%
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {categorias.length > 0 && (
+                  <div className="mt-6">
+                    <h4 className="mb-2 text-sm font-semibold">O que explica a diferença (por especialidade)</h4>
+                    <div className="overflow-hidden rounded-lg border border-border">
+                      <table className="w-full text-sm">
+                        <thead className="bg-muted/50 text-xs text-muted-foreground">
+                          <tr>
+                            <th className="p-2 text-left">Especialidade</th>
+                            <th className="p-2 text-right">Atual</th>
+                            <th className="p-2 text-right">Comparado</th>
+                            <th className="p-2 text-right">Diferença</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {categorias.map((c) => (
+                            <tr key={c.nome} className="border-t border-border">
+                              <td className="p-2">{c.nome}</td>
+                              <td className="p-2 text-right tabular-nums">{brl(c.atual)}</td>
+                              <td className="p-2 text-right tabular-nums">{brl(c.prev)}</td>
+                              <td className={cn("p-2 text-right tabular-nums", c.delta >= 0 ? "text-emerald-500" : "text-rose-500")}>
+                                {c.delta >= 0 ? "+" : "-"}{brl(Math.abs(c.delta))}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                <div className="mt-6">
+                  <h4 className="mb-2 text-sm font-semibold">Dia a dia</h4>
+                  <div className="overflow-hidden rounded-lg border border-border">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted/50 text-xs text-muted-foreground">
+                        <tr>
+                          <th className="p-2 text-left">Dia atual</th>
+                          <th className="p-2 text-right">Valor</th>
+                          <th className="p-2 text-left">Dia comparado</th>
+                          <th className="p-2 text-right">Valor</th>
+                          <th className="p-2 text-right">Diferença</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {linhas.map((l, i) => {
+                          const d = (l.vA ?? 0) - (l.vP ?? 0);
+                          return (
+                            <tr key={i} className="border-t border-border">
+                              <td className="p-2">{l.atual ? format(new Date(`${l.atual}T00:00:00`), "dd/MM") : "—"}</td>
+                              <td className="p-2 text-right tabular-nums">{l.vA === null ? "—" : formatKpi(kpiAberto.key, l.vA)}</td>
+                              <td className="p-2">{l.prev ? format(new Date(`${l.prev}T00:00:00`), "dd/MM") : "—"}</td>
+                              <td className="p-2 text-right tabular-nums">{l.vP === null ? "—" : formatKpi(kpiAberto.key, l.vP)}</td>
+                              <td className={cn("p-2 text-right tabular-nums", d >= 0 ? "text-emerald-500" : "text-rose-500")}>
+                                {d >= 0 ? "+" : "-"}{formatKpi(kpiAberto.key, Math.abs(d))}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {(kpiAberto.key === "novos" || kpiAberto.key === "no_show") && (
+                  <button
+                    type="button"
+                    className="mt-4 w-full rounded-lg border border-border p-2 text-sm hover:bg-muted/50"
+                    onClick={() => {
+                      setComparacaoKpi(null);
+                      if (kpiAberto.key === "novos") setDetalheNovos(true);
+                      else setDetalheNoShow(true);
+                    }}
+                  >
+                    Ver lista detalhada do período atual
+                  </button>
+                )}
+              </>
+            );
+          })()}
         </SheetContent>
       </Sheet>
     </div>
