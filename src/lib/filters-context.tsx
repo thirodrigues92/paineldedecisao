@@ -22,6 +22,8 @@ export interface DashboardFilters {
   profissionalIds: number[];
   especialidadeIds: number[];
   convenioTipo: "todos" | "particular" | "convenio";
+  compareFrom?: Date;
+  compareTo?: Date;
 }
 
 function computeRange(preset: PresetPeriod): { from: Date; to: Date } {
