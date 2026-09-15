@@ -44,6 +44,10 @@ export function DashboardDateFilter() {
     from: f.from,
     to: f.to,
   });
+  const [compareOpen, setCompareOpen] = useState(false);
+  const [tempCompare, setTempCompare] = useState<DateRange | undefined>(
+    f.compareFrom && f.compareTo ? { from: f.compareFrom, to: f.compareTo } : undefined
+  );
 
   const activeLabel = presets.find((p) => p.value === f.preset)?.label || "Personalizado";
 
