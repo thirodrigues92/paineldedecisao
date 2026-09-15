@@ -76,8 +76,8 @@ function DashboardPage() {
   const [detalheEspecialidade, setDetalheEspecialidade] = useState<string | null>(null);
 
   const diff = differenceInDays(f.to, f.from) + 1;
-  const prevFrom = subDays(f.from, diff);
-  const prevTo = subDays(f.to, diff);
+  const prevFrom = f.compareFrom ?? subDays(f.from, diff);
+  const prevTo = f.compareTo ?? subDays(f.to, diff);
 
   const query = useQuery({
     queryKey: dashboardQueryKey("dashboard", f),
