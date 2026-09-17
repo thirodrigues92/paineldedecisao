@@ -193,7 +193,7 @@ export function ComparativoMensal() {
     if (mesesOrdenados.length === 0) return [];
     const map = new Map<string, any>();
     for (const r of dados) {
-      const mes = (r.data_execucao || "").slice(0, 7);
+      const mes = r.mes;
       if (!mesesOrdenados.includes(mes)) continue;
       let chave = (r as any)[dimensao];
       if (dimensao === "convenio_nome") chave = chave || "Particular";
@@ -208,8 +208,9 @@ export function ComparativoMensal() {
         map.set(chave, cur);
       }
       cur[mes] = (cur[mes] || 0) + Number(r.valor || 0);
-      cur[`${mes}_qtd`] = (cur[`${mes}_qtd`] || 0) + 1;
+      cur[`${mes}_qtd`] = (cur[`${mes}_qtd`] || 0) + Number(r.qtd || 0);
       cur.total += Number(r.valor || 0);
+
     }
     return Array.from(map.values()).sort((a, b) => b.total - a.total);
   }, [dados, mesesOrdenados, dimensao]);
