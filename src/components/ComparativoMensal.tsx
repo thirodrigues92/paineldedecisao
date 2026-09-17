@@ -86,20 +86,40 @@ export function ComparativoMensal() {
     return { from, to };
   }, [janela]);
 
-  const { data: dados = [], isLoading } = useQuery({
+  const { data: agregado, isLoading } = useQuery({
     queryKey: [
-      "comparativoMensal",
+      "comparativoMensalRpc",
       janela,
       filters.unidadeIds,
       filters.profissionalIds,
       filters.convenioTipo,
     ],
-    queryFn: () =>
-      fetchLabProducaoRows(
-        { ...filters, from: range.from, to: range.to, preset: "custom" },
-        60_000
-      ),
+    queryFn: async () => {
+      const params = {
+        p_from: format(range.from, "yyyy-MM-dd"),
+        p_to: format(range.to, "yyyy-MM-dd"),
+        p_unidades: filters.unidadeIds.length ? filters.unidadeIds : null,
+        p_profissionais: filters.profissionalIds.length ? filters.profissionalIds : null,
+      };
+      const [res, dias] = await Promise.all([
+        supabase.rpc("lab_comparativo_mensal", {
+          ...params,
+          p_convenio: filters.convenioTipo,
+        }),
+        supabase.rpc("lab_dias_com_producao", params),
+      ]);
+      if (res.error) throw res.error;
+      if (dias.error) throw dias.error;
+      return {
+        linhas: (res.data ?? []) as LinhaAgregada[],
+        dias: ((dias.data ?? []) as any[]).map((d: any) =>
+          typeof d === "string" ? d : d.dia,
+        ) as string[],
+      };
+    },
   });
+
+  const dados = agregado?.linhas ?? [];
 
   const meses = useMemo(() => {
     const map = new Map<string, { chave: string; valor: number; qtd: number }>();
@@ -109,12 +129,10 @@ export function ComparativoMensal() {
       map.set(chave, { chave, valor: 0, qtd: 0 });
     }
     for (const r of dados) {
-      const iso = (r.data_execucao || "").slice(0, 7);
-      if (!iso) continue;
-      const cur = map.get(iso);
+      const cur = map.get(r.mes);
       if (!cur) continue;
       cur.valor += Number(r.valor || 0);
-      cur.qtd += 1;
+      cur.qtd += Number(r.qtd || 0);
     }
     return Array.from(map.values()).map((m) => ({
       ...m,
@@ -125,11 +143,9 @@ export function ComparativoMensal() {
 
   // Dias úteis (seg-sex) do período que não possuem nenhum registro gravado
   const diasFaltantes = useMemo(() => {
-    const presentes = new Set<string>();
-    for (const r of dados) {
-      const d = (r.data_execucao || "").slice(0, 10);
-      if (d) presentes.add(d);
-    }
+    const presentes = new Set<string>(
+      (agregado?.dias ?? []).map((d) => String(d).slice(0, 10)),
+    );
     const hoje = new Date();
     const hojeISO = format(hoje, "yyyy-MM-dd");
     const faltas: Record<string, string[]> = {};
@@ -146,7 +162,8 @@ export function ComparativoMensal() {
     return Object.entries(faltas)
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([mes, dias]) => ({ mes, dias }));
-  }, [dados, range]);
+  }, [agregado, range]);
+
 
   const toggleMes = (chave: string) =>
     setMesesSel((prev) =>
