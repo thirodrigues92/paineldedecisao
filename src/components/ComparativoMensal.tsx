@@ -60,6 +60,17 @@ const JANELAS = [6, 12, 18, 24] as const;
 
 type Dimensao = "grupo_nome" | "profissional_nome" | "convenio_nome" | "procedimento_nome";
 
+type LinhaAgregada = {
+  mes: string;
+  grupo_nome: string | null;
+  profissional_nome: string | null;
+  convenio_nome: string | null;
+  procedimento_nome: string | null;
+  valor: number | string | null;
+  qtd: number | string | null;
+};
+
+
 const DIM_LABEL: Record<Dimensao, string> = {
   grupo_nome: "Categoria",
   profissional_nome: "Profissional",
