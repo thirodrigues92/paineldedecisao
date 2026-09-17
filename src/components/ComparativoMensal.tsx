@@ -14,7 +14,7 @@ import {
 import { startOfMonth, subMonths, endOfMonth, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { brl, num, pct } from "@/lib/format";
-import { fetchLabProducaoRows } from "@/lib/dashboard-data";
+import { supabase } from "@/integrations/supabase/client";
 import { useFilters } from "@/lib/filters-context";
 import { tooltipProps } from "@/lib/chart-theme";
 import {
