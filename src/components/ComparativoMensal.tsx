@@ -98,8 +98,10 @@ export function ComparativoMensal() {
       const params = {
         p_from: format(range.from, "yyyy-MM-dd"),
         p_to: format(range.to, "yyyy-MM-dd"),
-        p_unidades: filters.unidadeIds.length ? filters.unidadeIds : null,
-        p_profissionais: filters.profissionalIds.length ? filters.profissionalIds : null,
+        ...(filters.unidadeIds.length ? { p_unidades: filters.unidadeIds } : {}),
+        ...(filters.profissionalIds.length
+          ? { p_profissionais: filters.profissionalIds }
+          : {}),
       };
       const [res, dias] = await Promise.all([
         supabase.rpc("lab_comparativo_mensal", {
@@ -112,6 +114,7 @@ export function ComparativoMensal() {
       if (dias.error) throw dias.error;
       return {
         linhas: (res.data ?? []) as LinhaAgregada[],
+
         dias: ((dias.data ?? []) as any[]).map((d: any) =>
           typeof d === "string" ? d : d.dia,
         ) as string[],
