@@ -1506,6 +1506,35 @@ export type Database = {
         }
         Returns: boolean
       }
+      lab_comparativo_mensal: {
+        Args: {
+          p_convenio?: string
+          p_from: string
+          p_profissionais?: number[]
+          p_to: string
+          p_unidades?: number[]
+        }
+        Returns: {
+          convenio_nome: string
+          grupo_nome: string
+          mes: string
+          procedimento_nome: string
+          profissional_nome: string
+          qtd: number
+          valor: number
+        }[]
+      }
+      lab_dias_com_producao: {
+        Args: {
+          p_from: string
+          p_profissionais?: number[]
+          p_to: string
+          p_unidades?: number[]
+        }
+        Returns: {
+          dia: string
+        }[]
+      }
       lab_enriquecer_faturamento: { Args: never; Returns: Json }
       lab_popular_dimensoes: { Args: never; Returns: undefined }
       refresh_dashboard_views: { Args: never; Returns: undefined }
