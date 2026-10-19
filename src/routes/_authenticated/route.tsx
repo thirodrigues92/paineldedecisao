@@ -17,7 +17,7 @@ export const Route = createFileRoute("/_authenticated")({
 
 function AuthenticatedLayout() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const exibirFiltrosGlobais = pathname !== "/faturamento-dinamico";
+  const exibirFiltrosGlobais = pathname !== "/faturamento-dinamico" && !pathname.startsWith("/financeiro");
 
   return (
     <FiltersProvider>
