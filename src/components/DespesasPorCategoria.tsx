@@ -78,12 +78,12 @@ export function DespesasPorCategoria({ from, to, cmpFrom, cmpTo }: { from: strin
         <div style={{ height: Math.max(320, grafico.length * 38) }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={grafico} layout="vertical" margin={{ left: 10, right: 30 }} onClick={(e: any) => e?.activeLabel && setSel(e.activeLabel)}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
-              <XAxis type="number" tickFormatter={(v) => brl(v).replace(",00", "")} stroke="hsl(var(--muted-foreground))" fontSize={11} />
-              <YAxis type="category" dataKey="categoria" width={200} stroke="hsl(var(--muted-foreground))" fontSize={11} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
+              <XAxis type="number" tickFormatter={(v) => brl(v).replace(",00", "")} stroke="var(--muted-foreground)" fontSize={11} />
+              <YAxis type="category" dataKey="categoria" width={200} stroke="var(--muted-foreground)" fontSize={11} />
               <Tooltip
-                cursor={{ fill: "hsl(var(--accent) / 0.3)" }}
-                contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
+                cursor={{ fill: "color-mix(in oklch, var(--accent) 30%, transparent)" }}
+                contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8 }}
                 formatter={(v: number, n: string, p: any) => {
                   const t = n === "Período atual" ? totA : totB;
                   const q = n === "Período atual" ? p.payload.qa : p.payload.qb;
@@ -91,10 +91,10 @@ export function DespesasPorCategoria({ from, to, cmpFrom, cmpTo }: { from: strin
                 }}
               />
               <Legend />
-              <Bar dataKey="atual" name="Período atual" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} className="cursor-pointer">
+              <Bar dataKey="atual" name="Período atual" fill="var(--primary)" radius={[0, 4, 4, 0]} className="cursor-pointer">
                 {grafico.map((g) => <Cell key={g.categoria} fillOpacity={!sel || sel === g.categoria ? 1 : 0.35} />)}
               </Bar>
-              <Bar dataKey="comp" name="Comparação" fill="hsl(var(--muted-foreground))" radius={[0, 4, 4, 0]} className="cursor-pointer">
+              <Bar dataKey="comp" name="Comparação" fill="var(--muted-foreground)" radius={[0, 4, 4, 0]} className="cursor-pointer">
                 {grafico.map((g) => <Cell key={g.categoria} fillOpacity={!sel || sel === g.categoria ? 0.8 : 0.25} />)}
               </Bar>
             </BarChart>

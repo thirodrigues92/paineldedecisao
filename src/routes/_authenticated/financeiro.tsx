@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { DashboardDateFilter } from "@/components/DashboardDateFilter";
 import { DreLancamentosSheet, type DreDrawerAlvo } from "@/components/DreLancamentosSheet";
+import { DespesasPorCategoria } from "@/components/DespesasPorCategoria";
 import { useFilters } from "@/lib/filters-context";
 import { brl, pct } from "@/lib/format";
 import {
@@ -147,6 +148,8 @@ function FinanceiroExecutivo() {
           )}
         </CardContent>
       </Card>
+
+      <DespesasPorCategoria from={range.from} to={range.to} cmpFrom={cmp.from} cmpTo={cmp.to} />
 
       <DreLancamentosSheet alvo={alvo} regime="competencia" onClose={() => setAlvo(null)} />
     </div>
