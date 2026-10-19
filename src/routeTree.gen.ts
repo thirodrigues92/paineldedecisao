@@ -39,6 +39,8 @@ import { Route as AuthenticatedFinanceiroContasAPagarRouteImport } from './route
 import { Route as AuthenticatedFinanceiroContasAReceberRouteImport } from './routes/_authenticated/financeiro_.contas-a-receber'
 import { Route as AuthenticatedFinanceiroDespesasRouteImport } from './routes/_authenticated/financeiro_.despesas'
 import { Route as AuthenticatedFinanceiroDreRouteImport } from './routes/_authenticated/financeiro_.dre'
+import { Route as AuthenticatedFinanceiroFluxoRouteImport } from './routes/_authenticated/financeiro_.fluxo'
+import { Route as AuthenticatedFinanceiroRepasseRouteImport } from './routes/_authenticated/financeiro_.repasse'
 import { Route as ApiPublicHooksSyncFeegowRouteImport } from './routes/api/public/hooks/sync-feegow'
 
 const IndexRoute = IndexRouteImport.update({
@@ -203,6 +205,18 @@ const AuthenticatedFinanceiroDreRoute =
     path: '/financeiro/dre',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedFinanceiroFluxoRoute =
+  AuthenticatedFinanceiroFluxoRouteImport.update({
+    id: '/financeiro_/fluxo',
+    path: '/financeiro/fluxo',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedFinanceiroRepasseRoute =
+  AuthenticatedFinanceiroRepasseRouteImport.update({
+    id: '/financeiro_/repasse',
+    path: '/financeiro/repasse',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const ApiPublicHooksSyncFeegowRoute =
   ApiPublicHooksSyncFeegowRouteImport.update({
     id: '/api/public/hooks/sync-feegow',
@@ -240,6 +254,8 @@ export interface FileRoutesByFullPath {
   '/financeiro/contas-a-receber': typeof AuthenticatedFinanceiroContasAReceberRoute
   '/financeiro/despesas': typeof AuthenticatedFinanceiroDespesasRoute
   '/financeiro/dre': typeof AuthenticatedFinanceiroDreRoute
+  '/financeiro/fluxo': typeof AuthenticatedFinanceiroFluxoRoute
+  '/financeiro/repasse': typeof AuthenticatedFinanceiroRepasseRoute
   '/api/public/hooks/sync-feegow': typeof ApiPublicHooksSyncFeegowRoute
 }
 export interface FileRoutesByTo {
@@ -272,6 +288,8 @@ export interface FileRoutesByTo {
   '/financeiro/contas-a-receber': typeof AuthenticatedFinanceiroContasAReceberRoute
   '/financeiro/despesas': typeof AuthenticatedFinanceiroDespesasRoute
   '/financeiro/dre': typeof AuthenticatedFinanceiroDreRoute
+  '/financeiro/fluxo': typeof AuthenticatedFinanceiroFluxoRoute
+  '/financeiro/repasse': typeof AuthenticatedFinanceiroRepasseRoute
   '/api/public/hooks/sync-feegow': typeof ApiPublicHooksSyncFeegowRoute
 }
 export interface FileRoutesById {
@@ -306,6 +324,8 @@ export interface FileRoutesById {
   '/_authenticated/financeiro_/contas-a-receber': typeof AuthenticatedFinanceiroContasAReceberRoute
   '/_authenticated/financeiro_/despesas': typeof AuthenticatedFinanceiroDespesasRoute
   '/_authenticated/financeiro_/dre': typeof AuthenticatedFinanceiroDreRoute
+  '/_authenticated/financeiro_/fluxo': typeof AuthenticatedFinanceiroFluxoRoute
+  '/_authenticated/financeiro_/repasse': typeof AuthenticatedFinanceiroRepasseRoute
   '/api/public/hooks/sync-feegow': typeof ApiPublicHooksSyncFeegowRoute
 }
 export interface FileRouteTypes {
@@ -340,6 +360,8 @@ export interface FileRouteTypes {
     | '/financeiro/contas-a-receber'
     | '/financeiro/despesas'
     | '/financeiro/dre'
+    | '/financeiro/fluxo'
+    | '/financeiro/repasse'
     | '/api/public/hooks/sync-feegow'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -372,6 +394,8 @@ export interface FileRouteTypes {
     | '/financeiro/contas-a-receber'
     | '/financeiro/despesas'
     | '/financeiro/dre'
+    | '/financeiro/fluxo'
+    | '/financeiro/repasse'
     | '/api/public/hooks/sync-feegow'
   id:
     | '__root__'
@@ -405,6 +429,8 @@ export interface FileRouteTypes {
     | '/_authenticated/financeiro_/contas-a-receber'
     | '/_authenticated/financeiro_/despesas'
     | '/_authenticated/financeiro_/dre'
+    | '/_authenticated/financeiro_/fluxo'
+    | '/_authenticated/financeiro_/repasse'
     | '/api/public/hooks/sync-feegow'
   fileRoutesById: FileRoutesById
 }
@@ -632,6 +658,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFinanceiroDreRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/financeiro_/fluxo': {
+      id: '/_authenticated/financeiro_/fluxo'
+      path: '/financeiro/fluxo'
+      fullPath: '/financeiro/fluxo'
+      preLoaderRoute: typeof AuthenticatedFinanceiroFluxoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/financeiro_/repasse': {
+      id: '/_authenticated/financeiro_/repasse'
+      path: '/financeiro/repasse'
+      fullPath: '/financeiro/repasse'
+      preLoaderRoute: typeof AuthenticatedFinanceiroRepasseRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/hooks/sync-feegow': {
       id: '/api/public/hooks/sync-feegow'
       path: '/api/public/hooks/sync-feegow'
@@ -665,6 +705,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedFinanceiroContasAReceberRoute: typeof AuthenticatedFinanceiroContasAReceberRoute
   AuthenticatedFinanceiroDespesasRoute: typeof AuthenticatedFinanceiroDespesasRoute
   AuthenticatedFinanceiroDreRoute: typeof AuthenticatedFinanceiroDreRoute
+  AuthenticatedFinanceiroFluxoRoute: typeof AuthenticatedFinanceiroFluxoRoute
+  AuthenticatedFinanceiroRepasseRoute: typeof AuthenticatedFinanceiroRepasseRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -695,6 +737,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedFinanceiroContasAReceberRoute,
   AuthenticatedFinanceiroDespesasRoute: AuthenticatedFinanceiroDespesasRoute,
   AuthenticatedFinanceiroDreRoute: AuthenticatedFinanceiroDreRoute,
+  AuthenticatedFinanceiroFluxoRoute: AuthenticatedFinanceiroFluxoRoute,
+  AuthenticatedFinanceiroRepasseRoute: AuthenticatedFinanceiroRepasseRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
