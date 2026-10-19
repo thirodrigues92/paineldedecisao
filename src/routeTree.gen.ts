@@ -35,6 +35,8 @@ import { Route as AuthenticatedAnalyticsComercialRouteImport } from './routes/_a
 import { Route as AuthenticatedAnalyticsPrevisoesRouteImport } from './routes/_authenticated/analytics/previsoes'
 import { Route as AuthenticatedAnalyticsRentabilidadeRouteImport } from './routes/_authenticated/analytics/rentabilidade'
 import { Route as AuthenticatedFinanceiroAdminCategoriasRouteImport } from './routes/_authenticated/financeiro_.admin-categorias'
+import { Route as AuthenticatedFinanceiroContasAPagarRouteImport } from './routes/_authenticated/financeiro_.contas-a-pagar'
+import { Route as AuthenticatedFinanceiroContasAReceberRouteImport } from './routes/_authenticated/financeiro_.contas-a-receber'
 import { Route as AuthenticatedFinanceiroDespesasRouteImport } from './routes/_authenticated/financeiro_.despesas'
 import { Route as AuthenticatedFinanceiroDreRouteImport } from './routes/_authenticated/financeiro_.dre'
 import { Route as ApiPublicHooksSyncFeegowRouteImport } from './routes/api/public/hooks/sync-feegow'
@@ -177,6 +179,18 @@ const AuthenticatedFinanceiroAdminCategoriasRoute =
     path: '/financeiro/admin-categorias',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedFinanceiroContasAPagarRoute =
+  AuthenticatedFinanceiroContasAPagarRouteImport.update({
+    id: '/financeiro_/contas-a-pagar',
+    path: '/financeiro/contas-a-pagar',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedFinanceiroContasAReceberRoute =
+  AuthenticatedFinanceiroContasAReceberRouteImport.update({
+    id: '/financeiro_/contas-a-receber',
+    path: '/financeiro/contas-a-receber',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedFinanceiroDespesasRoute =
   AuthenticatedFinanceiroDespesasRouteImport.update({
     id: '/financeiro_/despesas',
@@ -222,6 +236,8 @@ export interface FileRoutesByFullPath {
   '/analytics/previsoes': typeof AuthenticatedAnalyticsPrevisoesRoute
   '/analytics/rentabilidade': typeof AuthenticatedAnalyticsRentabilidadeRoute
   '/financeiro/admin-categorias': typeof AuthenticatedFinanceiroAdminCategoriasRoute
+  '/financeiro/contas-a-pagar': typeof AuthenticatedFinanceiroContasAPagarRoute
+  '/financeiro/contas-a-receber': typeof AuthenticatedFinanceiroContasAReceberRoute
   '/financeiro/despesas': typeof AuthenticatedFinanceiroDespesasRoute
   '/financeiro/dre': typeof AuthenticatedFinanceiroDreRoute
   '/api/public/hooks/sync-feegow': typeof ApiPublicHooksSyncFeegowRoute
@@ -252,6 +268,8 @@ export interface FileRoutesByTo {
   '/analytics/previsoes': typeof AuthenticatedAnalyticsPrevisoesRoute
   '/analytics/rentabilidade': typeof AuthenticatedAnalyticsRentabilidadeRoute
   '/financeiro/admin-categorias': typeof AuthenticatedFinanceiroAdminCategoriasRoute
+  '/financeiro/contas-a-pagar': typeof AuthenticatedFinanceiroContasAPagarRoute
+  '/financeiro/contas-a-receber': typeof AuthenticatedFinanceiroContasAReceberRoute
   '/financeiro/despesas': typeof AuthenticatedFinanceiroDespesasRoute
   '/financeiro/dre': typeof AuthenticatedFinanceiroDreRoute
   '/api/public/hooks/sync-feegow': typeof ApiPublicHooksSyncFeegowRoute
@@ -284,6 +302,8 @@ export interface FileRoutesById {
   '/_authenticated/analytics/previsoes': typeof AuthenticatedAnalyticsPrevisoesRoute
   '/_authenticated/analytics/rentabilidade': typeof AuthenticatedAnalyticsRentabilidadeRoute
   '/_authenticated/financeiro_/admin-categorias': typeof AuthenticatedFinanceiroAdminCategoriasRoute
+  '/_authenticated/financeiro_/contas-a-pagar': typeof AuthenticatedFinanceiroContasAPagarRoute
+  '/_authenticated/financeiro_/contas-a-receber': typeof AuthenticatedFinanceiroContasAReceberRoute
   '/_authenticated/financeiro_/despesas': typeof AuthenticatedFinanceiroDespesasRoute
   '/_authenticated/financeiro_/dre': typeof AuthenticatedFinanceiroDreRoute
   '/api/public/hooks/sync-feegow': typeof ApiPublicHooksSyncFeegowRoute
@@ -316,6 +336,8 @@ export interface FileRouteTypes {
     | '/analytics/previsoes'
     | '/analytics/rentabilidade'
     | '/financeiro/admin-categorias'
+    | '/financeiro/contas-a-pagar'
+    | '/financeiro/contas-a-receber'
     | '/financeiro/despesas'
     | '/financeiro/dre'
     | '/api/public/hooks/sync-feegow'
@@ -346,6 +368,8 @@ export interface FileRouteTypes {
     | '/analytics/previsoes'
     | '/analytics/rentabilidade'
     | '/financeiro/admin-categorias'
+    | '/financeiro/contas-a-pagar'
+    | '/financeiro/contas-a-receber'
     | '/financeiro/despesas'
     | '/financeiro/dre'
     | '/api/public/hooks/sync-feegow'
@@ -377,6 +401,8 @@ export interface FileRouteTypes {
     | '/_authenticated/analytics/previsoes'
     | '/_authenticated/analytics/rentabilidade'
     | '/_authenticated/financeiro_/admin-categorias'
+    | '/_authenticated/financeiro_/contas-a-pagar'
+    | '/_authenticated/financeiro_/contas-a-receber'
     | '/_authenticated/financeiro_/despesas'
     | '/_authenticated/financeiro_/dre'
     | '/api/public/hooks/sync-feegow'
@@ -578,6 +604,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFinanceiroAdminCategoriasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/financeiro_/contas-a-pagar': {
+      id: '/_authenticated/financeiro_/contas-a-pagar'
+      path: '/financeiro/contas-a-pagar'
+      fullPath: '/financeiro/contas-a-pagar'
+      preLoaderRoute: typeof AuthenticatedFinanceiroContasAPagarRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/financeiro_/contas-a-receber': {
+      id: '/_authenticated/financeiro_/contas-a-receber'
+      path: '/financeiro/contas-a-receber'
+      fullPath: '/financeiro/contas-a-receber'
+      preLoaderRoute: typeof AuthenticatedFinanceiroContasAReceberRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/financeiro_/despesas': {
       id: '/_authenticated/financeiro_/despesas'
       path: '/financeiro/despesas'
@@ -621,6 +661,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAnalyticsPrevisoesRoute: typeof AuthenticatedAnalyticsPrevisoesRoute
   AuthenticatedAnalyticsRentabilidadeRoute: typeof AuthenticatedAnalyticsRentabilidadeRoute
   AuthenticatedFinanceiroAdminCategoriasRoute: typeof AuthenticatedFinanceiroAdminCategoriasRoute
+  AuthenticatedFinanceiroContasAPagarRoute: typeof AuthenticatedFinanceiroContasAPagarRoute
+  AuthenticatedFinanceiroContasAReceberRoute: typeof AuthenticatedFinanceiroContasAReceberRoute
   AuthenticatedFinanceiroDespesasRoute: typeof AuthenticatedFinanceiroDespesasRoute
   AuthenticatedFinanceiroDreRoute: typeof AuthenticatedFinanceiroDreRoute
 }
@@ -647,6 +689,10 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedAnalyticsRentabilidadeRoute,
   AuthenticatedFinanceiroAdminCategoriasRoute:
     AuthenticatedFinanceiroAdminCategoriasRoute,
+  AuthenticatedFinanceiroContasAPagarRoute:
+    AuthenticatedFinanceiroContasAPagarRoute,
+  AuthenticatedFinanceiroContasAReceberRoute:
+    AuthenticatedFinanceiroContasAReceberRoute,
   AuthenticatedFinanceiroDespesasRoute: AuthenticatedFinanceiroDespesasRoute,
   AuthenticatedFinanceiroDreRoute: AuthenticatedFinanceiroDreRoute,
 }
