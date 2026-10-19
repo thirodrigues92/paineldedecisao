@@ -1052,8 +1052,11 @@ Deno.serve(async (req) => {
     }
 
     if (mode === "financial" || mode === "full") {
-      const to = new Date(); to.setDate(to.getDate() + 30);
-      const from = new Date(); from.setDate(from.getDate() - 90);
+      // Período opcional (?from=AAAA-MM-DD&to=AAAA-MM-DD) para cargas históricas; padrão -90/+30 dias
+      const iso = /^\d{4}-\d{2}-\d{2}$/;
+      const qf = url.searchParams.get("from"), qt = url.searchParams.get("to");
+      const to = qt && iso.test(qt) ? new Date(`${qt}T12:00:00`) : (() => { const d = new Date(); d.setDate(d.getDate() + 30); return d; })();
+      const from = qf && iso.test(qf) ? new Date(`${qf}T12:00:00`) : (() => { const d = new Date(); d.setDate(d.getDate() - 90); return d; })();
       await syncFinancial(supabase, from, to);
     }
 
