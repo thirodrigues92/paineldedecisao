@@ -51,7 +51,10 @@ function FinanceiroExecutivo() {
   const q = useQuery({ queryKey: dreQueryKey("competencia"), queryFn: () => fetchDre("competencia") });
 
   const meses = useMemo(() => mesesEntre(f.from, f.to), [f.from, f.to]);
-  const prevMeses = useMemo(() => mesesAnteriores(meses), [meses]);
+  const prevMeses = useMemo(
+    () => (f.compareFrom && f.compareTo ? mesesEntre(f.compareFrom, f.compareTo) : mesesAnteriores(meses)),
+    [meses, f.compareFrom, f.compareTo],
+  );
   const rows = q.data ?? [];
   const tA = totais(rows, meses);
   const tP = totais(rows, prevMeses);
