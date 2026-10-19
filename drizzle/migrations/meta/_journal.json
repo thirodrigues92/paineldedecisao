@@ -15,6 +15,13 @@
       "when": 1792416969492,
       "tag": "0001_dre_mensal_caixa",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792417572863,
+      "tag": "0002_vw_contas_receber",
+      "breakpoints": true
     }
   ]
 }
