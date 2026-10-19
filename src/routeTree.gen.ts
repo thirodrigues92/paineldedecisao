@@ -29,6 +29,7 @@ import { Route as AuthenticatedFaturamentoDinamicoRouteImport } from './routes/_
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedConfigRouteImport } from './routes/_authenticated/config'
 import { Route as AuthenticatedAuditoriaRouteImport } from './routes/_authenticated/auditoria'
+import { Route as AuthenticatedFinanceiroAdminCategoriasRouteImport } from './routes/_authenticated/financeiro_.admin-categorias'
 import { Route as AuthenticatedAnalyticsRentabilidadeRouteImport } from './routes/_authenticated/analytics/rentabilidade'
 import { Route as AuthenticatedAnalyticsPrevisoesRouteImport } from './routes/_authenticated/analytics/previsoes'
 import { Route as AuthenticatedAnalyticsComercialRouteImport } from './routes/_authenticated/analytics/comercial'
@@ -138,6 +139,12 @@ const AuthenticatedAuditoriaRoute = AuthenticatedAuditoriaRouteImport.update({
   path: '/auditoria',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedFinanceiroAdminCategoriasRoute =
+  AuthenticatedFinanceiroAdminCategoriasRouteImport.update({
+    id: '/financeiro_/admin-categorias',
+    path: '/financeiro/admin-categorias',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAnalyticsRentabilidadeRoute =
   AuthenticatedAnalyticsRentabilidadeRouteImport.update({
     id: '/analytics/rentabilidade',
@@ -200,6 +207,7 @@ export interface FileRoutesByFullPath {
   '/analytics/comercial': typeof AuthenticatedAnalyticsComercialRoute
   '/analytics/previsoes': typeof AuthenticatedAnalyticsPrevisoesRoute
   '/analytics/rentabilidade': typeof AuthenticatedAnalyticsRentabilidadeRoute
+  '/financeiro/admin-categorias': typeof AuthenticatedFinanceiroAdminCategoriasRoute
   '/api/public/hooks/sync-feegow': typeof ApiPublicHooksSyncFeegowRoute
 }
 export interface FileRoutesByTo {
@@ -227,6 +235,7 @@ export interface FileRoutesByTo {
   '/analytics/comercial': typeof AuthenticatedAnalyticsComercialRoute
   '/analytics/previsoes': typeof AuthenticatedAnalyticsPrevisoesRoute
   '/analytics/rentabilidade': typeof AuthenticatedAnalyticsRentabilidadeRoute
+  '/financeiro/admin-categorias': typeof AuthenticatedFinanceiroAdminCategoriasRoute
   '/api/public/hooks/sync-feegow': typeof ApiPublicHooksSyncFeegowRoute
 }
 export interface FileRoutesById {
@@ -256,6 +265,7 @@ export interface FileRoutesById {
   '/_authenticated/analytics/comercial': typeof AuthenticatedAnalyticsComercialRoute
   '/_authenticated/analytics/previsoes': typeof AuthenticatedAnalyticsPrevisoesRoute
   '/_authenticated/analytics/rentabilidade': typeof AuthenticatedAnalyticsRentabilidadeRoute
+  '/_authenticated/financeiro_/admin-categorias': typeof AuthenticatedFinanceiroAdminCategoriasRoute
   '/api/public/hooks/sync-feegow': typeof ApiPublicHooksSyncFeegowRoute
 }
 export interface FileRouteTypes {
@@ -285,6 +295,7 @@ export interface FileRouteTypes {
     | '/analytics/comercial'
     | '/analytics/previsoes'
     | '/analytics/rentabilidade'
+    | '/financeiro/admin-categorias'
     | '/api/public/hooks/sync-feegow'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -312,6 +323,7 @@ export interface FileRouteTypes {
     | '/analytics/comercial'
     | '/analytics/previsoes'
     | '/analytics/rentabilidade'
+    | '/financeiro/admin-categorias'
     | '/api/public/hooks/sync-feegow'
   id:
     | '__root__'
@@ -340,6 +352,7 @@ export interface FileRouteTypes {
     | '/_authenticated/analytics/comercial'
     | '/_authenticated/analytics/previsoes'
     | '/_authenticated/analytics/rentabilidade'
+    | '/_authenticated/financeiro_/admin-categorias'
     | '/api/public/hooks/sync-feegow'
   fileRoutesById: FileRoutesById
 }
@@ -497,6 +510,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAuditoriaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/financeiro_/admin-categorias': {
+      id: '/_authenticated/financeiro_/admin-categorias'
+      path: '/financeiro/admin-categorias'
+      fullPath: '/financeiro/admin-categorias'
+      preLoaderRoute: typeof AuthenticatedFinanceiroAdminCategoriasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/analytics/rentabilidade': {
       id: '/_authenticated/analytics/rentabilidade'
       path: '/analytics/rentabilidade'
@@ -560,6 +580,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAnalyticsComercialRoute: typeof AuthenticatedAnalyticsComercialRoute
   AuthenticatedAnalyticsPrevisoesRoute: typeof AuthenticatedAnalyticsPrevisoesRoute
   AuthenticatedAnalyticsRentabilidadeRoute: typeof AuthenticatedAnalyticsRentabilidadeRoute
+  AuthenticatedFinanceiroAdminCategoriasRoute: typeof AuthenticatedFinanceiroAdminCategoriasRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -582,6 +603,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAnalyticsPrevisoesRoute: AuthenticatedAnalyticsPrevisoesRoute,
   AuthenticatedAnalyticsRentabilidadeRoute:
     AuthenticatedAnalyticsRentabilidadeRoute,
+  AuthenticatedFinanceiroAdminCategoriasRoute:
+    AuthenticatedFinanceiroAdminCategoriasRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
