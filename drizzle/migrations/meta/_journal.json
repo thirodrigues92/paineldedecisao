@@ -22,6 +22,13 @@
       "when": 1792417572863,
       "tag": "0002_vw_contas_receber",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792418195277,
+      "tag": "0003_repasse_por_medico",
+      "breakpoints": true
     }
   ]
 }

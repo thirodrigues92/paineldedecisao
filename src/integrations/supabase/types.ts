@@ -1564,6 +1564,19 @@ export type Database = {
       dre_classificar: { Args: { cat: string }; Returns: string }
       dre_normalizar: { Args: { s: string }; Returns: string }
       dre_tipo_grupo: { Args: { g: string }; Returns: string }
+      fin_repasse_medico: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          apurado: number
+          especialidade: string
+          nome: string
+          pago: number
+          pendente: number
+          profissional_id: number
+          qtd_atend: number
+          receita: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1602,6 +1615,7 @@ export type Database = {
       }
       lab_enriquecer_faturamento: { Args: never; Returns: Json }
       lab_popular_dimensoes: { Args: never; Returns: undefined }
+      normalizar_nome_medico: { Args: { s: string }; Returns: string }
       refresh_dashboard_views: { Args: never; Returns: undefined }
     }
     Enums: {
