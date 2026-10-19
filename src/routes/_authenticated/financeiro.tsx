@@ -61,7 +61,8 @@ function FinanceiroExecutivo() {
   const a = metricas(tA);
   const b = metricas(tP);
   const range = mesRange(meses);
-  const abrir = (grupo: string, titulo: string) => setAlvo({ grupo, titulo, ...range });
+  const cmp = mesRange(prevMeses);
+  const abrir = (grupo: string, titulo: string) => setAlvo({ grupo, titulo, ...range, cmpFrom: cmp.from, cmpTo: cmp.to });
 
   const tomPct = (v: number, ok: number, warn: number, menorMelhor = false): Tom =>
     menorMelhor ? (v <= ok ? "ok" : v <= warn ? "warn" : "bad") : (v >= ok ? "ok" : v >= warn ? "warn" : "bad");
