@@ -37,7 +37,7 @@ export const Route = createFileRoute("/_authenticated/analytics/aplicacoes")({
   }),
   component: AplicacoesPage,
   errorComponent: ({ error }) => (
-    <div role="alert" className="text-sm text-destructive">Erro ao carregar: {error.message}</div>
+    <div role="alert" className="text-sm text-destructive">Erro ao carregar: {error instanceof Error ? error.message : String(error)}</div>
   ),
 });
 
