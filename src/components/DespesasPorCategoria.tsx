@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Bar, BarChart, CartesianGrid, Cell, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { ResponsiveContainer, Tooltip, Treemap } from "recharts";
 import { ArrowDownRight, ArrowUpRight, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -75,30 +75,29 @@ export function DespesasPorCategoria({ from, to, cmpFrom, cmpTo }: { from: strin
           </div>
         </div>
 
-        <div style={{ height: Math.max(320, grafico.length * 38) }}>
+        <div className="h-[340px]">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={grafico} layout="vertical" margin={{ left: 10, right: 30 }} onClick={(e: any) => e?.activeLabel && setSel(e.activeLabel)}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
-              <XAxis type="number" tickFormatter={(v) => brl(v).replace(",00", "")} stroke="var(--muted-foreground)" fontSize={11} />
-              <YAxis type="category" dataKey="categoria" width={200} stroke="var(--muted-foreground)" fontSize={11} />
+            <Treemap data={grafico.filter((g) => g.atual > 0).map((g) => ({ name: g.categoria, size: g.atual, qa: g.qa, comp: g.comp }))}
+              dataKey="size" aspectRatio={4 / 3} stroke="transparent" isAnimationActive={false}
+              content={<Bloco sel={sel} onPick={(n: string) => setSel(sel === n ? null : n)} />}>
               <Tooltip
-                cursor={{ fill: "color-mix(in oklch, var(--accent) 30%, transparent)" }}
                 contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8 }}
-                formatter={(v: number, n: string, p: any) => {
-                  const t = n === "Período atual" ? totA : totB;
-                  const q = n === "Período atual" ? p.payload.qa : p.payload.qb;
-                  return [`${brl(v)} · ${pct(t ? (v / t) * 100 : 0)} do total · ${num(q)} lanç.`, n];
-                }}
+                formatter={(v: number, _n: string, p: any) => [`${brl(v)} · ${pct(totA ? (v / totA) * 100 : 0)} do total · ${num(p.payload.qa)} lanç. · comparação ${brl(p.payload.comp)}`, p.payload.name]}
+                labelFormatter={() => ""}
               />
-              <Legend />
-              <Bar dataKey="atual" name="Período atual" fill="var(--primary)" radius={[0, 4, 4, 0]} className="cursor-pointer">
-                {grafico.map((g) => <Cell key={g.categoria} fillOpacity={!sel || sel === g.categoria ? 1 : 0.35} />)}
-              </Bar>
-              <Bar dataKey="comp" name="Comparação" fill="var(--muted-foreground)" radius={[0, 4, 4, 0]} className="cursor-pointer">
-                {grafico.map((g) => <Cell key={g.categoria} fillOpacity={!sel || sel === g.categoria ? 0.8 : 0.25} />)}
-              </Bar>
-            </BarChart>
+            </Treemap>
           </ResponsiveContainer>
+        </div>
+
+        <div className="flex flex-wrap gap-1.5">
+          {grafico.map((g, idx) => (
+            <button key={g.categoria} type="button" onClick={() => setSel(sel === g.categoria ? null : g.categoria)}
+              className={`flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-medium hover:bg-muted/60 ${sel === g.categoria ? "border-primary/60 bg-muted/60" : "border-border/50 bg-muted/20"} ${sel && sel !== g.categoria ? "opacity-45" : ""}`}>
+              <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: PALETTE[idx % PALETTE.length] }} />
+              <span className="truncate max-w-[160px]">{g.categoria}</span>
+              <span className="text-muted-foreground font-normal">{brl(g.atual)}</span>
+            </button>
+          ))}
         </div>
 
         <div className="overflow-x-auto">
@@ -170,5 +169,28 @@ function ListaLanc({ titulo, rows }: { titulo: string; rows: L[] }) {
         ))}
       </ul>
     </div>
+  );
+}
+
+const PALETTE = ["#2563eb", "#16a34a", "#d97706", "#dc2626", "#9333ea", "#0891b2", "#ea580c", "#4f46e5", "#65a30d", "#be123c"];
+
+function Bloco(props: any) {
+  const { x, y, width, height, index, name, value, sel, onPick } = props;
+  if (!name || typeof width !== "number") return <g />;
+  const color = PALETTE[(index ?? 0) % PALETTE.length];
+  const dim = sel && sel !== name;
+  return (
+    <g onClick={() => onPick(name)} style={{ cursor: "pointer" }}>
+      <rect x={x + 2} y={y + 2} width={Math.max(0, width - 4)} height={Math.max(0, height - 4)} rx={8}
+        fill={color} fillOpacity={dim ? 0.2 : sel === name ? 0.85 : 0.55} stroke={color} strokeOpacity={0.7} strokeWidth={sel === name ? 3 : 1} />
+      {width > 46 && height > 24 && (
+        <text x={x + 10} y={y + 18} fill="var(--foreground)" fillOpacity={0.9} fontSize={11} fontWeight={600} pointerEvents="none">
+          {name.length * 6.2 > width - 16 ? `${name.slice(0, Math.max(3, Math.floor((width - 16) / 6.2)))}…` : name}
+        </text>
+      )}
+      {width > 60 && height > 42 && (
+        <text x={x + 10} y={y + 33} fill="var(--foreground)" fillOpacity={0.65} fontSize={10} pointerEvents="none">{brl(value)}</text>
+      )}
+    </g>
   );
 }
