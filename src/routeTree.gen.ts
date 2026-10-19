@@ -35,6 +35,7 @@ import { Route as AuthenticatedAnalyticsComercialRouteImport } from './routes/_a
 import { Route as AuthenticatedAnalyticsPrevisoesRouteImport } from './routes/_authenticated/analytics/previsoes'
 import { Route as AuthenticatedAnalyticsRentabilidadeRouteImport } from './routes/_authenticated/analytics/rentabilidade'
 import { Route as AuthenticatedFinanceiroAdminCategoriasRouteImport } from './routes/_authenticated/financeiro_.admin-categorias'
+import { Route as AuthenticatedFinanceiroDreRouteImport } from './routes/_authenticated/financeiro_.dre'
 import { Route as ApiPublicHooksSyncFeegowRouteImport } from './routes/api/public/hooks/sync-feegow'
 
 const IndexRoute = IndexRouteImport.update({
@@ -175,6 +176,12 @@ const AuthenticatedFinanceiroAdminCategoriasRoute =
     path: '/financeiro/admin-categorias',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedFinanceiroDreRoute =
+  AuthenticatedFinanceiroDreRouteImport.update({
+    id: '/financeiro_/dre',
+    path: '/financeiro/dre',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const ApiPublicHooksSyncFeegowRoute =
   ApiPublicHooksSyncFeegowRouteImport.update({
     id: '/api/public/hooks/sync-feegow',
@@ -208,6 +215,7 @@ export interface FileRoutesByFullPath {
   '/analytics/previsoes': typeof AuthenticatedAnalyticsPrevisoesRoute
   '/analytics/rentabilidade': typeof AuthenticatedAnalyticsRentabilidadeRoute
   '/financeiro/admin-categorias': typeof AuthenticatedFinanceiroAdminCategoriasRoute
+  '/financeiro/dre': typeof AuthenticatedFinanceiroDreRoute
   '/api/public/hooks/sync-feegow': typeof ApiPublicHooksSyncFeegowRoute
 }
 export interface FileRoutesByTo {
@@ -236,6 +244,7 @@ export interface FileRoutesByTo {
   '/analytics/previsoes': typeof AuthenticatedAnalyticsPrevisoesRoute
   '/analytics/rentabilidade': typeof AuthenticatedAnalyticsRentabilidadeRoute
   '/financeiro/admin-categorias': typeof AuthenticatedFinanceiroAdminCategoriasRoute
+  '/financeiro/dre': typeof AuthenticatedFinanceiroDreRoute
   '/api/public/hooks/sync-feegow': typeof ApiPublicHooksSyncFeegowRoute
 }
 export interface FileRoutesById {
@@ -266,6 +275,7 @@ export interface FileRoutesById {
   '/_authenticated/analytics/previsoes': typeof AuthenticatedAnalyticsPrevisoesRoute
   '/_authenticated/analytics/rentabilidade': typeof AuthenticatedAnalyticsRentabilidadeRoute
   '/_authenticated/financeiro_/admin-categorias': typeof AuthenticatedFinanceiroAdminCategoriasRoute
+  '/_authenticated/financeiro_/dre': typeof AuthenticatedFinanceiroDreRoute
   '/api/public/hooks/sync-feegow': typeof ApiPublicHooksSyncFeegowRoute
 }
 export interface FileRouteTypes {
@@ -296,6 +306,7 @@ export interface FileRouteTypes {
     | '/analytics/previsoes'
     | '/analytics/rentabilidade'
     | '/financeiro/admin-categorias'
+    | '/financeiro/dre'
     | '/api/public/hooks/sync-feegow'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -324,6 +335,7 @@ export interface FileRouteTypes {
     | '/analytics/previsoes'
     | '/analytics/rentabilidade'
     | '/financeiro/admin-categorias'
+    | '/financeiro/dre'
     | '/api/public/hooks/sync-feegow'
   id:
     | '__root__'
@@ -353,6 +365,7 @@ export interface FileRouteTypes {
     | '/_authenticated/analytics/previsoes'
     | '/_authenticated/analytics/rentabilidade'
     | '/_authenticated/financeiro_/admin-categorias'
+    | '/_authenticated/financeiro_/dre'
     | '/api/public/hooks/sync-feegow'
   fileRoutesById: FileRoutesById
 }
@@ -552,6 +565,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFinanceiroAdminCategoriasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/financeiro_/dre': {
+      id: '/_authenticated/financeiro_/dre'
+      path: '/financeiro/dre'
+      fullPath: '/financeiro/dre'
+      preLoaderRoute: typeof AuthenticatedFinanceiroDreRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/hooks/sync-feegow': {
       id: '/api/public/hooks/sync-feegow'
       path: '/api/public/hooks/sync-feegow'
@@ -581,6 +601,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAnalyticsPrevisoesRoute: typeof AuthenticatedAnalyticsPrevisoesRoute
   AuthenticatedAnalyticsRentabilidadeRoute: typeof AuthenticatedAnalyticsRentabilidadeRoute
   AuthenticatedFinanceiroAdminCategoriasRoute: typeof AuthenticatedFinanceiroAdminCategoriasRoute
+  AuthenticatedFinanceiroDreRoute: typeof AuthenticatedFinanceiroDreRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -605,6 +626,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedAnalyticsRentabilidadeRoute,
   AuthenticatedFinanceiroAdminCategoriasRoute:
     AuthenticatedFinanceiroAdminCategoriasRoute,
+  AuthenticatedFinanceiroDreRoute: AuthenticatedFinanceiroDreRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

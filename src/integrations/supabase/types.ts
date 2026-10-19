@@ -1435,6 +1435,15 @@ export type Database = {
         }
         Relationships: []
       }
+      vw_dre_mensal_caixa: {
+        Row: {
+          grupo_dre: string | null
+          mes: string | null
+          tipo: string | null
+          valor: number | null
+        }
+        Relationships: []
+      }
       vw_faturamento_categorizado: {
         Row: {
           acrescimo: number | null
