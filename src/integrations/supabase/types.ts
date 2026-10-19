@@ -191,6 +191,24 @@ export type Database = {
         }
         Relationships: []
       }
+      dim_categoria_dre: {
+        Row: {
+          categoria_origem: string
+          grupo_dre: string
+          tipo: string
+        }
+        Insert: {
+          categoria_origem: string
+          grupo_dre: string
+          tipo: string
+        }
+        Update: {
+          categoria_origem?: string
+          grupo_dre?: string
+          tipo?: string
+        }
+        Relationships: []
+      }
       especialidades: {
         Row: {
           codigo_tiss: string | null
@@ -1398,6 +1416,25 @@ export type Database = {
         }
         Relationships: []
       }
+      vw_dre_categorias: {
+        Row: {
+          categoria_origem: string | null
+          grupo_dre: string | null
+          qtd: number | null
+          tipo: string | null
+          total: number | null
+        }
+        Relationships: []
+      }
+      vw_dre_mensal: {
+        Row: {
+          grupo_dre: string | null
+          mes: string | null
+          tipo: string | null
+          valor: number | null
+        }
+        Relationships: []
+      }
       vw_faturamento_categorizado: {
         Row: {
           acrescimo: number | null
@@ -1499,6 +1536,9 @@ export type Database = {
       }
     }
     Functions: {
+      dre_classificar: { Args: { cat: string }; Returns: string }
+      dre_normalizar: { Args: { s: string }; Returns: string }
+      dre_tipo_grupo: { Args: { g: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

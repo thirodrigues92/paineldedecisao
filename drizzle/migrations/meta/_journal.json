@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1792416662214,
+      "tag": "0000_financeiro_dre_base",
+      "breakpoints": true
+    }
+  ]
+}
