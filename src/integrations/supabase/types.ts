@@ -1404,6 +1404,22 @@ export type Database = {
         }
         Relationships: []
       }
+      vw_contas_receber: {
+        Row: {
+          categoria: string | null
+          convenio_id: number | null
+          convenio_nome: string | null
+          data_execucao: string | null
+          data_pagamento: string | null
+          data_vencimento: string | null
+          descricao_item: string | null
+          id: number | null
+          is_convenio: boolean | null
+          status: string | null
+          valor: number | null
+        }
+        Relationships: []
+      }
       vw_demanda_especialidade_por_regiao: {
         Row: {
           atendimentos: number | null
