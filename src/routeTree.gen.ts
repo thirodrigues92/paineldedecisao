@@ -9,42 +9,41 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as PublicLoginRouteImport } from './routes/public-login'
-import { Route as PublicDashboardRouteImport } from './routes/public-dashboard'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as LabRelatorioRouteImport } from './routes/lab/relatorio'
-import { Route as LabFaturamentoRouteImport } from './routes/lab/faturamento'
-import { Route as LabConciliacaoRouteImport } from './routes/lab/conciliacao'
-import { Route as AuthenticatedUnidadesRouteImport } from './routes/_authenticated/unidades'
-import { Route as AuthenticatedRelatorioAtendimentosRouteImport } from './routes/_authenticated/relatorio-atendimentos'
-import { Route as AuthenticatedProfissionaisRouteImport } from './routes/_authenticated/profissionais'
-import { Route as AuthenticatedNoShowRouteImport } from './routes/_authenticated/no-show'
-import { Route as AuthenticatedMapaRouteImport } from './routes/_authenticated/mapa'
-import { Route as AuthenticatedHojeRouteImport } from './routes/_authenticated/hoje'
-import { Route as AuthenticatedHeatmapRouteImport } from './routes/_authenticated/heatmap'
-import { Route as AuthenticatedFinanceiroRouteImport } from './routes/_authenticated/financeiro'
-import { Route as AuthenticatedFaturamentoDinamicoRouteImport } from './routes/_authenticated/faturamento-dinamico'
-import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
-import { Route as AuthenticatedConfigRouteImport } from './routes/_authenticated/config'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as PublicDashboardRouteImport } from './routes/public-dashboard'
+import { Route as PublicLoginRouteImport } from './routes/public-login'
 import { Route as AuthenticatedAuditoriaRouteImport } from './routes/_authenticated/auditoria'
-import { Route as AuthenticatedFinanceiroAdminCategoriasRouteImport } from './routes/_authenticated/financeiro_.admin-categorias'
-import { Route as AuthenticatedAnalyticsRentabilidadeRouteImport } from './routes/_authenticated/analytics/rentabilidade'
-import { Route as AuthenticatedAnalyticsPrevisoesRouteImport } from './routes/_authenticated/analytics/previsoes'
-import { Route as AuthenticatedAnalyticsComercialRouteImport } from './routes/_authenticated/analytics/comercial'
-import { Route as AuthenticatedAnalyticsCapacidadeRouteImport } from './routes/_authenticated/analytics/capacidade'
+import { Route as AuthenticatedConfigRouteImport } from './routes/_authenticated/config'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedFaturamentoDinamicoRouteImport } from './routes/_authenticated/faturamento-dinamico'
+import { Route as AuthenticatedFinanceiroRouteImport } from './routes/_authenticated/financeiro'
+import { Route as AuthenticatedHeatmapRouteImport } from './routes/_authenticated/heatmap'
+import { Route as AuthenticatedHojeRouteImport } from './routes/_authenticated/hoje'
+import { Route as AuthenticatedMapaRouteImport } from './routes/_authenticated/mapa'
+import { Route as AuthenticatedNoShowRouteImport } from './routes/_authenticated/no-show'
+import { Route as AuthenticatedProfissionaisRouteImport } from './routes/_authenticated/profissionais'
+import { Route as AuthenticatedRelatorioAtendimentosRouteImport } from './routes/_authenticated/relatorio-atendimentos'
+import { Route as AuthenticatedUnidadesRouteImport } from './routes/_authenticated/unidades'
+import { Route as LabConciliacaoRouteImport } from './routes/lab/conciliacao'
+import { Route as LabFaturamentoRouteImport } from './routes/lab/faturamento'
+import { Route as LabRelatorioRouteImport } from './routes/lab/relatorio'
 import { Route as AuthenticatedAnalyticsAplicacoesRouteImport } from './routes/_authenticated/analytics/aplicacoes'
+import { Route as AuthenticatedAnalyticsCapacidadeRouteImport } from './routes/_authenticated/analytics/capacidade'
+import { Route as AuthenticatedAnalyticsComercialRouteImport } from './routes/_authenticated/analytics/comercial'
+import { Route as AuthenticatedAnalyticsPrevisoesRouteImport } from './routes/_authenticated/analytics/previsoes'
+import { Route as AuthenticatedAnalyticsRentabilidadeRouteImport } from './routes/_authenticated/analytics/rentabilidade'
+import { Route as AuthenticatedFinanceiroAdminCategoriasRouteImport } from './routes/_authenticated/financeiro_.admin-categorias'
 import { Route as ApiPublicHooksSyncFeegowRouteImport } from './routes/api/public/hooks/sync-feegow'
 
-const PublicLoginRoute = PublicLoginRouteImport.update({
-  id: '/public-login',
-  path: '/public-login',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PublicDashboardRoute = PublicDashboardRouteImport.update({
-  id: '/public-dashboard',
-  path: '/public-dashboard',
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -52,70 +51,29 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
-  id: '/_authenticated',
+const PublicDashboardRoute = PublicDashboardRouteImport.update({
+  id: '/public-dashboard',
+  path: '/public-dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const PublicLoginRoute = PublicLoginRouteImport.update({
+  id: '/public-login',
+  path: '/public-login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LabRelatorioRoute = LabRelatorioRouteImport.update({
-  id: '/lab/relatorio',
-  path: '/lab/relatorio',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LabFaturamentoRoute = LabFaturamentoRouteImport.update({
-  id: '/lab/faturamento',
-  path: '/lab/faturamento',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LabConciliacaoRoute = LabConciliacaoRouteImport.update({
-  id: '/lab/conciliacao',
-  path: '/lab/conciliacao',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedUnidadesRoute = AuthenticatedUnidadesRouteImport.update({
-  id: '/unidades',
-  path: '/unidades',
+const AuthenticatedAuditoriaRoute = AuthenticatedAuditoriaRouteImport.update({
+  id: '/auditoria',
+  path: '/auditoria',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedRelatorioAtendimentosRoute =
-  AuthenticatedRelatorioAtendimentosRouteImport.update({
-    id: '/relatorio-atendimentos',
-    path: '/relatorio-atendimentos',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedProfissionaisRoute =
-  AuthenticatedProfissionaisRouteImport.update({
-    id: '/profissionais',
-    path: '/profissionais',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedNoShowRoute = AuthenticatedNoShowRouteImport.update({
-  id: '/no-show',
-  path: '/no-show',
+const AuthenticatedConfigRoute = AuthenticatedConfigRouteImport.update({
+  id: '/config',
+  path: '/config',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedMapaRoute = AuthenticatedMapaRouteImport.update({
-  id: '/mapa',
-  path: '/mapa',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedHojeRoute = AuthenticatedHojeRouteImport.update({
-  id: '/hoje',
-  path: '/hoje',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedHeatmapRoute = AuthenticatedHeatmapRouteImport.update({
-  id: '/heatmap',
-  path: '/heatmap',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedFinanceiroRoute = AuthenticatedFinanceiroRouteImport.update({
-  id: '/financeiro',
-  path: '/financeiro',
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedFaturamentoDinamicoRoute =
@@ -124,43 +82,67 @@ const AuthenticatedFaturamentoDinamicoRoute =
     path: '/faturamento-dinamico',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
+const AuthenticatedFinanceiroRoute = AuthenticatedFinanceiroRouteImport.update({
+  id: '/financeiro',
+  path: '/financeiro',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedConfigRoute = AuthenticatedConfigRouteImport.update({
-  id: '/config',
-  path: '/config',
+const AuthenticatedHeatmapRoute = AuthenticatedHeatmapRouteImport.update({
+  id: '/heatmap',
+  path: '/heatmap',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedAuditoriaRoute = AuthenticatedAuditoriaRouteImport.update({
-  id: '/auditoria',
-  path: '/auditoria',
+const AuthenticatedHojeRoute = AuthenticatedHojeRouteImport.update({
+  id: '/hoje',
+  path: '/hoje',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedFinanceiroAdminCategoriasRoute =
-  AuthenticatedFinanceiroAdminCategoriasRouteImport.update({
-    id: '/financeiro_/admin-categorias',
-    path: '/financeiro/admin-categorias',
+const AuthenticatedMapaRoute = AuthenticatedMapaRouteImport.update({
+  id: '/mapa',
+  path: '/mapa',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedNoShowRoute = AuthenticatedNoShowRouteImport.update({
+  id: '/no-show',
+  path: '/no-show',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedProfissionaisRoute =
+  AuthenticatedProfissionaisRouteImport.update({
+    id: '/profissionais',
+    path: '/profissionais',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedAnalyticsRentabilidadeRoute =
-  AuthenticatedAnalyticsRentabilidadeRouteImport.update({
-    id: '/analytics/rentabilidade',
-    path: '/analytics/rentabilidade',
+const AuthenticatedRelatorioAtendimentosRoute =
+  AuthenticatedRelatorioAtendimentosRouteImport.update({
+    id: '/relatorio-atendimentos',
+    path: '/relatorio-atendimentos',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedAnalyticsPrevisoesRoute =
-  AuthenticatedAnalyticsPrevisoesRouteImport.update({
-    id: '/analytics/previsoes',
-    path: '/analytics/previsoes',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedAnalyticsComercialRoute =
-  AuthenticatedAnalyticsComercialRouteImport.update({
-    id: '/analytics/comercial',
-    path: '/analytics/comercial',
+const AuthenticatedUnidadesRoute = AuthenticatedUnidadesRouteImport.update({
+  id: '/unidades',
+  path: '/unidades',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const LabConciliacaoRoute = LabConciliacaoRouteImport.update({
+  id: '/lab/conciliacao',
+  path: '/lab/conciliacao',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LabFaturamentoRoute = LabFaturamentoRouteImport.update({
+  id: '/lab/faturamento',
+  path: '/lab/faturamento',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LabRelatorioRoute = LabRelatorioRouteImport.update({
+  id: '/lab/relatorio',
+  path: '/lab/relatorio',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedAnalyticsAplicacoesRoute =
+  AuthenticatedAnalyticsAplicacoesRouteImport.update({
+    id: '/analytics/aplicacoes',
+    path: '/analytics/aplicacoes',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedAnalyticsCapacidadeRoute =
@@ -169,10 +151,28 @@ const AuthenticatedAnalyticsCapacidadeRoute =
     path: '/analytics/capacidade',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedAnalyticsAplicacoesRoute =
-  AuthenticatedAnalyticsAplicacoesRouteImport.update({
-    id: '/analytics/aplicacoes',
-    path: '/analytics/aplicacoes',
+const AuthenticatedAnalyticsComercialRoute =
+  AuthenticatedAnalyticsComercialRouteImport.update({
+    id: '/analytics/comercial',
+    path: '/analytics/comercial',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAnalyticsPrevisoesRoute =
+  AuthenticatedAnalyticsPrevisoesRouteImport.update({
+    id: '/analytics/previsoes',
+    path: '/analytics/previsoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAnalyticsRentabilidadeRoute =
+  AuthenticatedAnalyticsRentabilidadeRouteImport.update({
+    id: '/analytics/rentabilidade',
+    path: '/analytics/rentabilidade',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedFinanceiroAdminCategoriasRoute =
+  AuthenticatedFinanceiroAdminCategoriasRouteImport.update({
+    id: '/financeiro_/admin-categorias',
+    path: '/financeiro/admin-categorias',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const ApiPublicHooksSyncFeegowRoute =
@@ -370,25 +370,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/public-login': {
-      id: '/public-login'
-      path: '/public-login'
-      fullPath: '/public-login'
-      preLoaderRoute: typeof PublicLoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/public-dashboard': {
-      id: '/public-dashboard'
-      path: '/public-dashboard'
-      fullPath: '/public-dashboard'
-      preLoaderRoute: typeof PublicDashboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -398,102 +384,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/lab/relatorio': {
-      id: '/lab/relatorio'
-      path: '/lab/relatorio'
-      fullPath: '/lab/relatorio'
-      preLoaderRoute: typeof LabRelatorioRouteImport
+    '/public-dashboard': {
+      id: '/public-dashboard'
+      path: '/public-dashboard'
+      fullPath: '/public-dashboard'
+      preLoaderRoute: typeof PublicDashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/lab/faturamento': {
-      id: '/lab/faturamento'
-      path: '/lab/faturamento'
-      fullPath: '/lab/faturamento'
-      preLoaderRoute: typeof LabFaturamentoRouteImport
+    '/public-login': {
+      id: '/public-login'
+      path: '/public-login'
+      fullPath: '/public-login'
+      preLoaderRoute: typeof PublicLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/lab/conciliacao': {
-      id: '/lab/conciliacao'
-      path: '/lab/conciliacao'
-      fullPath: '/lab/conciliacao'
-      preLoaderRoute: typeof LabConciliacaoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/unidades': {
-      id: '/_authenticated/unidades'
-      path: '/unidades'
-      fullPath: '/unidades'
-      preLoaderRoute: typeof AuthenticatedUnidadesRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/relatorio-atendimentos': {
-      id: '/_authenticated/relatorio-atendimentos'
-      path: '/relatorio-atendimentos'
-      fullPath: '/relatorio-atendimentos'
-      preLoaderRoute: typeof AuthenticatedRelatorioAtendimentosRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/profissionais': {
-      id: '/_authenticated/profissionais'
-      path: '/profissionais'
-      fullPath: '/profissionais'
-      preLoaderRoute: typeof AuthenticatedProfissionaisRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/no-show': {
-      id: '/_authenticated/no-show'
-      path: '/no-show'
-      fullPath: '/no-show'
-      preLoaderRoute: typeof AuthenticatedNoShowRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/mapa': {
-      id: '/_authenticated/mapa'
-      path: '/mapa'
-      fullPath: '/mapa'
-      preLoaderRoute: typeof AuthenticatedMapaRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/hoje': {
-      id: '/_authenticated/hoje'
-      path: '/hoje'
-      fullPath: '/hoje'
-      preLoaderRoute: typeof AuthenticatedHojeRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/heatmap': {
-      id: '/_authenticated/heatmap'
-      path: '/heatmap'
-      fullPath: '/heatmap'
-      preLoaderRoute: typeof AuthenticatedHeatmapRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/financeiro': {
-      id: '/_authenticated/financeiro'
-      path: '/financeiro'
-      fullPath: '/financeiro'
-      preLoaderRoute: typeof AuthenticatedFinanceiroRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/faturamento-dinamico': {
-      id: '/_authenticated/faturamento-dinamico'
-      path: '/faturamento-dinamico'
-      fullPath: '/faturamento-dinamico'
-      preLoaderRoute: typeof AuthenticatedFaturamentoDinamicoRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/dashboard': {
-      id: '/_authenticated/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+    '/_authenticated/auditoria': {
+      id: '/_authenticated/auditoria'
+      path: '/auditoria'
+      fullPath: '/auditoria'
+      preLoaderRoute: typeof AuthenticatedAuditoriaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/config': {
@@ -503,39 +419,102 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConfigRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/auditoria': {
-      id: '/_authenticated/auditoria'
-      path: '/auditoria'
-      fullPath: '/auditoria'
-      preLoaderRoute: typeof AuthenticatedAuditoriaRouteImport
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/financeiro_/admin-categorias': {
-      id: '/_authenticated/financeiro_/admin-categorias'
-      path: '/financeiro/admin-categorias'
-      fullPath: '/financeiro/admin-categorias'
-      preLoaderRoute: typeof AuthenticatedFinanceiroAdminCategoriasRouteImport
+    '/_authenticated/faturamento-dinamico': {
+      id: '/_authenticated/faturamento-dinamico'
+      path: '/faturamento-dinamico'
+      fullPath: '/faturamento-dinamico'
+      preLoaderRoute: typeof AuthenticatedFaturamentoDinamicoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/analytics/rentabilidade': {
-      id: '/_authenticated/analytics/rentabilidade'
-      path: '/analytics/rentabilidade'
-      fullPath: '/analytics/rentabilidade'
-      preLoaderRoute: typeof AuthenticatedAnalyticsRentabilidadeRouteImport
+    '/_authenticated/financeiro': {
+      id: '/_authenticated/financeiro'
+      path: '/financeiro'
+      fullPath: '/financeiro'
+      preLoaderRoute: typeof AuthenticatedFinanceiroRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/analytics/previsoes': {
-      id: '/_authenticated/analytics/previsoes'
-      path: '/analytics/previsoes'
-      fullPath: '/analytics/previsoes'
-      preLoaderRoute: typeof AuthenticatedAnalyticsPrevisoesRouteImport
+    '/_authenticated/heatmap': {
+      id: '/_authenticated/heatmap'
+      path: '/heatmap'
+      fullPath: '/heatmap'
+      preLoaderRoute: typeof AuthenticatedHeatmapRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/analytics/comercial': {
-      id: '/_authenticated/analytics/comercial'
-      path: '/analytics/comercial'
-      fullPath: '/analytics/comercial'
-      preLoaderRoute: typeof AuthenticatedAnalyticsComercialRouteImport
+    '/_authenticated/hoje': {
+      id: '/_authenticated/hoje'
+      path: '/hoje'
+      fullPath: '/hoje'
+      preLoaderRoute: typeof AuthenticatedHojeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/mapa': {
+      id: '/_authenticated/mapa'
+      path: '/mapa'
+      fullPath: '/mapa'
+      preLoaderRoute: typeof AuthenticatedMapaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/no-show': {
+      id: '/_authenticated/no-show'
+      path: '/no-show'
+      fullPath: '/no-show'
+      preLoaderRoute: typeof AuthenticatedNoShowRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/profissionais': {
+      id: '/_authenticated/profissionais'
+      path: '/profissionais'
+      fullPath: '/profissionais'
+      preLoaderRoute: typeof AuthenticatedProfissionaisRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/relatorio-atendimentos': {
+      id: '/_authenticated/relatorio-atendimentos'
+      path: '/relatorio-atendimentos'
+      fullPath: '/relatorio-atendimentos'
+      preLoaderRoute: typeof AuthenticatedRelatorioAtendimentosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/unidades': {
+      id: '/_authenticated/unidades'
+      path: '/unidades'
+      fullPath: '/unidades'
+      preLoaderRoute: typeof AuthenticatedUnidadesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/lab/conciliacao': {
+      id: '/lab/conciliacao'
+      path: '/lab/conciliacao'
+      fullPath: '/lab/conciliacao'
+      preLoaderRoute: typeof LabConciliacaoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lab/faturamento': {
+      id: '/lab/faturamento'
+      path: '/lab/faturamento'
+      fullPath: '/lab/faturamento'
+      preLoaderRoute: typeof LabFaturamentoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lab/relatorio': {
+      id: '/lab/relatorio'
+      path: '/lab/relatorio'
+      fullPath: '/lab/relatorio'
+      preLoaderRoute: typeof LabRelatorioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/analytics/aplicacoes': {
+      id: '/_authenticated/analytics/aplicacoes'
+      path: '/analytics/aplicacoes'
+      fullPath: '/analytics/aplicacoes'
+      preLoaderRoute: typeof AuthenticatedAnalyticsAplicacoesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/analytics/capacidade': {
@@ -545,11 +524,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAnalyticsCapacidadeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/analytics/aplicacoes': {
-      id: '/_authenticated/analytics/aplicacoes'
-      path: '/analytics/aplicacoes'
-      fullPath: '/analytics/aplicacoes'
-      preLoaderRoute: typeof AuthenticatedAnalyticsAplicacoesRouteImport
+    '/_authenticated/analytics/comercial': {
+      id: '/_authenticated/analytics/comercial'
+      path: '/analytics/comercial'
+      fullPath: '/analytics/comercial'
+      preLoaderRoute: typeof AuthenticatedAnalyticsComercialRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/analytics/previsoes': {
+      id: '/_authenticated/analytics/previsoes'
+      path: '/analytics/previsoes'
+      fullPath: '/analytics/previsoes'
+      preLoaderRoute: typeof AuthenticatedAnalyticsPrevisoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/analytics/rentabilidade': {
+      id: '/_authenticated/analytics/rentabilidade'
+      path: '/analytics/rentabilidade'
+      fullPath: '/analytics/rentabilidade'
+      preLoaderRoute: typeof AuthenticatedAnalyticsRentabilidadeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/financeiro_/admin-categorias': {
+      id: '/_authenticated/financeiro_/admin-categorias'
+      path: '/financeiro/admin-categorias'
+      fullPath: '/financeiro/admin-categorias'
+      preLoaderRoute: typeof AuthenticatedFinanceiroAdminCategoriasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/api/public/hooks/sync-feegow': {
