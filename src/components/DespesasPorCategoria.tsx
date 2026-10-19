@@ -137,7 +137,7 @@ export function DespesasPorCategoria({ from, to, cmpFrom, cmpTo }: { from: strin
           <div className="rounded-md border border-border p-3">
             <div className="flex items-center justify-between mb-3">
               <div className="font-semibold">Lançamentos de “{sel}”</div>
-              <Button size="sm" variant="ghost" onClick={() => setSel(null)}>Fechar</Button>
+              <Button size="sm" variant="ghost" onClick={() => setSel(null)}>Ver todas as categorias</Button>
             </div>
             <div className="grid gap-6 md:grid-cols-2">
               <ListaLanc titulo="Período atual" rows={detalhe(qa.data)} />
