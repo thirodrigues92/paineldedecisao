@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { feegowIntegerId } from "./feegow-identifiers";
 
 const FEEGOW_BASE = "https://api.feegow.com/v1/api";
 const FEEGOW_TOKEN = () => process.env['FEEGOW_API_TOKEN'] ?? "";
@@ -123,13 +124,13 @@ export async function syncProducaoRange(start: string, end: string) {
       procedimento_nome: r.NomeProcedimento || null,
       valor: parseValorBR(r.Valor),
       valor_pago: parseValorBR(r.ValorPago),
-      convenio_id: r.ConvenioID != null ? Number(r.ConvenioID) : null,
+      convenio_id: feegowIntegerId(r.ConvenioID),
       convenio_nome: (r.ConvenioID && Number(r.ConvenioID) > 0)
         ? (r.NomeConvenio || null)
         : (r.TipoGuia === "Particular" ? "Particular" : (r.TipoGuia || null)),
       situacao: r.Situacao || null,
       situacao_conta: r.SituacaoConta || null,
-      grupo_id: r.GrupoID != null ? Number(r.GrupoID) : null,
+      grupo_id: feegowIntegerId(r.GrupoID),
       grupo_nome: r.NomeGrupo || null,
       tipo_procedimento: r.TipoProcedimento || null,
       forma_pagamento: r.FormaPagamento || null,
@@ -191,9 +192,9 @@ function mapRepasse(r: any) {
     paciente_id: toBig(r.PacienteID),
     paciente_nome: r.NomePaciente || null,
     procedimento_nome: r.NomeProcedimento || null,
-    grupo_id: r.GrupoID != null ? Number(r.GrupoID) : null,
-    especialidade_id: r.EspecialidadeID != null ? Number(r.EspecialidadeID) : null,
-    convenio_id: r.ConvenioID != null ? Number(r.ConvenioID) : null,
+    grupo_id: feegowIntegerId(r.GrupoID),
+    especialidade_id: feegowIntegerId(r.EspecialidadeID),
+    convenio_id: feegowIntegerId(r.ConvenioID),
     convenio_nome: r.NomeConvenio || null,
     unidade_id: toBig(r.UnidadeID),
     unidade_nome: r.NomeUnidade || null,
