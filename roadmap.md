@@ -1,5 +1,5 @@
 - [x] Identify the last successful Feegow loads and validate the updated token.
 - [x] Reload financial entries since their last successful load.
 - [x] Fix fractional source identifiers blocking production batches.
-- [ ] Recover production and transfers through November 11 and verify persisted totals.
-- [ ] Verify the updated data in the Financeiro screen and explain production publishing requirements.
+- [x] Recover production and transfers through November 11 and verify persisted totals; Feegow returned no November transfers.
+- [x] Verify the updated data in the authenticated Financeiro screen; publishing is required to update the live automatic sync token and parser.
