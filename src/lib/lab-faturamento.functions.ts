@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { feegowIntegerId } from "./feegow-identifiers";
 
 // --- UTILITÁRIOS ---
 
@@ -654,13 +655,13 @@ export const labSyncProducao = createServerFn({ method: "POST" })
           procedimento_nome: r.NomeProcedimento || null,
           valor: parseValorBR(r.Valor),
           valor_pago: parseValorBR(r.ValorPago),
-          convenio_id: r.ConvenioID != null ? Number(r.ConvenioID) : null,
+          convenio_id: feegowIntegerId(r.ConvenioID),
           convenio_nome: (r.ConvenioID && Number(r.ConvenioID) > 0)
             ? (r.NomeConvenio || null)
             : (r.TipoGuia === 'Particular' ? 'Particular' : (r.TipoGuia || null)),
           situacao: r.Situacao || null,
           situacao_conta: r.SituacaoConta || null,
-          grupo_id: r.GrupoID != null ? Number(r.GrupoID) : null,
+          grupo_id: feegowIntegerId(r.GrupoID),
           grupo_nome: r.NomeGrupo || null,
           tipo_procedimento: r.TipoProcedimento || null,
           forma_pagamento: r.FormaPagamento || null,

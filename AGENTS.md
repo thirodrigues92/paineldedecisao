@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Validate Feegow integer identifiers through the shared identifier parser; preserve invalid originals in raw payloads rather than rounding or rejecting entire sync batches.
