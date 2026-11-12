@@ -3,3 +3,6 @@
 - [x] Fix fractional source identifiers blocking production batches.
 - [x] Recover production and transfers through November 11 and verify persisted totals; Feegow returned no November transfers.
 - [x] Verify the updated data in the authenticated Financeiro screen; publishing is required to update the live automatic sync token and parser.
+- [ ] Validate Feegow settled accounts receivable and synchronize actual payment entries.
+- [ ] Use settled receipts for Financeiro revenue and its drill-down, preserving production revenue elsewhere.
+- [ ] Test the revenue rule and verify real financial totals through the UI.
