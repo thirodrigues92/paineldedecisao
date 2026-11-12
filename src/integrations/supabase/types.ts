@@ -1622,6 +1622,15 @@ export type Database = {
           receita: number
         }[]
       }
+      financeiro_dre_periodo: {
+        Args: { p_fim: string; p_inicio: string }
+        Returns: {
+          grupo_dre: string
+          mes: string
+          tipo: string
+          valor: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
