@@ -20,6 +20,7 @@ import { FaturamentoCategoriaComparativo } from "@/components/FaturamentoCategor
 import { FaturamentoProfissionalComparativo } from "@/components/FaturamentoProfissionalComparativo";
 import { ComparativoMensal } from "@/components/ComparativoMensal";
 import { ComparativoPeriodosProfissionalCategoria } from "@/components/ComparativoPeriodosProfissionalCategoria";
+import { AnalistaIA } from "@/components/AnalistaIA";
 
 type Dimensao = "profissional" | "convenio" | "grupo_procedimento" | "procedimento" | "mes_ano";
 type Metrica = "valor_faturado" | "valor_recebido" | "quantidade";
@@ -633,7 +634,14 @@ export function FaturamentoDinamicoPage() {
                 <TabsTrigger value="dinamico" className="min-h-10 gap-2 whitespace-normal py-2">
                   <BarChart2 className="h-4 w-4 shrink-0" /> Gráfico da tabela dinâmica
                 </TabsTrigger>
+                <TabsTrigger value="ia" className="min-h-10 gap-2 whitespace-normal py-2">
+                  🤖 Analista IA
+                </TabsTrigger>
               </TabsList>
+
+              <TabsContent value="ia" className="m-0 outline-none">
+                <AnalistaIA rows={rawData ?? []} periodo={`${format(filters.from, "dd/MM/yyyy")} a ${format(filters.to, "dd/MM/yyyy")}`} />
+              </TabsContent>
 
               <TabsContent value="categoria" className="m-0 outline-none">
                 <FaturamentoCategoriaComparativo />
