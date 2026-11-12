@@ -99,7 +99,7 @@ function FinanceiroExecutivo() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">Financeiro — Visão Executiva</h1>
-          <p className="text-sm text-muted-foreground">Regime de competência · comparado ao período anterior.</p>
+          <p className="text-sm text-muted-foreground">Receita recebida · despesas por vencimento.</p>
         </div>
         <div className="flex items-center gap-2">
           <Button asChild variant="outline" size="sm"><Link to="/financeiro/dre">Ver DRE</Link></Button>
