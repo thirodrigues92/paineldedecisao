@@ -400,8 +400,18 @@ export async function runIncrementalSync(diasJanela = 3) {
     const safety = await syncSafetyNetRange(inicio, fim);
     let repasse: any = null;
     try { repasse = await syncRepasseRange(inicio, fim); } catch (e: any) { repasse = { erro: e.message }; }
+    let receita: any = null;
+    try {
+      const { syncReceitaBaixada } = await import("./financeiro-receita.server");
+      // Revisit the last month of invoices to discover later settlements.
+      receita = await syncReceitaBaixada(addDaysISO(fim,-30),fim);
+      await logSync("financial/list-invoice:receita-baixada", { inicio: addDaysISO(fim,-30), fim }, true, receita.pagamentos);
+    } catch (e: any) {
+      receita = { erro: e.message };
+      await logSync("financial/list-invoice:receita-baixada", { fim }, false, 0, e.message);
+    }
     await enriquecer();
-    const result = { inicio, fim, producao, safety, repasse };
+    const result = { inicio, fim, producao, safety, repasse, receita };
     await logSync("auto-sync:30min", { inicio, fim }, true, producao.gravados + safety.preenchidos);
 
     await releaseLock("auto_sync", { ok: true, result, falhasAnteriores });

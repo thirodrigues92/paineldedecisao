@@ -24,6 +24,12 @@ export async function fetchDre(regime: Regime): Promise<DreRow[]> {
   return ((data ?? []) as DreRow[]).map((r) => ({ ...r, valor: Number(r.valor || 0) }));
 }
 
+export async function fetchDrePeriodo(from: string, to: string): Promise<DreRow[]> {
+  const { data, error } = await supabase.rpc("financeiro_dre_periodo", { p_inicio: from, p_fim: to });
+  if (error) throw error;
+  return (data ?? []).map(r => ({ ...r, valor: Number(r.valor) }));
+}
+
 export const mesKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 
 export function mesesEntre(from: Date, to: Date): string[] {
