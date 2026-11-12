@@ -287,6 +287,51 @@ export type Database = {
         }
         Relationships: []
       }
+      financeiro_recebimentos_baixados: {
+        Row: {
+          categoria: string | null
+          conta_id: number | null
+          data_baixa: string
+          descricao: string | null
+          forma_pagamento: number | null
+          invoice_id: number | null
+          origem: string
+          pagamento_id: number
+          payload_raw: Json
+          synced_at: string
+          tipo_conta: number | null
+          valor: number
+        }
+        Insert: {
+          categoria?: string | null
+          conta_id?: number | null
+          data_baixa: string
+          descricao?: string | null
+          forma_pagamento?: number | null
+          invoice_id?: number | null
+          origem?: string
+          pagamento_id: number
+          payload_raw: Json
+          synced_at?: string
+          tipo_conta?: number | null
+          valor: number
+        }
+        Update: {
+          categoria?: string | null
+          conta_id?: number | null
+          data_baixa?: string
+          descricao?: string | null
+          forma_pagamento?: number | null
+          invoice_id?: number | null
+          origem?: string
+          pagamento_id?: number
+          payload_raw?: Json
+          synced_at?: string
+          tipo_conta?: number | null
+          valor?: number
+        }
+        Relationships: []
+      }
       geo_bairros: {
         Row: {
           bairro: string
