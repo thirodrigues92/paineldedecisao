@@ -15,13 +15,19 @@ export const ORDEM_DRE = [
   "Receita", ...GRUPOS_VARIAVEIS, MARGEM, ...GRUPOS_FIXOS, RESULTADO, ...GRUPOS_FORA, ...GRUPOS_PENDENTES,
 ];
 
-export const dreQueryKey = (regime: Regime) => ["dre-mensal", regime];
+export const dreQueryKey = (regime: Regime) => ["dre-mensal-baixas", regime];
 
 export async function fetchDre(regime: Regime): Promise<DreRow[]> {
   const view = regime === "caixa" ? "vw_dre_mensal_caixa" : "vw_dre_mensal";
   const { data, error } = await (supabase as any).from(view).select("*");
   if (error) throw error;
   return ((data ?? []) as DreRow[]).map((r) => ({ ...r, valor: Number(r.valor || 0) }));
+}
+
+export async function fetchDrePeriodo(from: string, to: string): Promise<DreRow[]> {
+  const { data, error } = await supabase.rpc("financeiro_dre_periodo", { p_inicio: from, p_fim: to });
+  if (error) throw error;
+  return (data ?? []).map(r => ({ ...r, valor: Number(r.valor) }));
 }
 
 export const mesKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -69,26 +75,23 @@ export type Lancamento = { data: string | null; descricao: string; categoria: st
 /** Lançamentos que compõem um grupo do DRE no intervalo (datas AAAA-MM-DD). */
 export async function fetchLancamentosGrupo(grupo: string, from: string, to: string, regime: Regime): Promise<Lancamento[]> {
   const sb = supabase as any;
-  if (grupo === "Receita" && regime === "competencia") {
-    const { data, error } = await sb.from("lab_producao_feegow")
-      .select("data_execucao, paciente_nome, procedimento_nome, profissional_nome, grupo_nome, valor")
-      .eq("situacao", "Faturado").gte("data_execucao", from).lte("data_execucao", to)
-      .order("valor", { ascending: false }).limit(1000);
-    if (error) throw error;
-    return (data ?? []).map((r: any) => ({
-      data: r.data_execucao,
-      descricao: [r.paciente_nome, r.procedimento_nome, r.profissional_nome].filter(Boolean).join(" · "),
-      categoria: r.grupo_nome ?? "—",
-      valor: Number(r.valor || 0),
-    }));
+  if (grupo === "Receita") {
+    const rows: Lancamento[] = [];
+    for (let offset = 0;; offset += 1000) {
+      const { data, error } = await sb.from("financeiro_recebimentos_baixados")
+        .select("pagamento_id, data_baixa, descricao, categoria, valor")
+        .gte("data_baixa", from).lte("data_baixa", to)
+        .order("valor", { ascending: false }).order("pagamento_id").range(offset, offset + 999);
+      if (error) throw error;
+      rows.push(...(data ?? []).map((r: any) => ({ data: r.data_baixa, descricao: r.descricao || `Baixa ${r.pagamento_id}`, categoria: r.categoria ?? "Contas a receber", valor: Number(r.valor) })));
+      if ((data ?? []).length < 1000) return rows;
+    }
   }
   const dateCol = regime === "caixa" ? "data_pagamento" : "data_vencimento";
   let q = sb.from("financeiro_lancamentos")
     .select("data_vencimento, data_pagamento, categoria, descricao_item, valor, status")
     .gte(dateCol, from).lte(dateCol, to).order("valor", { ascending: false }).limit(1000);
-  if (grupo === "Receita") {
-    q = q.eq("tipo", "receita");
-  } else {
+  {
     q = q.eq("tipo", "despesa");
     const { data: cats, error: e1 } = await sb.from("vw_dre_categorias").select("categoria_origem, grupo_dre, tipo");
     if (e1) throw e1;

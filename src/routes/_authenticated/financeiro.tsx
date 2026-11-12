@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { differenceInCalendarDays, format, subDays } from "date-fns";
 import { ArrowDownRight, ArrowUpRight, AlertTriangle, Minus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,8 +12,8 @@ import { DespesasPorCategoria } from "@/components/DespesasPorCategoria";
 import { useFilters } from "@/lib/filters-context";
 import { brl, pct } from "@/lib/format";
 import {
-  dreQueryKey, fetchDre, FIXAS, GRUPOS_FIXOS, GRUPOS_FORA, GRUPOS_PENDENTES, GRUPOS_VARIAVEIS,
-  MARGEM, mesesAnteriores, mesesEntre, mesRange, RESULTADO, totais,
+  fetchDrePeriodo, FIXAS, GRUPOS_FIXOS, GRUPOS_FORA, GRUPOS_PENDENTES, GRUPOS_VARIAVEIS,
+  MARGEM, RESULTADO, totais,
 } from "@/lib/dre";
 
 export const Route = createFileRoute("/_authenticated/financeiro")({
@@ -49,20 +50,17 @@ function FinanceiroExecutivo() {
   const init = useRef(false);
   useEffect(() => { if (!init.current) { init.current = true; f.setPreset("month"); } }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [alvo, setAlvo] = useState<DreDrawerAlvo>(null);
-  const q = useQuery({ queryKey: dreQueryKey("competencia"), queryFn: () => fetchDre("competencia") });
-
-  const meses = useMemo(() => mesesEntre(f.from, f.to), [f.from, f.to]);
-  const prevMeses = useMemo(
-    () => (f.compareFrom && f.compareTo ? mesesEntre(f.compareFrom, f.compareTo) : mesesAnteriores(meses)),
-    [meses, f.compareFrom, f.compareTo],
-  );
-  const rows = q.data ?? [];
-  const tA = totais(rows, meses);
-  const tP = totais(rows, prevMeses);
+  const dias = differenceInCalendarDays(f.to, f.from) + 1;
+  const range = { from: format(f.from,"yyyy-MM-dd"), to: format(f.to,"yyyy-MM-dd") };
+  const cmp = { from: format(f.compareFrom ?? subDays(f.from,dias),"yyyy-MM-dd"), to: format(f.compareTo ?? subDays(f.from,1),"yyyy-MM-dd") };
+  const q = useQuery({ queryKey: ["dre-periodo-baixas",range.from,range.to,cmp.from,cmp.to], queryFn: async () => {
+    const [atual, anterior] = await Promise.all([fetchDrePeriodo(range.from,range.to),fetchDrePeriodo(cmp.from,cmp.to)]);
+    return { atual, anterior };
+  } });
+  const tA = totais(q.data?.atual ?? [], [range.from.slice(0,7)]);
+  const tP = totais(q.data?.anterior ?? [], [cmp.from.slice(0,7)]);
   const a = metricas(tA);
   const b = metricas(tP);
-  const range = mesRange(meses);
-  const cmp = mesRange(prevMeses);
   const abrir = (grupo: string, titulo: string) => setAlvo({ grupo, titulo, ...range, cmpFrom: cmp.from, cmpTo: cmp.to });
 
   const tomPct = (v: number, ok: number, warn: number, menorMelhor = false): Tom =>
@@ -99,7 +97,7 @@ function FinanceiroExecutivo() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">Financeiro — Visão Executiva</h1>
-          <p className="text-sm text-muted-foreground">Regime de competência · comparado ao período anterior.</p>
+          <p className="text-sm text-muted-foreground">Receita recebida · despesas por vencimento.</p>
         </div>
         <div className="flex items-center gap-2">
           <Button asChild variant="outline" size="sm"><Link to="/financeiro/dre">Ver DRE</Link></Button>

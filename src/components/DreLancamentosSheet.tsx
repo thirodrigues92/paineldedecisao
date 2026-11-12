@@ -17,7 +17,7 @@ const fmt = (d: string | null) => (d ? d.split("-").reverse().join("/") : "—")
 function Coluna({ titulo, grupo, from, to, regime }: { titulo: string; grupo: string; from: string; to: string; regime: Regime }) {
   const [busca, setBusca] = useState("");
   const q = useQuery({
-    queryKey: ["dre-lanc", grupo, from, to, regime],
+    queryKey: ["dre-lanc-baixas", grupo, from, to, regime],
     queryFn: () => fetchLancamentosGrupo(grupo, from, to, regime),
   });
   const rows = useMemo(() => {
@@ -37,7 +37,7 @@ function Coluna({ titulo, grupo, from, to, regime }: { titulo: string; grupo: st
         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input className="pl-8" placeholder="Buscar lançamento..." value={busca} onChange={(e) => setBusca(e.target.value)} />
       </div>
-      <div className="text-sm text-muted-foreground">{num(rows.length)} lançamentos · <b className="text-foreground">{brl(total)}</b>{(q.data?.length ?? 0) >= 1000 && " (1.000 maiores)"}</div>
+      <div className="text-sm text-muted-foreground">{num(rows.length)} lançamentos · <b className="text-foreground">{brl(total)}</b>{grupo !== "Receita" && (q.data?.length ?? 0) >= 1000 && " (1.000 maiores)"}</div>
       {q.isLoading ? <Skeleton className="h-40 w-full" /> : q.isError ? (
         <p className="text-sm text-destructive">Não foi possível carregar os lançamentos.</p>
       ) : rows.length === 0 ? (
@@ -67,16 +67,16 @@ export function DreLancamentosSheet({ alvo, regime, onClose }: { alvo: DreDrawer
         <SheetHeader>
           <SheetTitle>{alvo?.titulo}</SheetTitle>
           <SheetDescription>
-            {regime === "caixa" ? "Caixa" : "Competência"}
+            {alvo?.grupo === "Receita" ? "Contas a receber · itens baixados · data da baixa" : regime === "caixa" ? "Caixa" : "Competência"}
             {alvo?.grupo === FIXAS && " · despesas fixas"}
           </SheetDescription>
         </SheetHeader>
         {alvo && (
           <div className={`mt-4 grid gap-6 ${dupla ? "md:grid-cols-2 md:divide-x md:divide-border" : ""}`}>
             <Coluna key={`a-${alvo.grupo}-${alvo.from}`} titulo="Período selecionado" grupo={alvo.grupo} from={alvo.from} to={alvo.to} regime={regime} />
-            {dupla && (
+            {alvo.cmpFrom && alvo.cmpTo && (
               <div className="md:pl-6 min-w-0">
-                <Coluna key={`b-${alvo.grupo}-${alvo.cmpFrom}`} titulo="Período de comparação" grupo={alvo.grupo} from={alvo.cmpFrom!} to={alvo.cmpTo!} regime={regime} />
+                <Coluna key={`b-${alvo.grupo}-${alvo.cmpFrom}`} titulo="Período de comparação" grupo={alvo.grupo} from={alvo.cmpFrom} to={alvo.cmpTo} regime={regime} />
               </div>
             )}
           </div>

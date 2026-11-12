@@ -80,7 +80,7 @@ function DrePage() {
         <div>
           <h1 className="text-2xl font-semibold">DRE</h1>
           <p className="text-sm text-muted-foreground">
-            {regime === "competencia" ? "Competência: receita pela data de produção, despesas pelo vencimento." : "Caixa: receitas e despesas pela data de pagamento."}
+            {regime === "competencia" ? "Receita recebida pela data da baixa; despesas pelo vencimento." : "Receita recebida pela data da baixa; despesas pela data de pagamento."}
           </p>
         </div>
         <ToggleGroup type="single" value={regime} onValueChange={(v) => v && setRegime(v as Regime)} variant="outline">
