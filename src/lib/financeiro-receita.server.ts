@@ -1,8 +1,10 @@
 import { recebimentosBaixados } from "./financeiro-receita";
+import { syncPlanoContas } from "./feegow-plano-contas.server";
 
 export async function syncReceitaBaixada(from: string, to: string) {
   const token = process.env['FEEGOW_API_TOKEN'];
   if (!token) throw new Error("Token Feegow não configurado");
+  await syncPlanoContas(token);
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const rows = new Map<string, Record<string, any>>();
   let invoices = 0;

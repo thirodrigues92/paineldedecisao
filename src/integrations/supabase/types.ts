@@ -302,6 +302,39 @@ export type Database = {
         }
         Relationships: []
       }
+      fin_plano_contas: {
+        Row: {
+          atualizado_em: string
+          id: number
+          nivel: number
+          nome: string
+          parent_id: number | null
+          payload_raw: Json
+          posicao: string | null
+          tipo: string
+        }
+        Insert: {
+          atualizado_em?: string
+          id: number
+          nivel?: number
+          nome: string
+          parent_id?: number | null
+          payload_raw?: Json
+          posicao?: string | null
+          tipo: string
+        }
+        Update: {
+          atualizado_em?: string
+          id?: number
+          nivel?: number
+          nome?: string
+          parent_id?: number | null
+          payload_raw?: Json
+          posicao?: string | null
+          tipo?: string
+        }
+        Relationships: []
+      }
       financeiro_lancamentos: {
         Row: {
           agendamento_id: number | null
@@ -1670,6 +1703,18 @@ export type Database = {
           cidade: string | null
           especialidade_id: number | null
           pacientes: number | null
+        }
+        Relationships: []
+      }
+      vw_plano_contas_dre: {
+        Row: {
+          categoria_id: number | null
+          categoria_nome: string | null
+          grupo_dre_nome: string | null
+          grupo_dre_posicao: string | null
+          ordem_dre: number | null
+          posicao: string | null
+          tipo: string | null
         }
         Relationships: []
       }

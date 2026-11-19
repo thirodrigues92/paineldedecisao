@@ -4,6 +4,7 @@
 // Modos: ?mode=today | historical | support | financial | full
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { collectPlanoContas } from "./plano-contas.ts";
 
 const FEEGOW_BASE = "https://api.feegow.com/v1/api";
 const FEEGOW_TOKEN = Deno.env.get("FEEGOW_API_TOKEN") ?? "";
@@ -514,17 +515,23 @@ async function feegowCore(path: string, body: Record<string, unknown>): Promise<
 }
 
 /** Plano de contas (categoria_id → nome) e centros de custo (centro_custo_id → nome) */
-async function loadFinancialLookups() {
+async function loadFinancialLookups(supabase: any) {
   const categorias = new Map<number, string>();
   const centros = new Map<number, string>();
-  try {
-    const rows = await feegowCore("/core/financial/base/financial-category", { page: 1, perPage: 1000 });
-    for (const r of rows) {
-      const cid = Number(r.id);
-      if (Number.isFinite(cid) && r.name) categorias.set(cid, String(r.name).trim());
-    }
-    console.log(`[SYNC] categorias financeiras: ${categorias.size}`);
-  } catch (e) { console.warn("financial-category", e); }
+  const rows = await collectPlanoContas(async (page, perPage) => {
+    const res = await withRetry(() => fetch(FEEGOW_BASE + "/core/financial/base/financial-category", {
+      method: "POST", headers: { "x-access-token": FEEGOW_TOKEN, "Content-Type": "application/json" },
+      body: JSON.stringify({ page, perPage }),
+    }));
+    if (!res.ok) throw new Error(`financial-category HTTP ${res.status}`);
+    return await res.json();
+  });
+  for (let i = 0; i < rows.length; i += 500) {
+    const { error } = await supabase.from("fin_plano_contas").upsert(rows.slice(i, i + 500), { onConflict: "id" });
+    if (error) throw new Error(`Plano de contas: ${error.message}`);
+  }
+  for (const r of rows) categorias.set(r.id, r.nome);
+  console.log(`[SYNC] categorias financeiras: ${categorias.size}`);
   try {
     const rows = await feegowCore("/core/financial/base/cost-center", { page: 1, perPage: 500 });
     for (const r of rows) {
@@ -653,7 +660,7 @@ async function syncFinancial(supabase: any, from: Date, to: Date) {
   let diagnosticoReceb = "";
 
   try {
-    const { categorias, centros } = await loadFinancialLookups();
+    const { categorias, centros } = await loadFinancialLookups(supabase);
     const mapped: any[] = [];
     for (const tipoTransacao of ["C", "D"] as const) {
       const content = await feegow("/financial/list-invoice", {
@@ -1061,6 +1068,10 @@ Deno.serve(async (req) => {
     }
 
     let extra: Record<string, unknown> = {};
+    if (mode === "plano-contas") {
+      const { categorias } = await loadFinancialLookups(supabase);
+      extra = { categorias: categorias.size };
+    }
     if (mode === "pacientes") {
       const recarregar = url.searchParams.get("recarregar") === "1";
       extra = { ...extra, pacientes: await syncPacientes(supabase, limit || 400, recarregar) };

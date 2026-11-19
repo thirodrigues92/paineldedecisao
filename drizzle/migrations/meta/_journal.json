@@ -50,6 +50,13 @@
       "when": 1795088278910,
       "tag": "0006_create_feegow_dre_reference",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1795088608577,
+      "tag": "0007_financial_account_tree",
+      "breakpoints": true
     }
   ]
 }

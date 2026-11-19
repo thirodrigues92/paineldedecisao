@@ -13,3 +13,4 @@
 - Store financial receipts once per Feegow pagamento_id with original payment payload, amount converted from cents and payment date; DRE revenue and drill-down share that source so partial and repeated payments cannot inflate revenue.
 - Executive Financeiro uses an authenticated date-range aggregate for exact selected and comparison dates; monthly DRE views retain monthly grouping and both regimes use payment-based revenue.
 - Keep imported Feegow DRE reference data separate from existing financial calculations; link identifiers only on unique accent-, case-, and whitespace-normalized name matches to avoid guessing source IDs.
+- Persist the paginated Feegow financial category tree by source ID during financial lookup loading; derive DRE groups from position prefixes rather than category labels so renames and moves remain traceable.

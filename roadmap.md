@@ -6,5 +6,6 @@
 - [x] Validate Feegow settled accounts receivable and synchronize actual payment entries.
 - [x] Use settled receipts for Financeiro revenue and its drill-down, preserving production revenue elsewhere.
 - [x] Test the revenue rule and verify real financial totals through the UI: 408 November payments, R$ 285.285,94; date-exact comparison and independent search verified.
-- [ ] Create the three Feegow DRE reference tables and import the uploaded inserts unchanged.
-- [ ] Match normalized group names and report items without identifiers; category matching requires the missing fin_plano_contas source.
+- [x] Create the three Feegow DRE reference tables and import the uploaded inserts unchanged: 15 lines, 113 items, 216 monthly references.
+- [x] Match normalized names and report missing identifiers: 66 category links; 13 unmatched or ambiguous categories and 34 group items whose source has no group IDs.
+- [x] Persist the complete paginated financial account tree on financial and receipt syncs; deployed lookup verified with 213 returned rows, 197 unique IDs and DRE group counts.
