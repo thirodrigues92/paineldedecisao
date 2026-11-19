@@ -5,6 +5,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { collectPlanoContas } from "./plano-contas.ts";
+import { syncInvoiceItems } from "./fin-itens.ts";
 
 const FEEGOW_BASE = "https://api.feegow.com/v1/api";
 const FEEGOW_TOKEN = Deno.env.get("FEEGOW_API_TOKEN") ?? "";
@@ -661,6 +662,7 @@ async function syncFinancial(supabase: any, from: Date, to: Date) {
 
   try {
     const { categorias, centros } = await loadFinancialLookups(supabase);
+    await syncInvoiceItems(supabase, FEEGOW_TOKEN, from.toISOString().slice(0, 10), to.toISOString().slice(0, 10));
     const mapped: any[] = [];
     for (const tipoTransacao of ["C", "D"] as const) {
       const content = await feegow("/financial/list-invoice", {
@@ -1056,6 +1058,10 @@ Deno.serve(async (req) => {
       const now = new Date();
       const in7 = new Date(); in7.setDate(now.getDate() + 7);
       await syncAgendamentos(supabase, now, in7);
+      if (mode === "today") {
+        const from = new Date(now); from.setUTCDate(from.getUTCDate() - 6);
+        await syncInvoiceItems(supabase, FEEGOW_TOKEN, from.toISOString().slice(0, 10), now.toISOString().slice(0, 10));
+      }
     }
 
     if (mode === "financial" || mode === "full") {
@@ -1068,6 +1074,21 @@ Deno.serve(async (req) => {
     }
 
     let extra: Record<string, unknown> = {};
+    if (mode === "itens") {
+      const cronSecret = Deno.env.get("CRON_SYNC_SECRET");
+      const isCron = Boolean(cronSecret) && req.headers.get("x-cron-secret") === cronSecret;
+      if (!isCron) {
+        const bearer = req.headers.get("Authorization")?.replace(/^Bearer\s+/i, "");
+        const { data: auth } = bearer ? await supabase.auth.getUser(bearer) : { data: { user: null } };
+        const { data: admin } = auth.user ? await supabase.rpc("has_role", { _user_id: auth.user.id, _role: "admin" }) : { data: false };
+        if (!admin) return new Response(JSON.stringify({ ok: false, error: "Somente administradores podem sincronizar itens" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const from = url.searchParams.get("from") ?? new Date().toISOString().slice(0, 10);
+      const to = url.searchParams.get("to") ?? from;
+      extra = { itens: await syncInvoiceItems(supabase, FEEGOW_TOKEN, from, to) };
+    }
     if (mode === "plano-contas") {
       const { categorias } = await loadFinancialLookups(supabase);
       extra = { categorias: categorias.size };

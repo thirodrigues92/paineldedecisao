@@ -9,3 +9,6 @@
 - [x] Create the three Feegow DRE reference tables and import the uploaded inserts unchanged: 15 lines, 113 items, 216 monthly references.
 - [x] Match normalized names and report missing identifiers: 66 category links; 13 unmatched or ambiguous categories and 34 group items whose source has no group IDs.
 - [x] Persist the complete paginated financial account tree on financial and receipt syncs; deployed lookup verified with 213 returned rows, 197 unique IDs and DRE group counts.
+- [x] Store invoice items with their own categories and tested cents/date/payment mapping, without changing existing financial entries; 13 tests passed.
+- [x] Load January 1 through November 19 in 47 seven-day-or-shorter windows: 52,134 items, no failed windows or invalid item IDs; monthly C/D totals reported, D category zero/null counts both zero.
+- [x] Include items in daily legacy sync and 30-minute incremental sync; authorized recent-window reload verified (1,096 items); publishing activates the updated modern incremental routine.

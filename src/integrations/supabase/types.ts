@@ -302,6 +302,69 @@ export type Database = {
         }
         Relationships: []
       }
+      fin_itens: {
+        Row: {
+          acrescimo: number
+          agendamento_id: number | null
+          atualizado_em: string
+          categoria_id: number | null
+          centro_custo_id: number | null
+          data_competencia: string | null
+          data_pagamento: string | null
+          desconto: number
+          invoice_id: number | null
+          is_cancelado: boolean
+          item_id: number
+          payload_raw: Json
+          procedimento_id: number | null
+          quantidade: number
+          tipo_transacao: string
+          unidade_id: number | null
+          valor: number
+          valor_pago: number
+        }
+        Insert: {
+          acrescimo?: number
+          agendamento_id?: number | null
+          atualizado_em?: string
+          categoria_id?: number | null
+          centro_custo_id?: number | null
+          data_competencia?: string | null
+          data_pagamento?: string | null
+          desconto?: number
+          invoice_id?: number | null
+          is_cancelado?: boolean
+          item_id: number
+          payload_raw?: Json
+          procedimento_id?: number | null
+          quantidade?: number
+          tipo_transacao: string
+          unidade_id?: number | null
+          valor?: number
+          valor_pago?: number
+        }
+        Update: {
+          acrescimo?: number
+          agendamento_id?: number | null
+          atualizado_em?: string
+          categoria_id?: number | null
+          centro_custo_id?: number | null
+          data_competencia?: string | null
+          data_pagamento?: string | null
+          desconto?: number
+          invoice_id?: number | null
+          is_cancelado?: boolean
+          item_id?: number
+          payload_raw?: Json
+          procedimento_id?: number | null
+          quantidade?: number
+          tipo_transacao?: string
+          unidade_id?: number | null
+          valor?: number
+          valor_pago?: number
+        }
+        Relationships: []
+      }
       fin_plano_contas: {
         Row: {
           atualizado_em: string

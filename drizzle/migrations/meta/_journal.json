@@ -57,6 +57,13 @@
       "when": 1795088608577,
       "tag": "0007_financial_account_tree",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1795089325807,
+      "tag": "0008_financial_invoice_items",
+      "breakpoints": true
     }
   ]
 }

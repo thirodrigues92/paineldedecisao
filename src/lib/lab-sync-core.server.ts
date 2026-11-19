@@ -411,7 +411,16 @@ export async function runIncrementalSync(diasJanela = 3) {
       await logSync("financial/list-invoice:receita-baixada", { fim }, false, 0, e.message);
     }
     await enriquecer();
-    const result = { inicio, fim, producao, safety, repasse, receita };
+    let itens: any = null;
+    try {
+      const { syncFinItens } = await import("./fin-itens.server");
+      itens = await syncFinItens(addDaysISO(fim, -6), fim);
+      await logSync("financial/list-invoice:itens", { inicio: addDaysISO(fim, -6), fim }, true, itens.gravados);
+    } catch (e: any) {
+      itens = { erro: e.message };
+      await logSync("financial/list-invoice:itens", { fim }, false, 0, e.message);
+    }
+    const result = { inicio, fim, producao, safety, repasse, receita, itens };
     await logSync("auto-sync:30min", { inicio, fim }, true, producao.gravados + safety.preenchidos);
 
     await releaseLock("auto_sync", { ok: true, result, falhasAnteriores });
