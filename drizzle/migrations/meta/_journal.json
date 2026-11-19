@@ -78,6 +78,13 @@
       "when": 1795090209806,
       "tag": "0010_optimize_item_dre_aggregation",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1795091577010,
+      "tag": "0011_dre_screen_item_sources",
+      "breakpoints": true
     }
   ]
 }

@@ -1652,6 +1652,31 @@ export type Database = {
         }
         Relationships: []
       }
+      vw_dre_itens_tela: {
+        Row: {
+          ajustar_operacional: boolean | null
+          categoria_id: number | null
+          categoria_nome: string | null
+          data_competencia: string | null
+          data_pagamento: string | null
+          descricao: string | null
+          grupo_chave: string | null
+          grupo_linha: string | null
+          invoice_id: number | null
+          item_id: number | null
+          ordem_dre: number | null
+          pessoa_nome: string | null
+          posicao: string | null
+          procedimento_grupo: string | null
+          receita_procedimento: boolean | null
+          secao: string | null
+          tipo_transacao: string | null
+          unidade_id: number | null
+          valor_item: number | null
+          valor_linha: number | null
+        }
+        Relationships: []
+      }
       vw_dre_mensal: {
         Row: {
           grupo_dre: string | null
@@ -1816,6 +1841,26 @@ export type Database = {
           mes: number
           nivel: number
           ordem: number
+          valor: number
+        }[]
+      }
+      fn_dre_tela: {
+        Args: { p_ano: number; p_regime?: string; p_unidade?: number }
+        Returns: {
+          ajustes: number
+          categoria_id: number
+          categoria_nome: string
+          despesas: number
+          grupo_chave: string
+          grupo_linha: string
+          mes: number
+          ordem_dre: number
+          posicao: string
+          procedimento_grupo: string
+          qtd: number
+          receita_procedimento: boolean
+          receitas: number
+          secao: string
           valor: number
         }[]
       }

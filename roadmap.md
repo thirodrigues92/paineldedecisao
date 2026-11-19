@@ -14,3 +14,5 @@
 - [x] Include items in daily legacy sync and 30-minute incremental sync; authorized recent-window reload verified (1,096 items); publishing activates the updated modern incremental routine.
 - [x] Create the separate item-based fn_dre with payment/competency regimes, hierarchy, uncategorized fallback and operational result.
 - [x] Test DRE rules against SQL fixtures (24 tests passed) and reconcile both regimes with persisted items through authenticated paginated RPC calls; all monthly revenue/expense totals match.
+- [x] Update the DRE screen with year, regime and unit filters, monthly account hierarchy, doctor transfer details and searchable item drawers.
+- [x] Export the filtered annual DRE to Excel; 23 tests passed, authenticated filters/tree/search/download verified, and 96 monthly totals reconciled with fn_dre across both regimes.
