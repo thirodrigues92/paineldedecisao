@@ -12,3 +12,5 @@
 - [x] Store invoice items with their own categories and tested cents/date/payment mapping, without changing existing financial entries; 13 tests passed.
 - [x] Load January 1 through November 19 in 47 seven-day-or-shorter windows: 52,134 items, no failed windows or invalid item IDs; monthly C/D totals reported, D category zero/null counts both zero.
 - [x] Include items in daily legacy sync and 30-minute incremental sync; authorized recent-window reload verified (1,096 items); publishing activates the updated modern incremental routine.
+- [x] Create the separate item-based fn_dre with payment/competency regimes, hierarchy, uncategorized fallback and operational result.
+- [x] Test DRE rules against SQL fixtures (24 tests passed) and reconcile both regimes with persisted items through authenticated paginated RPC calls; all monthly revenue/expense totals match.

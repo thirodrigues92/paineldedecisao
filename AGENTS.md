@@ -15,3 +15,5 @@
 - Keep imported Feegow DRE reference data separate from existing financial calculations; link identifiers only on unique accent-, case-, and whitespace-normalized name matches to avoid guessing source IDs.
 - Persist the paginated Feegow financial category tree by source ID during financial lookup loading; derive DRE groups from position prefixes rather than category labels so renames and moves remain traceable.
 - Store invoice items independently by item_id using each item's category and seven-day fetch windows; invoice payment totals repeated on items are audit attributes, not additive receipt revenue.
+- Keep fn_dre as a separate invoker-secured item-based Feegow calculation; existing receipt-based screens remain unchanged because latest-payment item accounting is not actual payment allocation. Test its migration query with inline SQL fixtures so financial rules execute in PostgreSQL without changing real data.
+- Paginate fn_dre RPC reads through every returned row; annual hierarchy exceeds the Data API row cap, so a single request can omit expenses and result totals.

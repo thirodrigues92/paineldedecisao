@@ -1809,6 +1809,16 @@ export type Database = {
           valor: number
         }[]
       }
+      fn_dre: {
+        Args: { ano: number; regime?: string }
+        Returns: {
+          linha: string
+          mes: number
+          nivel: number
+          ordem: number
+          valor: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

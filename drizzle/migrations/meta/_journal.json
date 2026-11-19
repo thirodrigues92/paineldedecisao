@@ -64,6 +64,20 @@
       "when": 1795089325807,
       "tag": "0008_financial_invoice_items",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1795090102301,
+      "tag": "0009_item_based_dre_function",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1795090209806,
+      "tag": "0010_optimize_item_dre_aggregation",
+      "breakpoints": true
     }
   ]
 }
