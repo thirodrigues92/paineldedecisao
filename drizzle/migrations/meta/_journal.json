@@ -43,6 +43,13 @@
       "when": 1794510655730,
       "tag": "0005_financeiro_dre_periodo_baixas",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1795088278910,
+      "tag": "0006_create_feegow_dre_reference",
+      "breakpoints": true
     }
   ]
 }

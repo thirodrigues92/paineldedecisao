@@ -209,6 +209,75 @@ export type Database = {
         }
         Relationships: []
       }
+      dre_feegow_linha: {
+        Row: {
+          condicao: string
+          descricao: string
+          ordem: number
+        }
+        Insert: {
+          condicao: string
+          descricao: string
+          ordem: number
+        }
+        Update: {
+          condicao?: string
+          descricao?: string
+          ordem?: number
+        }
+        Relationships: []
+      }
+      dre_feegow_linha_item: {
+        Row: {
+          categoria_id: number | null
+          grupo_id: number | null
+          id: number
+          linha_descricao: string
+          nome: string
+          tipo_item: string
+        }
+        Insert: {
+          categoria_id?: number | null
+          grupo_id?: number | null
+          id?: number
+          linha_descricao: string
+          nome: string
+          tipo_item: string
+        }
+        Update: {
+          categoria_id?: number | null
+          grupo_id?: number | null
+          id?: number
+          linha_descricao?: string
+          nome?: string
+          tipo_item?: string
+        }
+        Relationships: []
+      }
+      dre_feegow_referencia: {
+        Row: {
+          ano: number | null
+          linha: string | null
+          mes: number | null
+          ordem: number | null
+          valor: number | null
+        }
+        Insert: {
+          ano?: number | null
+          linha?: string | null
+          mes?: number | null
+          ordem?: number | null
+          valor?: number | null
+        }
+        Update: {
+          ano?: number | null
+          linha?: string | null
+          mes?: number | null
+          ordem?: number | null
+          valor?: number | null
+        }
+        Relationships: []
+      }
       especialidades: {
         Row: {
           codigo_tiss: string | null
@@ -1607,6 +1676,7 @@ export type Database = {
     }
     Functions: {
       dre_classificar: { Args: { cat: string }; Returns: string }
+      dre_feegow_normalizar_nome: { Args: { s: string }; Returns: string }
       dre_normalizar: { Args: { s: string }; Returns: string }
       dre_tipo_grupo: { Args: { g: string }; Returns: string }
       fin_repasse_medico: {

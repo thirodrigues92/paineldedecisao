@@ -12,3 +12,4 @@
 - Validate Feegow integer identifiers through the shared identifier parser; preserve invalid originals in raw payloads rather than rounding or rejecting entire sync batches.
 - Store financial receipts once per Feegow pagamento_id with original payment payload, amount converted from cents and payment date; DRE revenue and drill-down share that source so partial and repeated payments cannot inflate revenue.
 - Executive Financeiro uses an authenticated date-range aggregate for exact selected and comparison dates; monthly DRE views retain monthly grouping and both regimes use payment-based revenue.
+- Keep imported Feegow DRE reference data separate from existing financial calculations; link identifiers only on unique accent-, case-, and whitespace-normalized name matches to avoid guessing source IDs.
