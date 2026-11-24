@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from "recharts";
-import { RefreshCw, LayoutGrid, BarChart2, SlidersHorizontal, Filter, FilterX, Check, Users, CalendarX, CalendarRange, Shapes, TrendingUp } from "lucide-react";
+import { RefreshCw, BarChart2, SlidersHorizontal, Filter, FilterX, Check, Users, CalendarX, CalendarRange, Shapes, TrendingUp } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Badge } from "@/components/ui/badge";
@@ -179,7 +179,7 @@ export function FaturamentoDinamicoPage() {
   }, [rawData, filtroProfissionais, filtroConvenios, filtroProcedimentos, filtroGrupos]);
 
   // Processamento do Pivot (Matriz) baseado nos dados filtrados e nas métricas selecionadas
-  const { rows, colunasAtivas, totaisPorColuna, totaisGeral } = useMemo(() => {
+  const { rows, colunasAtivas } = useMemo(() => {
     if (filteredData.length === 0 || metricas.length === 0) {
       return { rows: [], colunasAtivas: [], totaisPorColuna: {} as Record<string, Record<Metrica, number>>, totaisGeral: {} as Record<Metrica, number> };
     }
@@ -337,12 +337,6 @@ export function FaturamentoDinamicoPage() {
   };
 
   const hasFiltrosAtivos = filtroProfissionais.length > 0 || filtroConvenios.length > 0 || filtroProcedimentos.length > 0 || filtroGrupos.length > 0;
-  const colSpanVazio =
-    1 +
-    (coluna !== "none"
-      ? colunasAtivas.length * metricas.length + metricas.length
-      : metricas.length);
-
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <div className="p-6 space-y-6 flex-1 max-w-7xl mx-auto w-full">
@@ -353,131 +347,16 @@ export function FaturamentoDinamicoPage() {
               Faturamento Dinâmico
             </h1>
             <p className="text-muted-foreground mt-1">
-              Análise flexível tipo "Tabela Dinâmica" (Pivot) sobre a produção da clínica.
+              Análise visual da produção da clínica por categoria, profissional e período.
             </p>
           </div>
           <DashboardDateFilter />
         </div>
 
-        <div className="grid grid-cols-1 gap-4">
-          {/* Painel de Controles da Pivot */}
-          <Card className="border-border shadow-sm">
-            <CardContent className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Linhas (Eixo Principal)</label>
-                <Select value={linha} onValueChange={(v: Dimensao) => setLinha(v)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(DIMENSAO_LABELS).map(([k, v]) => (
-                      <SelectItem key={k} value={k}>{v}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Colunas (Quebra Opcional)</label>
-                <Select value={coluna} onValueChange={(v: any) => setColuna(v)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Nenhuma (Apenas Total)</SelectItem>
-                    {Object.entries(DIMENSAO_LABELS).map(([k, v]) => (
-                      <SelectItem key={k} value={k} disabled={k === linha}>{v}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Métricas (selecione uma ou várias)</label>
-                <div className="flex flex-wrap gap-2 pt-1">
-                  {METRICAS_DISPONIVEIS.map((m) => {
-                    const ativa = metricas.includes(m);
-                    return (
-                      <Button
-                        key={m}
-                        type="button"
-                        variant={ativa ? "default" : "outline"}
-                        size="sm"
-                        className="h-8 gap-1.5"
-                        onClick={() => toggleMetrica(m)}
-                      >
-                        {ativa && <Check className="w-3.5 h-3.5" />}
-                        {METRICA_SHORT_LABELS[m]}
-                      </Button>
-                    );
-                  })}
-                </div>
-                <p className="text-[11px] text-muted-foreground">
-                  Marque mais de uma métrica para comparar, por exemplo, valor e quantidade juntos.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Painel de Filtros Detalhados */}
-          <Card className="border-border shadow-sm bg-muted/10">
-            <CardHeader className="px-4 py-3 border-b flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Filter className="w-4 h-4" /> Filtros Detalhados da Tabela
-              </CardTitle>
-              {hasFiltrosAtivos && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setFiltroProfissionais([]);
-                    setFiltroConvenios([]);
-                    setFiltroProcedimentos([]);
-                    setFiltroGrupos([]);
-                  }}
-                  className="h-7 px-2 text-xs text-muted-foreground"
-                >
-                  <FilterX className="w-3 h-3 mr-1" />
-                  Limpar Todos
-                </Button>
-              )}
-            </CardHeader>
-            <CardContent className="p-4 flex flex-wrap items-center gap-3">
-              <MultiSelectFilter
-                title="Profissionais"
-                options={filterOptions.profissionais}
-                selected={filtroProfissionais}
-                onChange={setFiltroProfissionais}
-              />
-              <MultiSelectFilter
-                title="Convênios"
-                options={filterOptions.convenios}
-                selected={filtroConvenios}
-                onChange={setFiltroConvenios}
-              />
-              <MultiSelectFilter
-                title="Grupos"
-                options={filterOptions.grupos}
-                selected={filtroGrupos}
-                onChange={setFiltroGrupos}
-              />
-              <MultiSelectFilter
-                title="Procedimentos"
-                options={filterOptions.procedimentos}
-                selected={filtroProcedimentos}
-                onChange={setFiltroProcedimentos}
-              />
-            </CardContent>
-          </Card>
-        </div>
-
         {/* Área de Resultados */}
-        <Tabs defaultValue="table" className="w-full">
+        <Tabs defaultValue="chart" className="w-full">
           <div className="flex justify-between items-center mb-4">
             <TabsList>
-              <TabsTrigger value="table" className="flex items-center gap-2">
-                <LayoutGrid className="w-4 h-4" /> Tabela
-              </TabsTrigger>
               <TabsTrigger value="chart" className="flex items-center gap-2">
                 <BarChart2 className="w-4 h-4" /> Gráfico
               </TabsTrigger>
@@ -487,134 +366,6 @@ export function FaturamentoDinamicoPage() {
             </TabsList>
             {isLoading && <span className="text-sm text-muted-foreground font-mono flex items-center gap-2"><RefreshCw className="w-4 h-4 animate-spin" /> Calculando...</span>}
           </div>
-
-          <TabsContent value="table" className="p-0 outline-none">
-            <Card>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    {!umaMetrica && coluna !== "none" ? (
-                      <>
-                        <TableRow className="bg-muted/50">
-                          <TableHead rowSpan={2} className="w-[250px] font-bold">{DIMENSAO_LABELS[linha]}</TableHead>
-                          {colunasAtivas.map((c) => (
-                            <TableHead key={c} colSpan={metricas.length} className="text-center border-x">{c}</TableHead>
-                          ))}
-                          <TableHead colSpan={metricas.length} className="text-center font-bold bg-muted/70 border-l">Total da Linha</TableHead>
-                        </TableRow>
-                        <TableRow className="bg-muted/40">
-                          {colunasAtivas.flatMap((c) => metricas.map((m) => (
-                            <TableHead key={`${c}|${m}`} className="text-right text-xs font-medium">{METRICA_SHORT_LABELS[m]}</TableHead>
-                          )))}
-                          {metricas.map((m) => (
-                            <TableHead key={`total|${m}`} className="text-right text-xs font-medium">{METRICA_SHORT_LABELS[m]}</TableHead>
-                          ))}
-                        </TableRow>
-                      </>
-                    ) : (
-                      <TableRow className="bg-muted/50">
-                        <TableHead className="w-[250px] font-bold">{DIMENSAO_LABELS[linha]}</TableHead>
-                        {coluna !== "none" && colunasAtivas.map((c) => (
-                          <TableHead key={c} className="text-right font-medium">{c}</TableHead>
-                        ))}
-                        {!umaMetrica && coluna === "none" ? (
-                          metricas.map((m) => (
-                            <TableHead key={m} className="text-right font-medium">{METRICA_LABELS[m]}</TableHead>
-                          ))
-                        ) : (
-                          <TableHead className="text-right font-bold bg-muted/70">
-                            {metricaUnica ? METRICA_LABELS[metricaUnica] : "Total"}
-                          </TableHead>
-                        )}
-                      </TableRow>
-                    )}
-                  </TableHeader>
-                  <TableBody>
-                    {!isLoading && rows.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={colSpanVazio} className="text-center py-8 text-muted-foreground">
-                          Nenhum dado encontrado para os filtros selecionados.
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      rows.map((row, idx) => (
-                        <TableRow key={idx}>
-                          <TableCell className="font-medium">{row.name}</TableCell>
-                          {coluna === "none" ? (
-                            metricas.map((m) => (
-                              <TableCell key={m} className="text-right">
-                                {formatValorMetrica(m, row.total[m])}
-                              </TableCell>
-                            ))
-                          ) : !umaMetrica ? (
-                            <>
-                              {colunasAtivas.map((c) => metricas.map((m) => (
-                                <TableCell key={`${c}|${m}`} className="text-right">
-                                  {formatValorMetrica(m, row.cols[c]?.[m])}
-                                </TableCell>
-                              )))}
-                              {metricas.map((m) => (
-                                <TableCell key={`total|${m}`} className="text-right font-bold bg-muted/20">
-                                  {formatValorMetrica(m, row.total[m])}
-                                </TableCell>
-                              ))}
-                            </>
-                          ) : (
-                            <>
-                              {colunasAtivas.map((c) => (
-                                <TableCell key={c} className="text-right">
-                                  {formatValorMetrica(metricaUnica as Metrica, row.cols[c]?.[metricaUnica as Metrica])}
-                                </TableCell>
-                              ))}
-                              <TableCell className="text-right font-bold bg-muted/20">
-                                {formatValorMetrica(metricaUnica as Metrica, row.total[metricaUnica as Metrica])}
-                              </TableCell>
-                            </>
-                          )}
-                        </TableRow>
-                      ))
-                    )}
-                    {rows.length > 0 && (
-                      <TableRow className="border-t-2 border-border bg-muted/60 font-bold hover:bg-muted/60">
-                        <TableCell>TOTAL GERAL</TableCell>
-                        {coluna === "none" ? (
-                          metricas.map((m) => (
-                            <TableCell key={m} className="text-right text-base text-primary">
-                              {formatValorMetrica(m, totaisGeral[m])}
-                            </TableCell>
-                          ))
-                        ) : !umaMetrica ? (
-                          <>
-                            {colunasAtivas.flatMap((c) => metricas.map((m) => (
-                              <TableCell key={`${c}|${m}|total`} className="text-right">
-                                {formatValorMetrica(m, totaisPorColuna[c]?.[m])}
-                              </TableCell>
-                            )))}
-                            {metricas.map((m) => (
-                              <TableCell key={`total|${m}|total`} className="text-right text-primary">
-                                {formatValorMetrica(m, totaisGeral[m])}
-                              </TableCell>
-                            ))}
-                          </>
-                        ) : (
-                          <>
-                            {colunasAtivas.map((c) => (
-                              <TableCell key={c} className="text-right">
-                                {formatValorMetrica(metricaUnica as Metrica, totaisPorColuna[c]?.[metricaUnica as Metrica])}
-                              </TableCell>
-                            ))}
-                            <TableCell className="text-right text-base text-primary">
-                              {formatValorMetrica(metricaUnica as Metrica, totaisGeral[metricaUnica as Metrica])}
-                            </TableCell>
-                          </>
-                        )}
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </Card>
-          </TabsContent>
 
           <TabsContent value="chart" className="p-0 outline-none">
             <Tabs defaultValue="categoria" className="w-full">
@@ -660,6 +411,118 @@ export function FaturamentoDinamicoPage() {
               </TabsContent>
 
               <TabsContent value="dinamico" className="m-0 outline-none">
+                <div className="grid grid-cols-1 gap-4">
+                  {/* Painel de Controles da Pivot */}
+                  <Card className="border-border shadow-sm">
+                    <CardContent className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-foreground">Linhas (Eixo Principal)</label>
+                        <Select value={linha} onValueChange={(v: Dimensao) => setLinha(v)}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(DIMENSAO_LABELS).map(([k, v]) => (
+                              <SelectItem key={k} value={k}>{v}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-foreground">Colunas (Quebra Opcional)</label>
+                        <Select value={coluna} onValueChange={(v: any) => setColuna(v)}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Nenhuma (Apenas Total)</SelectItem>
+                            {Object.entries(DIMENSAO_LABELS).map(([k, v]) => (
+                              <SelectItem key={k} value={k} disabled={k === linha}>{v}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-foreground">Métricas (selecione uma ou várias)</label>
+                        <div className="flex flex-wrap gap-2 pt-1">
+                          {METRICAS_DISPONIVEIS.map((m) => {
+                            const ativa = metricas.includes(m);
+                            return (
+                              <Button
+                                key={m}
+                                type="button"
+                                variant={ativa ? "default" : "outline"}
+                                size="sm"
+                                className="h-8 gap-1.5"
+                                onClick={() => toggleMetrica(m)}
+                              >
+                                {ativa && <Check className="w-3.5 h-3.5" />}
+                                {METRICA_SHORT_LABELS[m]}
+                              </Button>
+                            );
+                          })}
+                        </div>
+                        <p className="text-[11px] text-muted-foreground">
+                          Marque mais de uma métrica para comparar, por exemplo, valor e quantidade juntos.
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Painel de Filtros Detalhados */}
+                  <Card className="border-border shadow-sm bg-muted/10">
+                    <CardHeader className="px-4 py-3 border-b flex flex-row items-center justify-between space-y-0">
+                      <CardTitle className="text-sm font-medium flex items-center gap-2">
+                        <Filter className="w-4 h-4" /> Filtros do gráfico
+                      </CardTitle>
+                      {hasFiltrosAtivos && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setFiltroProfissionais([]);
+                            setFiltroConvenios([]);
+                            setFiltroProcedimentos([]);
+                            setFiltroGrupos([]);
+                          }}
+                          className="h-7 px-2 text-xs text-muted-foreground"
+                        >
+                          <FilterX className="w-3 h-3 mr-1" />
+                          Limpar Todos
+                        </Button>
+                      )}
+                    </CardHeader>
+                    <CardContent className="p-4 flex flex-wrap items-center gap-3">
+                      <MultiSelectFilter
+                        title="Profissionais"
+                        options={filterOptions.profissionais}
+                        selected={filtroProfissionais}
+                        onChange={setFiltroProfissionais}
+                      />
+                      <MultiSelectFilter
+                        title="Convênios"
+                        options={filterOptions.convenios}
+                        selected={filtroConvenios}
+                        onChange={setFiltroConvenios}
+                      />
+                      <MultiSelectFilter
+                        title="Grupos"
+                        options={filterOptions.grupos}
+                        selected={filtroGrupos}
+                        onChange={setFiltroGrupos}
+                      />
+                      <MultiSelectFilter
+                        title="Procedimentos"
+                        options={filterOptions.procedimentos}
+                        selected={filtroProcedimentos}
+                        onChange={setFiltroProcedimentos}
+                      />
+                    </CardContent>
+                  </Card>
+                </div>
+
                 <Card>
                   <CardHeader>
                     <CardTitle>
@@ -671,7 +534,7 @@ export function FaturamentoDinamicoPage() {
                       {coluna !== "none" && umaMetrica ? (
                         <>Segmentado por {DIMENSAO_LABELS[coluna as Dimensao]}</>
                       ) : coluna !== "none" ? (
-                        <>Barras agrupadas representam os totais de cada métrica. O detalhamento por {DIMENSAO_LABELS[coluna as Dimensao]} está na aba Tabela.</>
+                        <>Barras agrupadas representam os totais de cada métrica. Selecione uma única métrica para ver o detalhamento por {DIMENSAO_LABELS[coluna as Dimensao]}.</>
                       ) : (
                         <>Métricas: {metricas.map((m) => METRICA_LABELS[m]).join(" • ")}</>
                       )}
