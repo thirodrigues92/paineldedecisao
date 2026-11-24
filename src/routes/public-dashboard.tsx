@@ -5,6 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { hasPublicPanelSession, signOutPublicPanel } from "@/lib/public-panel-session";
 import { toast } from "sonner";
 import { useFilters, FiltersProvider } from "@/lib/filters-context";
+import { IAAssistente } from "@/components/IAAssistente";
+import { setIA } from "@/lib/ia-assistente-store";
 import { ProducaoGapAlert } from "@/components/ProducaoGapAlert";
 import { 
   dashboardQueryKey, 
@@ -939,7 +941,7 @@ export const Route = createFileRoute("/public-dashboard")({
     <FiltersProvider>
       <div className="min-h-screen bg-background p-4 md:p-8">
         <main className="max-w-7xl mx-auto">
-          <Tabs defaultValue="visao-executiva" className="w-full">
+          <Tabs defaultValue="visao-executiva" className="w-full" onValueChange={(v) => setIA({ aba: v })}>
             <div className="mb-6 max-w-3xl overflow-x-auto">
             <TabsList className="grid grid-cols-4 w-full min-w-[700px] max-w-3xl">
               <TabsTrigger value="visao-executiva" className="flex items-center gap-2">
@@ -974,6 +976,7 @@ export const Route = createFileRoute("/public-dashboard")({
           </Tabs>
         </main>
       </div>
+      <IAAssistente />
     </FiltersProvider>
   ),
 });

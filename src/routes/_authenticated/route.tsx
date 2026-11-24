@@ -4,6 +4,7 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/s
 import { AppSidebar } from "@/components/AppSidebar";
 import { GlobalFilters } from "@/components/GlobalFilters";
 import { FiltersProvider } from "@/lib/filters-context";
+import { IAAssistente } from "@/components/IAAssistente";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -36,6 +37,7 @@ function AuthenticatedLayout() {
           </SidebarInset>
         </div>
       </SidebarProvider>
+      <IAAssistente />
     </FiltersProvider>
   );
 }

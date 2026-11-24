@@ -1,4 +1,5 @@
-import { Fragment, useMemo, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
+import { setIA } from "@/lib/ia-assistente-store";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ChevronDown, ChevronRight, Download, Loader2, RefreshCw } from "lucide-react";
@@ -45,6 +46,7 @@ export function DreAnual() {
   const [year, setYear] = useState(currentYear);
   const [regime, setRegime] = useState<ItemRegime>("pagamento");
   const [unit, setUnit] = useState("all");
+  useEffect(() => { setIA({ dreFiltros: { ano: year, regime, unidade: unit } }); return () => setIA({ dreFiltros: null }); }, [year, regime, unit]);
   const [focusMonth, setFocusMonth] = useState<number | null | undefined>(undefined);
   const [operational, setOperational] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());

@@ -26,3 +26,4 @@
 - Explicit DRE month comparisons may fetch selected extra years through the shared paginated fetchItemDre query key; match groups/categories by tree IDs, export leaf rows once, and open the existing item drawer with the selected B year/month.
 
 - The executive AI agent (ia-agente.functions.ts) answers via Responses function calling over the invoker-secured ia_* SQL functions with the caller's RLS client, max 8 tool calls, and audits each question in ia_conversas; the older Analista IA stays context-based.
+- The floating IAAssistente is mounted in the authenticated layout and public dashboard; its conversation lives in a module-level store (ia-assistente-store) so it survives tab and page changes, and pages publish extra filters (DRE, public tab) into that store.
