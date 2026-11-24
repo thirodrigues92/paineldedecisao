@@ -1,6 +1,9 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { hasPublicPanelSession, signOutPublicPanel } from "@/lib/public-panel-session";
+import { toast } from "sonner";
 import { useFilters, FiltersProvider } from "@/lib/filters-context";
 import { ProducaoGapAlert } from "@/components/ProducaoGapAlert";
 import { 
@@ -38,6 +41,9 @@ import { MapaPacientes } from "@/components/MapaPacientes";
 
 function PublicDashboardContent() {
   const f = useFilters();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [signingOut, setSigningOut] = useState(false);
   const [detalhe, setDetalhe] = useState<string | null>(null);
   const [detalheOrigem, setDetalheOrigem] = useState<string | null>(null);
   const [detalhePagamento, setDetalhePagamento] = useState<string | null>(null);
@@ -380,11 +386,16 @@ function PublicDashboardContent() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Visão Executiva (Pública)</h1>
-        <Button variant="outline" size="sm" onClick={() => {
-          localStorage.removeItem("public_admin_session");
-          window.location.href = "/public-login";
+        <Button variant="outline" size="sm" disabled={signingOut} onClick={async () => {
+          setSigningOut(true);
+          try {
+            await signOutPublicPanel(supabase.auth, localStorage, queryClient);
+            await navigate({ to: "/public-login", replace: true });
+          } catch {
+            toast.error("Não foi possível sair. Tente novamente.");
+          } finally { setSigningOut(false); }
         }}>
-          Sair
+          {signingOut ? "Saindo…" : "Sair"}
         </Button>
       </div>
 
@@ -916,11 +927,11 @@ export const Route = createFileRoute("/public-dashboard")({
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },
   ] }),
-  beforeLoad: () => {
+  beforeLoad: async () => {
     if (typeof window !== "undefined") {
-      const isAuthed = localStorage.getItem("public_admin_session") === "true";
+      const isAuthed = await hasPublicPanelSession(supabase.auth, localStorage);
       if (!isAuthed) {
-        throw redirect({ to: "/public-login" as any });
+        throw redirect({ to: "/public-login" });
       }
     }
   },

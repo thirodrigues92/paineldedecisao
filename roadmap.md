@@ -18,3 +18,6 @@
 - [x] Export the filtered annual DRE to Excel; 23 tests passed, authenticated filters/tree/search/download verified, and 96 monthly totals reconciled with fn_dre across both regimes.
 - [x] Share annual DRE presentation with the public dashboard and add its fourth top tab without changing calculations or other tabs.
 - [x] Verify DRE filters, drill-down and Excel export in the public dashboard, original financial route and mobile tab scrolling; nine tree tests passed. Existing financial authentication remains required (public admin-only access does not grant financial data permissions).
+- [x] Replace public panel's local-only login with email/password authentication and sign-out with cache cleanup; keep database permissions unchanged.
+- [x] Test failed password login, fake session marker rejection, production/DRE reads with the requester's real Auth session and sign-out; 14 tests passed, no runtime errors. Successful password entry with the dedicated account remains unverified until it is supplied.
+- [ ] Create and verify the dedicated public panel account after receiving its email and a securely supplied password; no profile data required.
