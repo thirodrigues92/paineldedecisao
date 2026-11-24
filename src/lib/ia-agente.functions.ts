@@ -32,7 +32,7 @@ const TOOLS = [
       p_limite: { type: ["integer", "null"], description: "Máx. de linhas (até 500, padrão 100)" } }) },
   { name: "ia_dre", description: "DRE anual completa por linha/grupo e mês (receitas, despesas, resultado, resultado operacional).",
     parameters: obj({ p_ano: { type: "integer" }, p_regime: enumNul(["pagamento", "competencia"], "Padrão pagamento") }) },
-  { name: "ia_producao", description: "Produção/faturamento de atendimentos (Feegow) no período. Agrupa por profissional, grupo, procedimento, convenio, origem, mes, dia, forma_pagamento ou total. Origem separa Particular, Convênio e Não faturado; Não Faturado não é um convênio.",
+  { name: "ia_producao", description: "Produção dos atendimentos Feegow: produzido (todos os itens), faturado (somente situacao Faturado), nao_faturado (somente situacao Não Faturado) e recebido (valor_pago dos itens, não as baixas do Financeiro). Agrupa por profissional, grupo/especialidade, procedimento, convenio, origem, mes, dia, forma_pagamento ou total. Origem separa Particular, Convênio e Não faturado; Não Faturado não é um convênio.",
     parameters: obj({ p_inicio: d, p_fim: d,
       p_agrupar: enumNul(["profissional", "grupo", "procedimento", "convenio", "origem", "mes", "dia", "forma_pagamento", "total"], "Padrão profissional"),
       p_profissional: nul("Filtro profissional"), p_convenio: nul("Filtro convênio"), p_grupo: nul("Filtro grupo/categoria") }) },
@@ -71,6 +71,7 @@ COMO TRABALHAR
 3. Nomes de pessoas: primeiro use ia_buscar_pessoa. Se houver mais de um resultado provável, mostre as opções e pergunte qual é antes de somar.
 4. Financeiro: use o regime 'pagamento' (igual ao Feegow) salvo pedido contrário. Repasse médico é despesa. SÓCIOS (distribuição de lucros/pró-labore) e AQUISIÇÃO DE PATRIMÔNIO aparecem separados do resultado operacional.
 5. Considere a tela atual do usuário (rota e filtros) quando a pergunta disser 'aqui', 'nesta tela', 'esse período'.
+6. Ao falar de faturamento por especialidade, mostre as colunas Produzido, Faturado, Não faturado e Recebido. Use a palavra 'faturamento' só para o Faturado. Destaque quando o Não faturado passar de 10% do grupo (nao_faturado / produzido > 0,10). Recebido na produção é valor_pago dos itens, não substitui as baixas reais do Financeiro. Nunca conclua que Produzido = Faturado + Não faturado se houver outros status. Os nomes de especialidade retornados já estão padronizados.
 
 FORMATO DA RESPOSTA
 - Primeiro a resposta direta em 1 ou 2 linhas, com o número principal em negrito.

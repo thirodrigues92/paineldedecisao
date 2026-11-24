@@ -209,6 +209,27 @@ export type Database = {
         }
         Relationships: []
       }
+      dim_grupo_procedimento_manual: {
+        Row: {
+          atualizado_em: string
+          grupo_nome: string
+          procedimento_chave: string | null
+          procedimento_nome: string
+        }
+        Insert: {
+          atualizado_em?: string
+          grupo_nome: string
+          procedimento_chave?: string | null
+          procedimento_nome: string
+        }
+        Update: {
+          atualizado_em?: string
+          grupo_nome?: string
+          procedimento_chave?: string | null
+          procedimento_nome?: string
+        }
+        Relationships: []
+      }
       dre_feegow_linha: {
         Row: {
           condicao: string
@@ -995,6 +1016,8 @@ export type Database = {
           data_execucao: string | null
           feegow_id: number | null
           forma_pagamento: string | null
+          grupo_exibicao: string | null
+          grupo_fonte: string | null
           grupo_id: number | null
           grupo_nome: string | null
           hora_inicio: string | null
@@ -1025,6 +1048,8 @@ export type Database = {
           data_execucao?: string | null
           feegow_id?: number | null
           forma_pagamento?: string | null
+          grupo_exibicao?: string | null
+          grupo_fonte?: string | null
           grupo_id?: number | null
           grupo_nome?: string | null
           hora_inicio?: string | null
@@ -1055,6 +1080,8 @@ export type Database = {
           data_execucao?: string | null
           feegow_id?: number | null
           forma_pagamento?: string | null
+          grupo_exibicao?: string | null
+          grupo_fonte?: string | null
           grupo_id?: number | null
           grupo_nome?: string | null
           hora_inicio?: string | null
@@ -1603,6 +1630,14 @@ export type Database = {
         }
         Relationships: []
       }
+      lab_vw_catalogo_grupos: {
+        Row: {
+          grupo_nome: string | null
+          procedimento_id: number | null
+          procedimento_nome: string | null
+        }
+        Relationships: []
+      }
       lab_vw_faturado_x_recebido: {
         Row: {
           grupo_nome: string | null
@@ -1611,6 +1646,20 @@ export type Database = {
           saldo_a_receber: number | null
           total_faturado: number | null
           total_recebido: number | null
+        }
+        Relationships: []
+      }
+      lab_vw_grupo_por_id: {
+        Row: {
+          grupo_nome: string | null
+          procedimento_id: number | null
+        }
+        Relationships: []
+      }
+      lab_vw_grupo_por_nome: {
+        Row: {
+          grupo_nome: string | null
+          procedimento_chave: string | null
         }
         Relationships: []
       }
@@ -1853,6 +1902,102 @@ export type Database = {
         }
         Relationships: []
       }
+      vw_lab_producao_classificada: {
+        Row: {
+          agendamento_id: number | null
+          convenio_id: number | null
+          convenio_nome: string | null
+          created_at: string | null
+          data_execucao: string | null
+          feegow_id: number | null
+          forma_pagamento: string | null
+          grupo_fonte: string | null
+          grupo_id: number | null
+          grupo_nome: string | null
+          grupo_nome_original: string | null
+          hora_inicio: string | null
+          id: string | null
+          id_transacao: string | null
+          n_guia_prestador: string | null
+          paciente_id: number | null
+          paciente_nome: string | null
+          procedimento_id: number | null
+          procedimento_nome: string | null
+          profissional_id: number | null
+          profissional_nome: string | null
+          prontuario: string | null
+          situacao: string | null
+          situacao_conta: string | null
+          tipo_guia: string | null
+          tipo_procedimento: string | null
+          unidade_id: number | null
+          valor: number | null
+          valor_pago: number | null
+        }
+        Insert: {
+          agendamento_id?: number | null
+          convenio_id?: number | null
+          convenio_nome?: string | null
+          created_at?: string | null
+          data_execucao?: string | null
+          feegow_id?: number | null
+          forma_pagamento?: string | null
+          grupo_fonte?: string | null
+          grupo_id?: number | null
+          grupo_nome?: never
+          grupo_nome_original?: string | null
+          hora_inicio?: string | null
+          id?: string | null
+          id_transacao?: string | null
+          n_guia_prestador?: string | null
+          paciente_id?: number | null
+          paciente_nome?: string | null
+          procedimento_id?: number | null
+          procedimento_nome?: string | null
+          profissional_id?: number | null
+          profissional_nome?: string | null
+          prontuario?: string | null
+          situacao?: string | null
+          situacao_conta?: string | null
+          tipo_guia?: string | null
+          tipo_procedimento?: string | null
+          unidade_id?: number | null
+          valor?: number | null
+          valor_pago?: number | null
+        }
+        Update: {
+          agendamento_id?: number | null
+          convenio_id?: number | null
+          convenio_nome?: string | null
+          created_at?: string | null
+          data_execucao?: string | null
+          feegow_id?: number | null
+          forma_pagamento?: string | null
+          grupo_fonte?: string | null
+          grupo_id?: number | null
+          grupo_nome?: never
+          grupo_nome_original?: string | null
+          hora_inicio?: string | null
+          id?: string | null
+          id_transacao?: string | null
+          n_guia_prestador?: string | null
+          paciente_id?: number | null
+          paciente_nome?: string | null
+          procedimento_id?: number | null
+          procedimento_nome?: string | null
+          profissional_id?: number | null
+          profissional_nome?: string | null
+          prontuario?: string | null
+          situacao?: string | null
+          situacao_conta?: string | null
+          tipo_guia?: string | null
+          tipo_procedimento?: string | null
+          unidade_id?: number | null
+          valor?: number | null
+          valor_pago?: number | null
+        }
+        Relationships: []
+      }
       vw_pacientes_por_regiao: {
         Row: {
           bairro: string | null
@@ -1882,6 +2027,23 @@ export type Database = {
           id_transacao: string | null
           motivo: string | null
           procedimento_id: number | null
+          valor: number | null
+        }
+        Relationships: []
+      }
+      vw_producao_sem_grupo: {
+        Row: {
+          procedimento_id: number | null
+          procedimento_nome: string | null
+          qtd: number | null
+          valor: number | null
+        }
+        Relationships: []
+      }
+      vw_producao_sem_grupo_mensal: {
+        Row: {
+          mes: string | null
+          qtd: number | null
           valor: number | null
         }
         Relationships: []
@@ -2059,6 +2221,8 @@ export type Database = {
         Returns: {
           chave: string
           faturado: number
+          nao_faturado: number
+          produzido: number
           qtd: number
           recebido: number
           ticket_medio: number
@@ -2094,6 +2258,7 @@ export type Database = {
         }[]
       }
       lab_enriquecer_faturamento: { Args: never; Returns: Json }
+      lab_grupo_exibicao: { Args: { s: string }; Returns: string }
       lab_popular_dimensoes: { Args: never; Returns: undefined }
       lab_producao_origem: {
         Args: { p_convenio_id?: number; p_nome: string }

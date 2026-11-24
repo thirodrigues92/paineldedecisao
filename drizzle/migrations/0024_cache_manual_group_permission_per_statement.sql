@@ -1,0 +1,1 @@
+ALTER POLICY manual_grupo_edicao ON public.dim_grupo_procedimento_manual USING ((SELECT public.has_role((SELECT auth.uid()),'admin'))) WITH CHECK ((SELECT public.has_role((SELECT auth.uid()),'admin')));

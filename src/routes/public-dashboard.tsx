@@ -602,6 +602,7 @@ function PublicDashboardContent() {
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Faturamento por Profissional</CardTitle>
+            <p className="text-xs text-muted-foreground">Produção total, incluindo itens não faturados.</p>
           </CardHeader>
           <CardContent className="h-80">
             {query.isLoading ? <Skeleton className="h-full w-full" /> : profissionaisBreakdown.length === 0 ? <p className="grid place-items-center h-full text-sm text-muted-foreground">Sem dados.</p> : (
@@ -654,6 +655,7 @@ function PublicDashboardContent() {
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Especialidades por Faturamento</CardTitle>
+            <p className="text-xs text-muted-foreground">Produção total, incluindo itens não faturados.</p>
           </CardHeader>
           <CardContent className="h-80">
             {query.isLoading ? <Skeleton className="h-full w-full" /> : topEsp.length === 0 ? <p className="grid place-items-center h-full text-sm text-muted-foreground">Sem dados.</p> : (

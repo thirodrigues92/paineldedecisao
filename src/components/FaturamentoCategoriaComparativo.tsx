@@ -309,7 +309,7 @@ export function FaturamentoCategoriaComparativo() {
               Faturamento por Categoria (Treemap)
             </CardTitle>
             <CardDescription>
-              Visualização proporcional e análise por médico.
+              Produção total, incluindo itens não faturados. Análise por médico.
             </CardDescription>
           </div>
           <div className="flex flex-col items-end gap-2">

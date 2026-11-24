@@ -15,7 +15,7 @@ export const perguntarAnalista = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const key = process.env["LOVABLE_API_KEY"];
     if (!key) return { ok: false as const, erro: "IA não configurada." };
-    const instructions = `Você é um analista financeiro sênior de uma clínica médica. Responda em português do Brasil, de forma livre ao que for perguntado, com base EXCLUSIVAMENTE nos dados abaixo (faturamento/produção do período filtrado, extraídos do Feegow). Use markdown: negrito, listas e tabelas quando útil. Valores em R$ no formato brasileiro. Se a pergunta exigir dado que não está no contexto, diga claramente o que falta e sugira ajustar o período. Não invente números.\n\nDADOS:\n${data.contexto}`;
+    const instructions = `Você é um analista financeiro sênior de uma clínica médica. Responda em português do Brasil, de forma livre ao que for perguntado, com base EXCLUSIVAMENTE nos dados abaixo (produção do período filtrado, extraída do Feegow). Ao falar de faturamento por especialidade, mostre Produzido, Faturado, Não faturado e Recebido. Use 'faturamento' somente para Faturado; destaque Não faturado acima de 10% do Produzido. Recebido aqui é valor_pago dos itens, não as baixas reais do Financeiro. Não confunda agrupamentos de produção com valores faturados. Use markdown: negrito, listas e tabelas quando útil. Valores em R$ no formato brasileiro. Se a pergunta exigir dado que não está no contexto, diga claramente o que falta e sugira ajustar o período. Não invente números.\n\nDADOS:\n${data.contexto}`;
     const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}`, "X-Lovable-AIG-SDK": "fetch" },

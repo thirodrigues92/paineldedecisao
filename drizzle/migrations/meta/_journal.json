@@ -148,6 +148,48 @@
       "when": 1795527552214,
       "tag": "0020_custom_plan_ai_production",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1795527822485,
+      "tag": "0021_production_specialty_metrics_and_manual_groups",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1795527981724,
+      "tag": "0022_bounded_specialty_name_normalization",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1795528189175,
+      "tag": "0023_allow_safe_production_group_enrichment",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1795528526383,
+      "tag": "0024_cache_manual_group_permission_per_statement",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1795528635037,
+      "tag": "0025_isolate_manual_group_lookup_to_unclassified_items",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1795528868968,
+      "tag": "0026_store_specialty_display_for_fast_authenticated_reads",
+      "breakpoints": true
     }
   ]
 }

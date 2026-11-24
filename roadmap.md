@@ -33,3 +33,7 @@
 - [x] Classify Não Faturado separately from Particular/Convênio in production screens and ia_producao; authenticated November origin RPC verified.
 - [x] Add the invoker-secured duplicate view and last-sync alert; authenticated count is zero, simulated nonzero alert and origin drawer verified, mobile layout has no page overflow.
 - [ ] Annual filtered ia_producao request still exceeds its eight-second timeout despite search indexes; November origin queries and direct Cardiologia total reconciliation succeed. Requires a separate query-plan investigation.
+- [ ] Separate production/billed/unbilled/received metrics in ia_producao and explain chart inclusion in the cited screens.
+- [ ] Resolve missing production groups by catalog IDs then unambiguous normalized names; add editable manual mappings in Auditoria.
+- [ ] Standardize displayed specialty names without rewriting existing nonempty originals and add monthly missing-group alert above R$ 1.000.
+- [ ] Verify classifications, metric and 10% rules, audit editing, alerts and real 2026 specialty totals.

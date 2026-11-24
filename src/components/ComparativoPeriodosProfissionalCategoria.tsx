@@ -153,7 +153,7 @@ export function ComparativoPeriodosProfissionalCategoria() {
       // eslint-disable-next-line no-constant-condition
       while (true) {
         let query = supabase
-          .from("lab_producao_feegow")
+          .from("vw_lab_producao_classificada")
           .select("data_execucao, profissional_nome, grupo_nome, procedimento_nome, convenio_nome, convenio_id, paciente_nome, valor, valor_pago")
           .gte("data_execucao", intervalo.de)
           .lte("data_execucao", intervalo.ate);

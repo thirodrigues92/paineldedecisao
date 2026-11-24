@@ -29,3 +29,5 @@
 - The floating IAAssistente is mounted in the authenticated layout and public dashboard; its conversation lives in a module-level store (ia-assistente-store) so it survives tab and page changes, and pages publish extra filters (DRE, public tab) into that store.
 - Route every production write through gravarProducao and retain the advisory-lock database trigger: reject blank transactions, replace same-pair ATE on billing, and skip stale ATE even across concurrent or older deployed writers.
 - Share production-origin classification between presentation and lab_producao_origem/ia_producao; the Não Faturado sentinel is its own group, never an insurance payer, and vw_producao_duplicados audits stale records with invoker permissions.
+- Use vw_lab_producao_classificada for specialty presentation: catalog ID/name matches must be unambiguous, manual mappings apply only to missing/manual groups, and nonempty source names remain unchanged.
+- ia_producao separates produced totals, exact Faturado/Não Faturado status sums and item valor_pago; dynamic parameter-bound filtering avoids generic annual query plans without changing RLS or the timeout.

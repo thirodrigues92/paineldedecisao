@@ -121,8 +121,8 @@ export function FaturamentoDinamicoPage() {
 
       while (true) {
         let query = supabase
-          .from("lab_producao_feegow")
-          .select("data_execucao, profissional_nome, procedimento_nome, grupo_nome, convenio_nome, convenio_id, valor, valor_pago")
+          .from("vw_lab_producao_classificada")
+          .select("data_execucao, profissional_nome, procedimento_nome, grupo_nome, convenio_nome, convenio_id, valor, valor_pago, situacao")
           .gte("data_execucao", ds)
           .lte("data_execucao", de);
 
@@ -348,7 +348,7 @@ export function FaturamentoDinamicoPage() {
               Faturamento Dinâmico
             </h1>
             <p className="text-muted-foreground mt-1">
-              Análise visual da produção da clínica por categoria, profissional e período.
+              Produção por categoria, profissional e período — os valores dos gráficos incluem itens não faturados.
             </p>
           </div>
           <DashboardDateFilter />
@@ -532,6 +532,7 @@ export function FaturamentoDinamicoPage() {
                         : `${METRICA_LABELS[metricaUnica as Metrica]} por ${DIMENSAO_LABELS[linha]}`}
                     </CardTitle>
                     <CardDescription>
+                      <span className="block">Produção total inclui itens não faturados; Recebido corresponde ao valor pago dos itens.</span>
                       {coluna !== "none" && umaMetrica ? (
                         <>Segmentado por {DIMENSAO_LABELS[coluna as Dimensao]}</>
                       ) : coluna !== "none" ? (

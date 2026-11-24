@@ -477,7 +477,7 @@ export function FaturamentoProfissionalComparativo() {
               Faturamento por Profissional (Treemap)
             </CardTitle>
             <CardDescription>
-              Visualização proporcional e comparação entre profissionais.
+              Produção total, incluindo itens não faturados. Comparação entre profissionais.
             </CardDescription>
           </div>
           <div className="flex flex-col items-end gap-2">

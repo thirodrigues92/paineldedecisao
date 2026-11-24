@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { brl, num } from "@/lib/format";
+import { ProductionGroupAudit } from "@/components/ProductionGroupAudit";
 
 export const Route = createFileRoute("/_authenticated/auditoria")({
   head: () => ({
@@ -149,14 +150,16 @@ function AuditoriaPage() {
       </div>
 
       <Tabs defaultValue="sync">
-        <TabsList>
+        <TabsList className="max-w-full overflow-x-auto justify-start">
           <TabsTrigger value="sync">Status de Sync</TabsTrigger>
           <TabsTrigger value="qualidade">Qualidade de Dados</TabsTrigger>
           <TabsTrigger value="receita">Rastreamento de Receita</TabsTrigger>
           <TabsTrigger value="tabelas">Log de Todas as Tabelas</TabsTrigger>
           <TabsTrigger value="json">JSON</TabsTrigger>
+          <TabsTrigger value="especialidades">Especialidades</TabsTrigger>
         </TabsList>
 
+        <TabsContent value="especialidades"><ProductionGroupAudit /></TabsContent>
         <TabsContent value="sync" className="space-y-4">
           <Card>
             <CardHeader><CardTitle>Últimas execuções</CardTitle></CardHeader>

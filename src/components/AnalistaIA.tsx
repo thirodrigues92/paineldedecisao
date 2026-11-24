@@ -8,8 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { perguntarAnalista } from "@/lib/analista-ia.functions";
+import { productionMetrics, unbilledWarning } from "@/lib/production-metrics";
 
-type Row = { data_execucao: string; profissional_nome: string | null; procedimento_nome: string | null; grupo_nome: string | null; convenio_nome: string | null; valor: any; valor_pago: any };
+type Row = { data_execucao: string; profissional_nome: string | null; procedimento_nome: string | null; grupo_nome: string | null; convenio_nome: string | null; valor: any; valor_pago: any; situacao?: string | null };
 type Msg = { role: "user" | "assistant"; content: string };
 
 const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -26,7 +27,10 @@ function agrupar(rows: Row[], key: (r: Row) => string, limite = 60) {
 }
 
 function montarContexto(rows: Row[], periodo: string) {
-  const total = rows.reduce((s, r) => s + (Number(r.valor) || 0), 0);
+  const metrics = productionMetrics(rows);
+  const specialties = new Map<string, Row[]>();
+  for (const row of rows) { const name = row.grupo_nome || "Não informado"; const list = specialties.get(name) ?? []; list.push(row); specialties.set(name, list); }
+  const specialtyTable = [...specialties].map(([name, list]) => { const m = productionMetrics(list); return `${name}: Produzido ${brl(m.produzido)} | Faturado ${brl(m.faturado)} | Não faturado ${brl(m.nao_faturado)} | Recebido ${brl(m.recebido)}${unbilledWarning(m.produzido, m.nao_faturado) ? " | ALERTA: não faturado acima de 10%" : ""}`; }).join("\n");
   const profConv = new Map<string, number>();
   for (const r of rows) {
     const k = `${r.profissional_nome || "Sem profissional"} × ${r.convenio_nome || "Particular"}`;
@@ -35,11 +39,12 @@ function montarContexto(rows: Row[], periodo: string) {
   const pc = [...profConv.entries()].sort((a, b) => b[1] - a[1]).slice(0, 120).map(([k, v]) => `${k}: ${brl(v)}`).join("\n");
   return [
     `Período filtrado: ${periodo}`,
-    `Faturamento total: ${brl(total)} | Itens: ${rows.length}`,
+    `Produzido: ${brl(metrics.produzido)} | Faturado: ${brl(metrics.faturado)} | Não faturado: ${brl(metrics.nao_faturado)} | Recebido (valor_pago dos itens): ${brl(metrics.recebido)} | Itens: ${rows.length}`,
+    "Use 'faturamento' somente para Faturado. Mostre Produzido, Faturado, Não faturado e Recebido ao analisar especialidades; destaque não faturado acima de 10% do produzido. Os demais agrupamentos abaixo somam PRODUZIDO, não faturamento.",
+    `\n## Especialidades — medidas separadas\n${specialtyTable}`,
     `\n## Por dia\n${agrupar(rows, (r) => r.data_execucao, 400).split("\n").sort().join("\n")}`,
     `\n## Por profissional\n${agrupar(rows, (r) => r.profissional_nome || "")}`,
     `\n## Por convênio\n${agrupar(rows, (r) => r.convenio_nome || "Particular")}`,
-    `\n## Por categoria\n${agrupar(rows, (r) => r.grupo_nome || "")}`,
     `\n## Top procedimentos\n${agrupar(rows, (r) => r.procedimento_nome || "", 80)}`,
     `\n## Profissional × convênio\n${pc}`,
   ].join("\n");

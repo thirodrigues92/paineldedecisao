@@ -687,7 +687,7 @@ function DashboardPage() {
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Faturamento por categoria</CardTitle>
-            <p className="text-xs text-muted-foreground">Receitas do período agrupadas por categoria financeira — as menores aparecem no fim da lista.</p>
+            <p className="text-xs text-muted-foreground">Produção total por categoria, incluindo itens não faturados — as menores aparecem no fim da lista.</p>
           </CardHeader>
           <CardContent className="h-[26rem]">
             {query.isLoading ? <Skeleton className="h-full w-full" /> : topCategorias.length === 0 ? <EmptyState /> : (
@@ -934,7 +934,7 @@ function DashboardPage() {
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Faturamento por Profissional</CardTitle>
-            <p className="text-xs text-muted-foreground">Desempenho financeiro por médico/profissional no período.</p>
+            <p className="text-xs text-muted-foreground">Produção total por profissional, incluindo itens não faturados.</p>
           </CardHeader>
           <CardContent className="h-80">
             {query.isLoading ? <Skeleton className="h-full w-full" /> : profissionaisBreakdown.length === 0 ? <EmptyState /> : (
@@ -990,7 +990,7 @@ function DashboardPage() {
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Especialidades por Faturamento</CardTitle>
-            <p className="text-xs text-muted-foreground">Ranking das especialidades que mais geraram receita no período selecionado.</p>
+            <p className="text-xs text-muted-foreground">Ranking por produção total, incluindo itens não faturados no período selecionado.</p>
           </CardHeader>
           <CardContent className="h-80">
             {query.isLoading ? <Skeleton className="h-full w-full" /> : topEsp.length === 0 ? <EmptyState /> : (
