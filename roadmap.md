@@ -26,3 +26,5 @@
 - [x] Update DRE drawer search and Excel, verify desktop/mobile and document search/export, and run 22 tests; authenticated 2026 competency counts: revenue 47,384/47,607 named, expenses 4,253/4,254 named. Original item amounts and counts unchanged.
 - [x] Add tree-based DRE charts and focus/operational controls without changing table, accounting or drawer; annual comparison uses an already loaded previous year, otherwise hides changes without a new query.
 - [x] Test chart filtering/comparisons (18 tests passed) and verify real chart month clicks, category/group drawers, Others and desktop/mobile public DRE with no runtime errors or mobile page overflow; operational toggle leaves the table identical.
+- [x] Add independent month/year comparison with root impact chart, category drill-down and Excel using shared DRE reads; existing chart panel/table untouched.
+- [x] Verify B-minus-A rules (26 tests passed), 2025 extra-year loading, B-year/month drawer, 10/all toggle, 139-row Excel and desktop/mobile public DRE; no runtime errors and no mobile page overflow.

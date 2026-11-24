@@ -14,6 +14,7 @@ import { annual, buildDreTree, DRE_MONTHS, flattenTree, revenuePercent, type Ite
 import { brl, pct } from "@/lib/format";
 import { DreChartControls, DreChartPanel } from "@/components/DreChartPanel";
 import { latestDreMonth } from "@/lib/dre-chart-data";
+import { DreMonthComparison } from "@/components/DreMonthComparison";
 
 export function DreAnual() {
   const completePeople = useServerFn(completeDrePeople);
@@ -97,6 +98,7 @@ export function DreAnual() {
     {q.isPending || lookup.isPending ? <Skeleton className="h-96 w-full" /> : q.isError || lookup.isError ? <div role="alert" className="space-y-3 text-destructive"><p>Não foi possível carregar a DRE.</p><Button variant="outline" onClick={() => { q.refetch(); lookup.refetch(); }}>Tentar novamente</Button></div> : <>
       {q.data?.length === 0 && <p className="text-sm text-muted-foreground">Sem itens no período e unidade selecionados.</p>}
       <DreChartPanel tree={tree} {...(previousTree ? { previousTree } : {})} month={month} onMonth={setFocusMonth} operational={operational} onTarget={setTarget} year={year} />
+      <DreMonthComparison key={`${year}-${regime}-${unit}`} tree={tree} accounts={lookup.data?.accounts ?? []} year={year} month={month} regime={regime} unit={unit} operational={operational} />
       <div className="dre-annual-scroll overflow-x-auto rounded-md border"><table className="w-full min-w-[1900px] text-xs"><thead><tr className="border-b bg-muted text-muted-foreground"><th className="sticky left-0 z-20 min-w-72 bg-muted px-3 py-4 text-left">Plano de Contas</th>{DRE_MONTHS.map(m => <th key={m} className="min-w-28 px-2 text-right">{m}</th>)}<th className="min-w-32 px-3 text-right">Total</th><th className="min-w-28 px-3 text-right">% da receita</th></tr></thead><tbody>{renderRows(tree)}</tbody></table></div>
     </>}
     <DreItemDrawer key={`${target?.row.id}-${target?.month}-${year}-${regime}-${unit}`} target={target} year={year} regime={regime} unit={unit} onClose={() => setTarget(null)} />
