@@ -21,3 +21,4 @@
 - Build annual account trees by source IDs and parent links; roll up each item once per ancestor and export all levels without adding hierarchical rows together.
 - Keep annual DRE presentation in the shared DreAnual component, rendered by both the financial route and public dashboard; reuse existing invoker-secured data access to prevent calculation drift.
 - Authenticate public-panel email/password access through Cloud Auth; its localStorage flag is only a navigation marker checked alongside getUser, and sign-out cancels queries and clears protected caches before removing the Auth session.
+- Resolve DRE person names by the exact account/type pair in fin_conta_pessoa; share bounded enrichment across invoice sync paths, prefer local patient names, persist failed lookups as null, and restrict manual completion to verified admins without changing item accounting.

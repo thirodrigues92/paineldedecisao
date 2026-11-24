@@ -302,6 +302,33 @@ export type Database = {
         }
         Relationships: []
       }
+      fin_conta_pessoa: {
+        Row: {
+          atualizado_em: string
+          conta_id: number
+          documento: string | null
+          nome: string | null
+          tipo_conta: number
+          tipo_descricao: string | null
+        }
+        Insert: {
+          atualizado_em?: string
+          conta_id: number
+          documento?: string | null
+          nome?: string | null
+          tipo_conta: number
+          tipo_descricao?: string | null
+        }
+        Update: {
+          atualizado_em?: string
+          conta_id?: number
+          documento?: string | null
+          nome?: string | null
+          tipo_conta?: number
+          tipo_descricao?: string | null
+        }
+        Relationships: []
+      }
       fin_itens: {
         Row: {
           acrescimo: number
@@ -1665,7 +1692,11 @@ export type Database = {
           invoice_id: number | null
           item_id: number | null
           ordem_dre: number | null
+          pessoa_conta_id: number | null
+          pessoa_documento: string | null
           pessoa_nome: string | null
+          pessoa_tipo: string | null
+          pessoa_tipo_conta: number | null
           posicao: string | null
           procedimento_grupo: string | null
           receita_procedimento: boolean | null
@@ -1748,6 +1779,13 @@ export type Database = {
         }
         Relationships: []
       }
+      vw_fin_conta_pares: {
+        Row: {
+          conta_id: number | null
+          tipo_conta: number | null
+        }
+        Relationships: []
+      }
       vw_heatmap_agenda: {
         Row: {
           dia_semana: number | null
@@ -1812,6 +1850,16 @@ export type Database = {
       dre_feegow_normalizar_nome: { Args: { s: string }; Returns: string }
       dre_normalizar: { Args: { s: string }; Returns: string }
       dre_tipo_grupo: { Args: { g: string }; Returns: string }
+      fin_pessoa_identifier: { Args: { v: string }; Returns: number }
+      fin_pessoas_pendentes: {
+        Args: { p_limite?: number }
+        Returns: {
+          conta_id: number
+          paciente_nome: string
+          tipo_conta: number
+        }[]
+      }
+      fin_pessoas_pendentes_count: { Args: never; Returns: number }
       fin_repasse_medico: {
         Args: { p_from: string; p_to: string }
         Returns: {

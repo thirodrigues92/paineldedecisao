@@ -1,4 +1,5 @@
 import { feegowIntegerId } from "./plano-contas.ts";
+import { completeAccountPeople } from "./conta-pessoa.ts";
 
 type Raw = Record<string, any>;
 export function itemDate(value: unknown): string | null {
@@ -91,5 +92,9 @@ export async function syncInvoiceItems(client: any, token: string, from: string,
       }
     }
   }
-  return { from, to, gravados, invalidos };
+  // Enrichment must never turn a successful invoice load into a failed sync.
+  let pessoas;
+  try { pessoas = await completeAccountPeople(client, token); }
+  catch { pessoas = { erro: "Não foi possível completar nomes nesta execução" }; }
+  return { from, to, gravados, invalidos, pessoas };
 }

@@ -1,6 +1,9 @@
 import { Fragment, useMemo, useState, type ReactNode } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { ChevronDown, ChevronRight, Download, Loader2 } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { ChevronDown, ChevronRight, Download, Loader2, RefreshCw } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { completeDrePeople } from "@/lib/dre-person.functions";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -11,6 +14,30 @@ import { annual, buildDreTree, DRE_MONTHS, flattenTree, revenuePercent, type Ite
 import { brl, pct } from "@/lib/format";
 
 export function DreAnual() {
+  const completePeople = useServerFn(completeDrePeople);
+  const queryClient = useQueryClient();
+  const [completing, setCompleting] = useState(false);
+  const [completionMessage, setCompletionMessage] = useState("");
+  const admin = useQuery({ queryKey: ["dre-complete-names-admin"], queryFn: async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+    const { data, error } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
+    return !error && data === true;
+  } });
+  const completeNames = async () => {
+    setCompleting(true); setCompletionMessage("");
+    let processed = 0, failures = 0;
+    try {
+      while (true) {
+        const result = await completePeople();
+        processed += result.processados; failures += result.falhas;
+        setCompletionMessage(`${processed.toLocaleString("pt-BR")} contas consultadas · ${result.pendentes.toLocaleString("pt-BR")} pendentes · ${failures} falhas`);
+        if (result.pendentes === 0) break;
+        if (result.processados === 0) throw new Error("Sem progresso");
+      }
+    } catch { setCompletionMessage(`Preenchimento interrompido após ${processed.toLocaleString("pt-BR")} contas; tente novamente para continuar.`); }
+    finally { await queryClient.invalidateQueries({ queryKey: ["dre-items-drawer"] }); setCompleting(false); }
+  };
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState(currentYear);
   const [regime, setRegime] = useState<ItemRegime>("pagamento");
@@ -57,6 +84,7 @@ export function DreAnual() {
       <div className="space-y-2"><div className="text-xs font-medium text-muted-foreground">Regime</div><ToggleGroup type="single" value={regime} onValueChange={v => { if (v === "pagamento" || v === "competencia") { setRegime(v); reset(); } }} variant="outline"><ToggleGroupItem value="pagamento">Pagamento</ToggleGroupItem><ToggleGroupItem value="competencia">Competência</ToggleGroupItem></ToggleGroup></div>
       <div className="min-w-0 space-y-2"><label className="text-xs font-medium text-muted-foreground">Unidade</label><Select value={unit} onValueChange={v => { setUnit(v); reset(); }}><SelectTrigger aria-label="Unidade da DRE" className="w-64 max-w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Todas as unidades</SelectItem><SelectItem value="0">Sem unidade na origem</SelectItem>{lookup.data?.units.filter(u => u.unidade_id !== 0).map(u => <SelectItem key={u.unidade_id} value={String(u.unidade_id)}>{u.nome_fantasia}</SelectItem>)}</SelectContent></Select></div>
     </div>
+    {admin.data && <div className="flex flex-wrap items-center gap-3"><Button variant="outline" disabled={completing} onClick={completeNames}>{completing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />} {completing ? "Completando nomes…" : "Completar nomes"}</Button>{completionMessage && <p role="status" className="text-sm text-muted-foreground">{completionMessage}</p>}</div>}
     {exportError && <p role="alert" className="text-sm text-destructive">Não foi possível exportar o Excel. Tente novamente.</p>}
     {q.isPending || lookup.isPending ? <Skeleton className="h-96 w-full" /> : q.isError || lookup.isError ? <div role="alert" className="space-y-3 text-destructive"><p>Não foi possível carregar a DRE.</p><Button variant="outline" onClick={() => { q.refetch(); lookup.refetch(); }}>Tentar novamente</Button></div> : <>
       {q.data?.length === 0 && <p className="text-sm text-muted-foreground">Sem itens no período e unidade selecionados.</p>}

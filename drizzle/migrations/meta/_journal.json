@@ -85,6 +85,20 @@
       "when": 1795091577010,
       "tag": "0011_dre_screen_item_sources",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1795520554100,
+      "tag": "0012_dre_account_person_names",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1795520745595,
+      "tag": "0013_restrict_account_person_grants",
+      "breakpoints": true
     }
   ]
 }

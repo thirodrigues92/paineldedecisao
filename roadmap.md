@@ -21,3 +21,6 @@
 - [x] Replace public panel's local-only login with email/password authentication and sign-out with cache cleanup; keep database permissions unchanged.
 - [x] Test failed password login, fake session marker rejection, production/DRE reads with the requester's real Auth session and sign-out; 14 tests passed, no runtime errors. Successful password entry with the dedicated account remains unverified until it is supplied.
 - [ ] Create and verify the dedicated public panel account after receiving its email and a securely supplied password; no profile data required.
+- [x] Persist Feegow account-person associations and complete up to 300 missing pairs per financial sync with 150ms API spacing and patient lookup first; legacy sync deployed and modern sync shares the same helper.
+- [x] Add admin-only historical name completion and enrich DRE detail names/types/documents without changing calculations; history exhausted all pending pairs (7,168 cached, seven failed lookups retained as null).
+- [x] Update DRE drawer search and Excel, verify desktop/mobile and document search/export, and run 22 tests; authenticated 2026 competency counts: revenue 47,384/47,607 named, expenses 4,253/4,254 named. Original item amounts and counts unchanged.
