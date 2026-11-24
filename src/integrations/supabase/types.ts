@@ -2104,6 +2104,7 @@ export type Database = {
       dre_feegow_normalizar_nome: { Args: { s: string }; Returns: string }
       dre_normalizar: { Args: { s: string }; Returns: string }
       dre_tipo_grupo: { Args: { g: string }; Returns: string }
+      feegow_detectar_buracos: { Args: { p_dias?: number }; Returns: number }
       fin_pessoa_identifier: { Args: { v: string }; Returns: number }
       fin_pessoas_pendentes: {
         Args: { p_limite?: number }
