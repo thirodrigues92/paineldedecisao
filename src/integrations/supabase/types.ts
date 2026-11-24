@@ -560,6 +560,36 @@ export type Database = {
         }
         Relationships: []
       }
+      ia_conversas: {
+        Row: {
+          criado_em: string
+          duracao_ms: number | null
+          ferramentas_usadas: Json
+          id: string
+          pergunta: string
+          resposta: string | null
+          user_id: string
+        }
+        Insert: {
+          criado_em?: string
+          duracao_ms?: number | null
+          ferramentas_usadas?: Json
+          id?: string
+          pergunta: string
+          resposta?: string | null
+          user_id: string
+        }
+        Update: {
+          criado_em?: string
+          duracao_ms?: number | null
+          ferramentas_usadas?: Json
+          id?: string
+          pergunta?: string
+          resposta?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       lab_agendamento_enriquecido: {
         Row: {
           agendamento_id: number

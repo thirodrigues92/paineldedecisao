@@ -24,3 +24,5 @@
 - Resolve DRE person names by the exact account/type pair in fin_conta_pessoa; share bounded enrichment across invoice sync paths, prefer local patient names, persist failed lookups as null, and restrict manual completion to verified admins without changing item accounting.
 - Derive annual DRE charts only from the existing account tree; operational exclusions use immutable presentation copies, and prior-year comparisons use already cached data to avoid new queries or changes to table accounting.
 - Explicit DRE month comparisons may fetch selected extra years through the shared paginated fetchItemDre query key; match groups/categories by tree IDs, export leaf rows once, and open the existing item drawer with the selected B year/month.
+
+- The executive AI agent (ia-agente.functions.ts) answers via Responses function calling over the invoker-secured ia_* SQL functions with the caller's RLS client, max 8 tool calls, and audits each question in ia_conversas; the older Analista IA stays context-based.
