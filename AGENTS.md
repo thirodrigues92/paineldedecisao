@@ -22,3 +22,4 @@
 - Keep annual DRE presentation in the shared DreAnual component, rendered by both the financial route and public dashboard; reuse existing invoker-secured data access to prevent calculation drift.
 - Authenticate public-panel email/password access through Cloud Auth; its localStorage flag is only a navigation marker checked alongside getUser, and sign-out cancels queries and clears protected caches before removing the Auth session.
 - Resolve DRE person names by the exact account/type pair in fin_conta_pessoa; share bounded enrichment across invoice sync paths, prefer local patient names, persist failed lookups as null, and restrict manual completion to verified admins without changing item accounting.
+- Derive annual DRE charts only from the existing account tree; operational exclusions use immutable presentation copies, and prior-year comparisons use already cached data to avoid new queries or changes to table accounting.

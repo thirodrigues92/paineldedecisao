@@ -24,3 +24,5 @@
 - [x] Persist Feegow account-person associations and complete up to 300 missing pairs per financial sync with 150ms API spacing and patient lookup first; legacy sync deployed and modern sync shares the same helper.
 - [x] Add admin-only historical name completion and enrich DRE detail names/types/documents without changing calculations; history exhausted all pending pairs (7,168 cached, seven failed lookups retained as null).
 - [x] Update DRE drawer search and Excel, verify desktop/mobile and document search/export, and run 22 tests; authenticated 2026 competency counts: revenue 47,384/47,607 named, expenses 4,253/4,254 named. Original item amounts and counts unchanged.
+- [x] Add tree-based DRE charts and focus/operational controls without changing table, accounting or drawer; annual comparison uses an already loaded previous year, otherwise hides changes without a new query.
+- [x] Test chart filtering/comparisons (18 tests passed) and verify real chart month clicks, category/group drawers, Others and desktop/mobile public DRE with no runtime errors or mobile page overflow; operational toggle leaves the table identical.
