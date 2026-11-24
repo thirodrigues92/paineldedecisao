@@ -1,7 +1,12 @@
 import { supabase } from "@/integrations/supabase/client";
+import type {DashboardFilters} from './filters-context';
+import {locationKey,locationName,realMapRows,type MapProduction} from './patient-map-rules';
 
 export type PacienteGeo = {
   paciente_id: number;
+  nome?: string | null;
+  prontuario?: string | null;
+  cep?: string | null;
   sexo: string | null;
   ano_nascimento: number | null;
   bairro: string | null;
@@ -21,13 +26,13 @@ export type UnidadeGeo = {
 };
 
 /** Todos os pacientes (paginado — PostgREST devolve no máximo 1000 linhas por request). */
-export async function fetchPacientesGeo(limit = 40_000): Promise<PacienteGeo[]> {
+export async function fetchPacientesGeo(limit = Infinity): Promise<PacienteGeo[]> {
   const pageSize = 1_000;
   const all: PacienteGeo[] = [];
   for (let from = 0; from < limit; from += pageSize) {
     const { data, error } = await supabase
       .from("pacientes")
-      .select("paciente_id, sexo, ano_nascimento, bairro, cidade, estado, latitude, longitude, convenio_id, metricas")
+      .select("paciente_id, nome, prontuario, cep, sexo, ano_nascimento, bairro, cidade, estado, latitude, longitude, convenio_id, metricas")
       .order("paciente_id", { ascending: true })
       .range(from, Math.min(from + pageSize - 1, limit - 1));
     if (error) throw error;
@@ -69,11 +74,27 @@ export function idadeDe(anoNascimento: number | null | undefined): number | null
 }
 
 export function normalizarCidade(value: string | null | undefined): string {
-  const raw = value?.trim() || "Não informado";
-  const key = raw.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase();
+  const raw = locationName(value);
+  const key = locationKey(value);
   if (key === "acreuna") return "Acreúna";
   if (key === "santa helena" || key === "santa helena de goias") return "Santa Helena de Goiás";
   return raw;
+}
+
+/** Map-only source: complete stable pagination; no appointment enrichment or row ceiling. */
+export async function fetchMapProduction(f:DashboardFilters):Promise<MapProduction[]> {
+  const rows:MapProduction[]=[];
+  for(let n=0;;n+=1000) {
+    let q=supabase.from('vw_lab_producao_classificada').select('id,agendamento_id,paciente_id,paciente_nome,prontuario,grupo_nome,valor,situacao,convenio_nome,convenio_id').gte('data_execucao',f.from.toISOString().slice(0,10)).lte('data_execucao',f.to.toISOString().slice(0,10)).order('id').range(n,n+999);
+    if(f.unidadeIds.length)q=q.in('unidade_id',f.unidadeIds);
+    if(f.profissionalIds.length)q=q.in('profissional_id',f.profissionalIds);
+    if(f.convenioTipo==='particular')q=q.or('convenio_id.is.null,convenio_id.eq.0,convenio_nome.eq.Particular').or('convenio_nome.is.null,convenio_nome.not.ilike.Não Faturado');
+    if(f.convenioTipo==='convenio')q=q.not('convenio_nome','eq','Particular').not('convenio_id','is',null).not('convenio_id','eq',0).not('convenio_nome','ilike','Não Faturado');
+    const {data,error}=await q;if(error)throw error;
+    rows.push(...(data??[]).filter(r=>r.agendamento_id!=null).map(r=>({...r,agendamento_id:Number(r.agendamento_id)})));
+    if(!data || data.length<1000)break;
+  }
+  return realMapRows(rows);
 }
 
 export function imcDe(metricas: Record<string, unknown> | null | undefined): number | null {

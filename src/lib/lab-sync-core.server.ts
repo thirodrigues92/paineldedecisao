@@ -436,9 +436,14 @@ export async function runIncrementalSync(diasJanela = 3) {
     });
     const window=appointmentWindow(fim);
     const agendamentos=await run("agendamentos",window.inicio,window.fim,()=>syncAgendamentosRange(window.inicio,window.fim));
+    const pacientes=await run("pacientes",inicio,fim,async()=>{
+      const {syncPatientRegistrations}=await import('./patient-registration.server');
+      return syncPatientRegistrations(300);
+    });
+    const geocode=await isolatedStage(async()=>{const {processPatientGeocodes}=await import('./patient-geocode.server');return processPatientGeocodes(150,10);});
     await enriquecer();
-    const result={inicio,fim,producao,safety,repasse,receita,itens,agendamentos};
-    const stages=[producao,safety,repasse,receita,itens,agendamentos];
+    const result={inicio,fim,producao,safety,repasse,receita,itens,agendamentos,pacientes,geocode};
+    const stages=[producao,safety,repasse,receita,itens,agendamentos,pacientes];
     const ok=stages.some(s=>s.ok);
     const errors=stages.filter(s=>!s.ok).map(s=>s.erro).join(" | ");
     await logSync("auto-sync:30min",{inicio,fim},stages.every(s=>s.ok),producao.gravados ?? 0,errors || undefined);

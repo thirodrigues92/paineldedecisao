@@ -42,6 +42,7 @@ import { Route as AuthenticatedFinanceiroDreRouteImport } from './routes/_authen
 import { Route as AuthenticatedFinanceiroFluxoRouteImport } from './routes/_authenticated/financeiro_.fluxo'
 import { Route as AuthenticatedFinanceiroRepasseRouteImport } from './routes/_authenticated/financeiro_.repasse'
 import { Route as ApiPublicHooksSyncFeegowRouteImport } from './routes/api/public/hooks/sync-feegow'
+import { Route as ApiPublicJobsPatientRecoveryRouteImport } from './routes/api/public/jobs/patient-recovery'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -223,6 +224,12 @@ const ApiPublicHooksSyncFeegowRoute =
     path: '/api/public/hooks/sync-feegow',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicJobsPatientRecoveryRoute =
+  ApiPublicJobsPatientRecoveryRouteImport.update({
+    id: '/api/public/jobs/patient-recovery',
+    path: '/api/public/jobs/patient-recovery',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -257,6 +264,7 @@ export interface FileRoutesByFullPath {
   '/financeiro/fluxo': typeof AuthenticatedFinanceiroFluxoRoute
   '/financeiro/repasse': typeof AuthenticatedFinanceiroRepasseRoute
   '/api/public/hooks/sync-feegow': typeof ApiPublicHooksSyncFeegowRoute
+  '/api/public/jobs/patient-recovery': typeof ApiPublicJobsPatientRecoveryRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -291,6 +299,7 @@ export interface FileRoutesByTo {
   '/financeiro/fluxo': typeof AuthenticatedFinanceiroFluxoRoute
   '/financeiro/repasse': typeof AuthenticatedFinanceiroRepasseRoute
   '/api/public/hooks/sync-feegow': typeof ApiPublicHooksSyncFeegowRoute
+  '/api/public/jobs/patient-recovery': typeof ApiPublicJobsPatientRecoveryRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -327,6 +336,7 @@ export interface FileRoutesById {
   '/_authenticated/financeiro_/fluxo': typeof AuthenticatedFinanceiroFluxoRoute
   '/_authenticated/financeiro_/repasse': typeof AuthenticatedFinanceiroRepasseRoute
   '/api/public/hooks/sync-feegow': typeof ApiPublicHooksSyncFeegowRoute
+  '/api/public/jobs/patient-recovery': typeof ApiPublicJobsPatientRecoveryRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -363,6 +373,7 @@ export interface FileRouteTypes {
     | '/financeiro/fluxo'
     | '/financeiro/repasse'
     | '/api/public/hooks/sync-feegow'
+    | '/api/public/jobs/patient-recovery'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -397,6 +408,7 @@ export interface FileRouteTypes {
     | '/financeiro/fluxo'
     | '/financeiro/repasse'
     | '/api/public/hooks/sync-feegow'
+    | '/api/public/jobs/patient-recovery'
   id:
     | '__root__'
     | '/'
@@ -432,6 +444,7 @@ export interface FileRouteTypes {
     | '/_authenticated/financeiro_/fluxo'
     | '/_authenticated/financeiro_/repasse'
     | '/api/public/hooks/sync-feegow'
+    | '/api/public/jobs/patient-recovery'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -444,6 +457,7 @@ export interface RootRouteChildren {
   LabFaturamentoRoute: typeof LabFaturamentoRoute
   LabRelatorioRoute: typeof LabRelatorioRoute
   ApiPublicHooksSyncFeegowRoute: typeof ApiPublicHooksSyncFeegowRoute
+  ApiPublicJobsPatientRecoveryRoute: typeof ApiPublicJobsPatientRecoveryRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -679,6 +693,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksSyncFeegowRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/jobs/patient-recovery': {
+      id: '/api/public/jobs/patient-recovery'
+      path: '/api/public/jobs/patient-recovery'
+      fullPath: '/api/public/jobs/patient-recovery'
+      preLoaderRoute: typeof ApiPublicJobsPatientRecoveryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -754,6 +775,7 @@ const rootRouteChildren: RootRouteChildren = {
   LabFaturamentoRoute: LabFaturamentoRoute,
   LabRelatorioRoute: LabRelatorioRoute,
   ApiPublicHooksSyncFeegowRoute: ApiPublicHooksSyncFeegowRoute,
+  ApiPublicJobsPatientRecoveryRoute: ApiPublicJobsPatientRecoveryRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

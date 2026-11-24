@@ -1,0 +1,8 @@
+CREATE TABLE public.lab_paciente_sync_fila(paciente_id bigint PRIMARY KEY);
+GRANT SELECT ON public.lab_paciente_sync_fila TO authenticated; GRANT ALL ON public.lab_paciente_sync_fila TO service_role;
+ALTER TABLE public.lab_paciente_sync_fila ENABLE ROW LEVEL SECURITY;
+CREATE POLICY patient_queue_read ON public.lab_paciente_sync_fila FOR SELECT TO authenticated USING(true);
+CREATE OR REPLACE FUNCTION public.lab_enqueue_source_patient() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ BEGIN IF NEW.paciente_id>0 THEN INSERT INTO public.lab_paciente_sync_fila(paciente_id) VALUES(NEW.paciente_id) ON CONFLICT DO NOTHING; END IF; RETURN NEW; END; $$;
+CREATE TRIGGER lab_patient_production_source AFTER INSERT OR UPDATE OF paciente_id ON public.lab_producao_feegow FOR EACH ROW EXECUTE FUNCTION public.lab_enqueue_source_patient();
+CREATE TRIGGER lab_patient_appointment_source AFTER INSERT OR UPDATE OF paciente_id ON public.agendamentos FOR EACH ROW EXECUTE FUNCTION public.lab_enqueue_source_patient();
+CREATE OR REPLACE VIEW public.lab_vw_pacientes_pendentes WITH(security_invoker=true) AS SELECT i.paciente_id,p.paciente_id IS NULL sem_cadastro FROM public.lab_paciente_sync_fila i LEFT JOIN public.pacientes p ON p.paciente_id=i.paciente_id LEFT JOIN public.lab_paciente_sync_estado s ON s.paciente_id=i.paciente_id WHERE (p.paciente_id IS NULL OR coalesce(p.cadastro_sincronizado_em,p.updated_at)<now()-interval '60 days') AND (s.erro IS NULL OR s.tentado_em<now()-interval '1 day');

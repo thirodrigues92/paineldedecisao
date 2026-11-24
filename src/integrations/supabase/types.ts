@@ -983,6 +983,33 @@ export type Database = {
         }
         Relationships: []
       }
+      lab_geo_cidades: {
+        Row: {
+          atualizado_em: string
+          chave: string
+          cidade: string
+          estado: string
+          latitude: number | null
+          longitude: number | null
+        }
+        Insert: {
+          atualizado_em?: string
+          chave: string
+          cidade: string
+          estado: string
+          latitude?: number | null
+          longitude?: number | null
+        }
+        Update: {
+          atualizado_em?: string
+          chave?: string
+          cidade?: string
+          estado?: string
+          latitude?: number | null
+          longitude?: number | null
+        }
+        Relationships: []
+      }
       lab_grupo_catalogo_cache: {
         Row: {
           chave: string
@@ -1025,6 +1052,60 @@ export type Database = {
           paciente_id?: number | null
           unidade_id?: number | null
           valor_total?: number | null
+        }
+        Relationships: []
+      }
+      lab_paciente_geo_fila: {
+        Row: {
+          atualizado_em: string
+          erro: string | null
+          paciente_id: number
+          status: string
+          tentativas: number
+        }
+        Insert: {
+          atualizado_em?: string
+          erro?: string | null
+          paciente_id: number
+          status?: string
+          tentativas?: number
+        }
+        Update: {
+          atualizado_em?: string
+          erro?: string | null
+          paciente_id?: number
+          status?: string
+          tentativas?: number
+        }
+        Relationships: []
+      }
+      lab_paciente_sync_estado: {
+        Row: {
+          erro: string | null
+          paciente_id: number
+          tentado_em: string
+        }
+        Insert: {
+          erro?: string | null
+          paciente_id: number
+          tentado_em?: string
+        }
+        Update: {
+          erro?: string | null
+          paciente_id?: number
+          tentado_em?: string
+        }
+        Relationships: []
+      }
+      lab_paciente_sync_fila: {
+        Row: {
+          paciente_id: number
+        }
+        Insert: {
+          paciente_id: number
+        }
+        Update: {
+          paciente_id?: number
         }
         Relationships: []
       }
@@ -1398,6 +1479,8 @@ export type Database = {
         Row: {
           ano_nascimento: number | null
           bairro: string | null
+          cadastro_raw: Json | null
+          cadastro_sincronizado_em: string | null
           celular: string | null
           cep: string | null
           cidade: string | null
@@ -1408,6 +1491,7 @@ export type Database = {
           latitude: number | null
           longitude: number | null
           metricas: Json
+          nascimento: string | null
           nome: string | null
           origem_id: number | null
           paciente_id: number
@@ -1418,6 +1502,8 @@ export type Database = {
         Insert: {
           ano_nascimento?: number | null
           bairro?: string | null
+          cadastro_raw?: Json | null
+          cadastro_sincronizado_em?: string | null
           celular?: string | null
           cep?: string | null
           cidade?: string | null
@@ -1428,6 +1514,7 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           metricas?: Json
+          nascimento?: string | null
           nome?: string | null
           origem_id?: number | null
           paciente_id: number
@@ -1438,6 +1525,8 @@ export type Database = {
         Update: {
           ano_nascimento?: number | null
           bairro?: string | null
+          cadastro_raw?: Json | null
+          cadastro_sincronizado_em?: string | null
           celular?: string | null
           cep?: string | null
           cidade?: string | null
@@ -1448,6 +1537,7 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           metricas?: Json
+          nascimento?: string | null
           nome?: string | null
           origem_id?: number | null
           paciente_id?: number
@@ -1654,6 +1744,17 @@ export type Database = {
         }
         Relationships: []
       }
+      lab_sync_status: {
+        Row: {
+          atrasada: boolean | null
+          etapa: string | null
+          nome: string | null
+          registros_ultimo_sucesso: number | null
+          ultima_tentativa: string | null
+          ultimo_sucesso: string | null
+        }
+        Relationships: []
+      }
       lab_vw_catalogo_grupos: {
         Row: {
           grupo_nome: string | null
@@ -1684,6 +1785,13 @@ export type Database = {
         Row: {
           grupo_nome: string | null
           procedimento_chave: string | null
+        }
+        Relationships: []
+      }
+      lab_vw_pacientes_pendentes: {
+        Row: {
+          paciente_id: number | null
+          sem_cadastro: boolean | null
         }
         Relationships: []
       }
@@ -2279,6 +2387,7 @@ export type Database = {
           ticket_medio: number
         }[]
       }
+      lab_apply_cached_patient_geo: { Args: never; Returns: number }
       lab_comparativo_mensal: {
         Args: {
           p_convenio?: string
@@ -2297,6 +2406,10 @@ export type Database = {
           valor: number
         }[]
       }
+      lab_coordinate_near: {
+        Args: { city_lat: number; city_lng: number; lat: number; lng: number }
+        Returns: boolean
+      }
       lab_dias_com_producao: {
         Args: {
           p_from: string
@@ -2310,6 +2423,7 @@ export type Database = {
       }
       lab_enriquecer_faturamento: { Args: never; Returns: Json }
       lab_grupo_exibicao: { Args: { s: string }; Returns: string }
+      lab_patient_city_key: { Args: { c: string; s: string }; Returns: string }
       lab_popular_dimensoes: { Args: never; Returns: undefined }
       lab_producao_origem: {
         Args: { p_convenio_id?: number; p_nome: string }

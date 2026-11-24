@@ -34,3 +34,4 @@
 - Isolate incremental stages and log success only after every sub-window persists; automatic pauses expire after two hours. Track recovery per stage in three-day jobs with daily fallback, so partial failures cannot silently close gaps.
 - Share paginated appointment fetching between Safety Net and the modern incremental worker; preserve actual appointment values separately from reference estimates and retain existing settled financial accounting.
 - Cache unambiguous catalog group mappings for row-trigger lookups and refresh after synchronization; per-row scans of the production-derived catalog exceed write deadlines.
+- Patient maps count noncancelled production visits and patients from one paginated source; registrations and geocodes recover through durable bounded queues with city-radius validation. Nightly HTTP calls use small batches to respect caller deadlines; larger recovery is explicitly driven.

@@ -204,6 +204,34 @@
       "when": 1795553328480,
       "tag": "0028_cache_production_group_catalog_for_sync",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1795554623896,
+      "tag": "0029_patient_registration_and_validated_geocode_queue",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1795554702888,
+      "tag": "0030_index_patient_recovery_sources",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1795554755250,
+      "tag": "0031_durable_patient_recovery_queue",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1795555265731,
+      "tag": "0032_cached_patient_coordinate_validation",
+      "breakpoints": true
     }
   ]
 }

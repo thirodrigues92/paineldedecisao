@@ -41,3 +41,7 @@
 - [x] Recover production/transfers in November, transfers September–October and appointments September 23–November 24: all 58 jobs completed; Feegow returned no November transfers; duplicate audit remains zero.
 - [x] Add per-stage freshness banners, last-success status and daily 60-day audit; authenticated UI and callback verified, 45 targeted tests passed; daily and specialty reports delivered.
 - [ ] Publish the updated sync handler and freshness UI, then verify a scheduled production run; publishing has not been requested.
+- [ ] Complete patient registration/geocode recovery: thousands remain; initial bounded batches persisted, source API and geocoder throughput prevent completion this turn.
+- [x] Base only the patient map on noncancelled production visits, normalize locations, average neighborhood coordinates, show searchable/exportable coverage gaps; November UI verifies 2,390 visits/1,370 patients and R$478,195.84.
+- [x] Validate map totals and report current August–November coverage; recovery remains partial, not final coverage.
+- [ ] Publish patient recovery routes and verify scheduled calls; nightly short callbacks process ten registrations per invocation and cached coordinates only.

@@ -2,10 +2,10 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useFilters } from "@/lib/filters-context";
-import { dashboardQueryKey, fetchDashboardAppointments, fetchLabProducaoRows } from "@/lib/dashboard-data";
+import { dashboardQueryKey, fetchDashboardAppointments } from "@/lib/dashboard-data";
 import {
   fetchPacientesGeo, fetchUnidadesGeo, distanceKm, idadeDe, imcDe, normalizarCidade,
-  type PacienteGeo,
+  fetchMapProduction, type PacienteGeo,
 } from "@/lib/geo-data";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,8 +20,11 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, MapPinned, Lightbulb } from "lucide-react";
+import { Upload, MapPinned, Lightbulb, Search, Download } from "lucide-react";
 import type { BairroPoint, UnidadePoint } from "@/components/PatientMap";
+
+import {locationKey,locationName,mapPeriodTotals,validCityCoordinate} from "@/lib/patient-map-rules";
+import {Dialog,DialogContent,DialogHeader,DialogTitle} from "@/components/ui/dialog";
 
 const PatientMap = lazy(() => import("@/components/PatientMap"));
 
@@ -56,6 +59,8 @@ export function MapaPacientes({ showUploader = true }: { showUploader?: boolean 
   const [showUnits, setShowUnits] = useState(true);
   const [somenteObesos, setSomenteObesos] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
+  const [pendingOpen,setPendingOpen] = useState(false);
+  const [pendingSearch,setPendingSearch] = useState("");
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
@@ -63,8 +68,9 @@ export function MapaPacientes({ showUploader = true }: { showUploader?: boolean 
     queryKey: dashboardQueryKey("mapa-ags", f),
     queryFn: () => fetchDashboardAppointments(f, 30_000),
   });
-  const producao = useQuery({ queryKey: dashboardQueryKey("mapa-producao", f), queryFn: () => fetchLabProducaoRows(f, 30_000) });
-  const pacientes = useQuery({ queryKey: ["mapa-pacientes"], queryFn: () => fetchPacientesGeo() });
+  const producao = useQuery({ queryKey: dashboardQueryKey("mapa-producao", f), queryFn: () => fetchMapProduction(f) });
+  const pacientes = useQuery({ queryKey: ["mapa-pacientes"], queryFn: () => fetchPacientesGeo(), refetchInterval:60_000 });
+  const cities = useQuery({queryKey:["mapa-city-centers"],queryFn:async()=>{const {data,error}=await supabase.from("lab_geo_cidades").select("*");if(error)throw error;return data??[];},refetchInterval:60_000});
   const unidades = useQuery({ queryKey: ["mapa-unidades"], queryFn: fetchUnidadesGeo });
 
   const loading = ags.isLoading || pacientes.isLoading || producao.isLoading;
@@ -81,119 +87,69 @@ export function MapaPacientes({ showUploader = true }: { showUploader?: boolean 
     [unidades.data],
   );
 
-  const especialidadesDisponiveis = useMemo(() => {
-    const m = new Map<string, string>();
-    for (const a of ags.data ?? []) {
-      const nome = a.especialidades?.nome;
-      if (nome) m.set(nome, nome);
+  const especialidadesDisponiveis = useMemo(() => [...new Set((producao.data??[]).map(r=>r.grupo_nome||"Não classificado"))].sort(),[producao.data]);
+  const categoriasDisponiveis = especialidadesDisponiveis;
+  const {bairros,semGeo,totalPacientes,coverage,pendencias} = useMemo(()=>{
+    const pacMap=new Map((pacientes.data??[]).map(p=>[p.paciente_id,p]));
+    const centerMap=new Map((cities.data??[]).map(c=>[c.chave,c.latitude==null?null:{latitude:Number(c.latitude),longitude:Number(c.longitude)}]));
+    const pointFor=(p:PacienteGeo)=>{
+      if(p.latitude==null || p.longitude==null || !p.cidade || !p.estado)return null;
+      const uf=locationKey(p.estado)==="goias"?"GO":p.estado.toUpperCase();
+      const center=centerMap.get(`${locationKey(normalizarCidade(p.cidade))}|${uf}`)??null;
+      const point={latitude:Number(p.latitude),longitude:Number(p.longitude)};
+      return validCityCoordinate(point,center)?point:null;
+    };
+    const base=producao.data??[];
+    const totals=mapPeriodTotals(base);
+    const byPatient=new Map<number,{nome:string;prontuario:string}>();
+    for(const r of base)if(r.paciente_id!=null && r.paciente_id>0)byPatient.set(r.paciente_id,{nome:r.paciente_nome??"",prontuario:r.prontuario??""});
+    let mapped=0,missing=0,address=0;
+    const pending:Array<{paciente_id:number;nome:string;prontuario:string;cidade:string;motivo:string}>=[];
+    for(const [id,info] of byPatient) {
+      const p=pacMap.get(id);
+      if(p && pointFor(p)) {mapped++;continue;}
+      if(!p)missing++;else address++;
+      pending.push({paciente_id:id,nome:p?.nome||info.nome||`Paciente ${id}`,prontuario:p?.prontuario||info.prontuario||"—",cidade:p?.cidade||"—",motivo:!p?"Sem cadastro":!p.cidade||!p.estado||(!p.cep&&!p.bairro)?"Sem endereço":"Endereço sem coordenada validada"});
     }
-    return [...m.keys()].sort();
-  }, [ags.data]);
-
-  /** Faturamento por paciente, separado por categoria (grupo_nome da produção). */
-  const { porPaciente, categoriasDisponiveis } = useMemo(() => {
-    const porPaciente = new Map<number, { total: number; cat: Map<string, number> }>();
-    const cats = new Map<string, number>();
-    for (const r of producao.data ?? []) {
-      const pid = Number(r.paciente_id);
-      if (!pid) continue;
-      const categoria = (r.grupo_nome || "Não classificado").trim();
-      const valor = Number(r.valor || 0);
-      cats.set(categoria, (cats.get(categoria) ?? 0) + valor);
-      let e = porPaciente.get(pid);
-      if (!e) { e = { total: 0, cat: new Map() }; porPaciente.set(pid, e); }
-      e.total += valor;
-      e.cat.set(categoria, (e.cat.get(categoria) ?? 0) + valor);
+    type Acc={bairro:string;cidade:string;lat:number;lng:number;patients:Set<number>;visits:Set<number>;value:number;cats:Map<string,number>;specialties:Map<string,Set<number>>;noShow:number;scheduled:number};
+    const acc=new Map<string,Acc>();
+    for(const r of base) {
+      if(especialidade!=="__all__" && r.grupo_nome!==especialidade)continue;
+      if(categoria!=="__all__" && r.grupo_nome!==categoria)continue;
+      const pid=r.paciente_id;if(pid==null)continue;const p=pacMap.get(pid);if(!p)continue;
+      const age=idadeDe(p.ano_nascimento);
+      if(age!=null && (age<faixa[0]||age>faixa[1]))continue;
+      if(convenio==="convenio" && (!r.convenio_id || locationKey(r.convenio_nome)==="nao faturado" || locationKey(r.convenio_nome)==="particular"))continue;
+      if(convenio==="particular" && r.convenio_id && locationKey(r.convenio_nome)!=="particular")continue;
+      if(somenteObesos && (imcDe(p.metricas)??0)<30)continue;
+      const point=pointFor(p);if(!point)continue;
+      const cidade=normalizarCidade(p.cidade),bairro=locationName(p.bairro),key=`${locationKey(bairro)}|${locationKey(cidade)}|${locationKey(p.estado)}`;
+      let a=acc.get(key);
+      if(!a){a={bairro,cidade,lat:0,lng:0,patients:new Set(),visits:new Set(),value:0,cats:new Map(),specialties:new Map(),noShow:0,scheduled:0};acc.set(key,a);}
+      if(!a.patients.has(pid)){a.lat+=point.latitude;a.lng+=point.longitude;a.patients.add(pid);}
+      a.visits.add(r.agendamento_id);a.value+=Number(r.valor??0);
+      const cat=r.grupo_nome||"Não classificado";a.cats.set(cat,(a.cats.get(cat)??0)+Number(r.valor??0));
+      const visits=a.specialties.get(cat)??new Set<number>();visits.add(r.agendamento_id);a.specialties.set(cat,visits);
     }
-    return {
-      porPaciente,
-      categoriasDisponiveis: [...cats.entries()].sort((a, b) => b[1] - a[1]).map(([nome]) => nome),
-    };
-  }, [producao.data]);
-
-  const { bairros, semGeo, totalPacientes } = useMemo(() => {
-    const pacMap = new Map<number, PacienteGeo>();
-    for (const p of pacientes.data ?? []) pacMap.set(p.paciente_id, p);
-
-    const passaPerfil = (p: PacienteGeo) => {
-      const idade = idadeDe(p.ano_nascimento);
-      if (idade != null && (idade < faixa[0] || idade > faixa[1])) return false;
-      if (convenio === "convenio" && !p.convenio_id) return false;
-      if (convenio === "particular" && p.convenio_id) return false;
-      if (somenteObesos) { const imc = imcDe(p.metricas); if (imc == null || imc < 30) return false; }
-      return true;
-    };
-
-    const catAtiva = categoria !== "__all__";
-    const valorDoPaciente = (pid: number) => {
-      const e = porPaciente.get(pid);
-      if (!e) return 0;
-      return catAtiva ? (e.cat.get(categoria) ?? 0) : e.total;
-    };
-    const pacienteNaCategoria = (pid: number) => !catAtiva || (porPaciente.get(pid)?.cat.has(categoria) ?? false);
-
-    type Acc = {
-      bairro: string; cidade: string; lat: number; lng: number;
-      pacientes: Set<number>; demanda: number; faturamento: number; noShow: number;
-      esp: Map<string, number>; cat: Map<string, number>;
-    };
-    const acc = new Map<string, Acc>();
-    let semCoord = 0;
-    const contados = new Set<number>();
-    const jaSomado = new Set<string>();
-
-    for (const a of ags.data ?? []) {
-      if (especialidade !== "__all__" && a.especialidades?.nome !== especialidade) continue;
-      const pid = (a as any).paciente_id as number | null;
-      if (!pid) continue;
-      const p = pacMap.get(pid);
-      if (!p || !passaPerfil(p)) continue;
-      if (!pacienteNaCategoria(pid)) continue;
-      contados.add(pid);
-      if (p.latitude == null || p.longitude == null) { semCoord++; continue; }
-      const cidade = normalizarCidade(p.cidade);
-      const bairro = p.bairro?.trim() || "Não informado";
-      const key = `${bairro}|${cidade}`;
-      let e = acc.get(key);
-      if (!e) {
-        e = {
-          bairro, cidade,
-          lat: Number(p.latitude), lng: Number(p.longitude),
-          pacientes: new Set(), demanda: 0, faturamento: 0, noShow: 0, esp: new Map(), cat: new Map(),
-        };
-        acc.set(key, e);
-      }
-      e.pacientes.add(pid);
-      e.demanda += 1;
-      const somaKey = `${key}#${pid}`;
-      if (!jaSomado.has(somaKey)) {
-        jaSomado.add(somaKey);
-        e.faturamento += valorDoPaciente(pid);
-        const det = porPaciente.get(pid);
-        if (det) for (const [c, v] of det.cat) e.cat.set(c, (e.cat.get(c) ?? 0) + v);
-      }
-      if (a.status_agendamento?.categoria === "no_show") e.noShow += 1;
-      const nome = a.especialidades?.nome ?? "Sem especialidade";
-      e.esp.set(nome, (e.esp.get(nome) ?? 0) + 1);
+    // No-show comes exclusively from appointments and is never added to production visits.
+    for(const a of ags.data??[]) {
+      if(a.paciente_id==null)continue;const p=pacMap.get(a.paciente_id);if(!p)continue;
+      const b=acc.get(`${locationKey(locationName(p.bairro))}|${locationKey(normalizarCidade(p.cidade))}|${locationKey(p.estado)}`);
+      if(!b || !b.patients.has(a.paciente_id))continue;
+      b.scheduled++;if(a.status_agendamento?.categoria==="no_show")b.noShow++;
     }
-
-    const list: (BairroPoint & { noShowPct: number; categorias: Array<[string, number]> })[] =
-      [...acc.entries()].map(([key, e]) => {
-        const top = [...e.esp.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? "—";
-        const dist = unidadePoints.length
-          ? Math.min(...unidadePoints.map((u) => distanceKm(e.lat, e.lng, u.lat, u.lng)))
-          : null;
-        return {
-          key, bairro: e.bairro, cidade: e.cidade, lat: e.lat, lng: e.lng,
-          pacientes: e.pacientes.size, demanda: e.demanda, faturamento: e.faturamento,
-          topEspecialidade: top, distanciaKm: dist,
-          noShowPct: e.demanda ? (e.noShow / e.demanda) * 100 : 0,
-          categorias: [...e.cat.entries()].sort((a, b) => b[1] - a[1]),
-        };
-      }).sort((a, b) => (metric === "faturamento" ? b.faturamento - a.faturamento : b.pacientes - a.pacientes));
-
-    return { bairros: list, semGeo: semCoord, totalPacientes: contados.size };
-  }, [ags.data, pacientes.data, porPaciente, categoria, especialidade, faixa, convenio, somenteObesos, unidadePoints, metric]);
+    const list=[...acc.entries()].map(([key,a])=>{
+      const lat=a.lat/a.patients.size,lng=a.lng/a.patients.size;
+      return {key,bairro:a.bairro,cidade:a.cidade,lat,lng,pacientes:a.patients.size,demanda:a.visits.size,faturamento:a.value,topEspecialidade:[...a.specialties].sort((x,y)=>y[1].size-x[1].size)[0]?.[0]??"—",distanciaKm:unidadePoints.length?Math.min(...unidadePoints.map(u=>distanceKm(lat,lng,u.lat,u.lng))):null,noShowPct:a.scheduled?100*a.noShow/a.scheduled:0,categorias:[...a.cats].sort((x,y)=>y[1]-x[1])};
+    }).sort((a,b)=>metric==="faturamento"?b.faturamento-a.faturamento:b.pacientes-a.pacientes);
+    return {bairros:list,semGeo:address,totalPacientes:totals.pacientes,coverage:{...totals,mapped,missing,address,pct:totals.pacientes?100*mapped/totals.pacientes:0},pendencias:pending};
+  },[producao.data,pacientes.data,cities.data,ags.data,especialidade,categoria,faixa,convenio,somenteObesos,unidadePoints,metric]);
+  const visiblePending=pendencias.filter(p=>locationKey(`${p.nome} ${p.prontuario} ${p.cidade} ${p.motivo}`).includes(locationKey(pendingSearch)));
+  const exportPending=async()=>{
+    const XLSX=await import("xlsx");const book=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(book,XLSX.utils.json_to_sheet(visiblePending),"Pendências");
+    XLSX.writeFile(book,`mapa-pendencias-${f.from.toISOString().slice(0,10)}.xlsx`);
+  };
 
   const insights = useMemo(() => {
     const out: string[] = [];
@@ -210,7 +166,7 @@ export function MapaPacientes({ showUploader = true }: { showUploader?: boolean 
       if (!cur || b.demanda > cur.demanda) porEsp.set(b.topEspecialidade, { bairro: b.bairro, demanda: b.demanda });
     }
     const [esp, info] = [...porEsp.entries()].sort((a, b) => b[1].demanda - a[1].demanda)[0] ?? [];
-    if (esp && info) out.push(`${esp} tem maior demanda em ${info.bairro} (${info.demanda} agendamentos) — considere ampliar a oferta na região.`);
+    if (esp && info) out.push(`${esp} tem maior demanda em ${info.bairro} (${info.demanda} atendimentos) — considere ampliar a oferta na região.`);
     const relevantes = bairros.filter((b) => b.demanda >= 10);
     const pior = [...relevantes].sort((a, b) => b.noShowPct - a.noShowPct)[0];
     if (pior && pior.noShowPct > 0) {
@@ -221,7 +177,7 @@ export function MapaPacientes({ showUploader = true }: { showUploader?: boolean 
       );
     }
     const distantes = bairros.filter((b) => (b.distanciaKm ?? 0) > 15).slice(0, 1)[0];
-    if (distantes) out.push(`${distantes.bairro} está a ${distantes.distanciaKm!.toFixed(1)} km da unidade e ainda gera ${distantes.demanda} agendamentos — potencial para telemedicina ou ponto avançado.`);
+    if (distantes) out.push(`${distantes.bairro} está a ${distantes.distanciaKm?.toFixed(1)} km da unidade e ainda gera ${distantes.demanda} atendimentos — potencial para telemedicina ou ponto avançado.`);
     return out;
   }, [bairros]);
 
@@ -255,6 +211,12 @@ export function MapaPacientes({ showUploader = true }: { showUploader?: boolean 
          </p>
       </div>
 
+      <section className="border-y border-border py-4 space-y-3" aria-label="Cobertura do mapa">
+        {loading ? <Skeleton className="h-8 w-full"/> : <p className="font-medium">Período: {coverage.atendimentos.toLocaleString("pt-BR")} atendimentos de {coverage.pacientes.toLocaleString("pt-BR")} pacientes · no mapa: {coverage.mapped.toLocaleString("pt-BR")} ({coverage.pct.toFixed(1)}%) · sem cadastro: {coverage.missing.toLocaleString("pt-BR")} · sem endereço: {coverage.address.toLocaleString("pt-BR")}</p>}
+        <div className="flex flex-wrap gap-3 items-center"><Button variant="outline" onClick={()=>setPendingOpen(true)}><Search className="size-4"/>Ver pendências</Button><span className="text-sm text-muted-foreground">Produção no período: {brl(coverage.valor)}</span></div>
+        {(producao.error||pacientes.error||cities.error||ags.error) && <p role="alert" className="text-destructive">Falha ao consultar a cobertura; os números podem estar incompletos.</p>}
+      </section>
+      <Dialog open={pendingOpen} onOpenChange={setPendingOpen}><DialogContent className="sm:max-w-3xl max-h-[85dvh] z-[1100] overflow-hidden flex flex-col"><DialogHeader><DialogTitle>Pendências do mapa · {pendencias.length} pacientes</DialogTitle></DialogHeader><div className="flex gap-2"><Input aria-label="Pesquisar pendências" placeholder="Paciente, prontuário, cidade ou motivo" value={pendingSearch} onChange={e=>setPendingSearch(e.target.value)}/><Button variant="outline" onClick={exportPending}><Download className="size-4"/>Excel</Button></div><div className="min-h-0 overflow-auto"><table className="w-full text-sm"><thead><tr className="text-left border-b border-border"><th className="p-2">Paciente</th><th className="p-2">Prontuário</th><th className="p-2">Cidade</th><th className="p-2">Motivo</th></tr></thead><tbody>{visiblePending.map(p=><tr key={p.paciente_id} className="border-b border-border"><td className="p-2">{p.nome}</td><td className="p-2">{p.prontuario}</td><td className="p-2">{p.cidade}</td><td className="p-2">{p.motivo}</td></tr>)}{!visiblePending.length && <tr><td colSpan={4} className="p-4">Nenhuma pendência encontrada.</td></tr>}</tbody></table></div></DialogContent></Dialog>
       <Card>
         <CardContent className="flex flex-wrap items-end gap-4 p-4">
           <div className="flex items-center gap-2">
@@ -417,7 +379,7 @@ export function MapaPacientes({ showUploader = true }: { showUploader?: boolean 
               <CardHeader><CardTitle className="text-base">{detalhe.bairro} — {detalhe.cidade}</CardTitle></CardHeader>
               <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <Metric label="Pacientes" value={String(detalhe.pacientes)} />
-                <Metric label="Agendamentos" value={String(detalhe.demanda)} />
+                <Metric label="Atendimentos" value={String(detalhe.demanda)} />
                 <Metric label="Especialidade líder" value={detalhe.topEspecialidade} />
                 <Metric label="Distância da unidade" value={detalhe.distanciaKm != null ? `${detalhe.distanciaKm.toFixed(1)} km` : "—"} />
               </CardContent>
