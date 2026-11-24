@@ -16,3 +16,5 @@
 - [x] Test DRE rules against SQL fixtures (24 tests passed) and reconcile both regimes with persisted items through authenticated paginated RPC calls; all monthly revenue/expense totals match.
 - [x] Update the DRE screen with year, regime and unit filters, monthly account hierarchy, doctor transfer details and searchable item drawers.
 - [x] Export the filtered annual DRE to Excel; 23 tests passed, authenticated filters/tree/search/download verified, and 96 monthly totals reconciled with fn_dre across both regimes.
+- [x] Share annual DRE presentation with the public dashboard and add its fourth top tab without changing calculations or other tabs.
+- [x] Verify DRE filters, drill-down and Excel export in the public dashboard, original financial route and mobile tab scrolling; nine tree tests passed. Existing financial authentication remains required (public admin-only access does not grant financial data permissions).

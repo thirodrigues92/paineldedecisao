@@ -19,3 +19,4 @@
 - Paginate fn_dre RPC reads through every returned row; annual hierarchy exceeds the Data API row cap, so a single request can omit expenses and result totals.
 - The annual DRE screen uses the invoker-secured fn_dre_tela aggregate and vw_dre_itens_tela detail source, mirroring fn_dre classification with unit filtering; retain receipt-based Executive Financeiro unchanged.
 - Build annual account trees by source IDs and parent links; roll up each item once per ancestor and export all levels without adding hierarchical rows together.
+- Keep annual DRE presentation in the shared DreAnual component, rendered by both the financial route and public dashboard; reuse existing invoker-secured data access to prevent calculation drift.

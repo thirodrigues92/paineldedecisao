@@ -30,7 +30,8 @@ import { GlobalFilters } from "@/components/GlobalFilters";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Eye, SlidersHorizontal, MapPinned } from "lucide-react";
+import { Eye, Landmark, SlidersHorizontal, MapPinned } from "lucide-react";
+import { DreAnual } from "@/components/DreAnual";
 import { FaturamentoDinamicoPage } from "@/components/FaturamentoDinamico";
 import { MapaPacientes } from "@/components/MapaPacientes";
 
@@ -907,6 +908,14 @@ function PublicDashboardContent() {
 
 export const Route = createFileRoute("/public-dashboard")({
   ssr: false,
+  head: () => ({ meta: [
+    { title: "Painel público — Painel de Decisão" },
+    { name: "description", content: "Visão executiva, DRE anual, faturamento dinâmico e mapa de pacientes da clínica." },
+    { property: "og:title", content: "Painel público — Painel de Decisão" },
+    { property: "og:description", content: "Indicadores da clínica e DRE anual com filtros de ano, regime e unidade." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   beforeLoad: () => {
     if (typeof window !== "undefined") {
       const isAuthed = localStorage.getItem("public_admin_session") === "true";
@@ -920,9 +929,13 @@ export const Route = createFileRoute("/public-dashboard")({
       <div className="min-h-screen bg-background p-4 md:p-8">
         <main className="max-w-7xl mx-auto">
           <Tabs defaultValue="visao-executiva" className="w-full">
-            <TabsList className="grid grid-cols-3 w-full max-w-2xl mb-6">
+            <div className="mb-6 max-w-3xl overflow-x-auto">
+            <TabsList className="grid grid-cols-4 w-full min-w-[700px] max-w-3xl">
               <TabsTrigger value="visao-executiva" className="flex items-center gap-2">
                 <Eye className="w-4 h-4" /> Visão Executiva
+              </TabsTrigger>
+              <TabsTrigger value="dre" className="flex items-center gap-2">
+                <Landmark className="w-4 h-4" /> DRE
               </TabsTrigger>
               <TabsTrigger value="faturamento-dinamico" className="flex items-center gap-2">
                 <SlidersHorizontal className="w-4 h-4" /> Faturamento Dinâmico
@@ -931,11 +944,15 @@ export const Route = createFileRoute("/public-dashboard")({
                 <MapPinned className="w-4 h-4" /> Mapa de Pacientes
               </TabsTrigger>
             </TabsList>
+            </div>
             <TabsContent value="visao-executiva" className="p-0 outline-none">
               <div className="mb-6 border-b pb-4">
                 <GlobalFilters />
               </div>
               <PublicDashboardContent />
+            </TabsContent>
+            <TabsContent value="dre" className="min-w-0 p-0 outline-none">
+              <DreAnual />
             </TabsContent>
             <TabsContent value="faturamento-dinamico" className="p-0 outline-none">
               <FaturamentoDinamicoPage />
