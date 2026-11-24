@@ -1919,6 +1919,109 @@ export type Database = {
         }
         Returns: boolean
       }
+      ia_agenda: {
+        Args: { p_agrupar?: string; p_fim: string; p_inicio: string }
+        Returns: {
+          cancelados: number
+          chave: string
+          faltas: number
+          qtd: number
+          realizados: number
+          taxa_no_show: number
+        }[]
+      }
+      ia_buscar_pessoa: {
+        Args: { p_texto: string }
+        Returns: {
+          documento: string
+          id: number
+          nome: string
+          tipo: string
+        }[]
+      }
+      ia_dre: {
+        Args: { p_ano: number; p_regime?: string }
+        Returns: {
+          despesas: number
+          grupo: string
+          margem_pct: number
+          mes: number
+          receitas: number
+          resultado: number
+          resultado_operacional: number
+          secao: string
+          valor: number
+        }[]
+      }
+      ia_financeiro: {
+        Args: {
+          p_agrupar?: string
+          p_categoria?: string
+          p_fim: string
+          p_grupo?: string
+          p_inicio: string
+          p_pessoa?: string
+          p_regime?: string
+          p_tipo?: string
+        }
+        Returns: {
+          chave: string
+          percentual: number
+          qtd: number
+          total: number
+        }[]
+      }
+      ia_financeiro_itens: {
+        Args: {
+          p_categoria?: string
+          p_fim: string
+          p_grupo?: string
+          p_inicio: string
+          p_limite?: number
+          p_pessoa?: string
+          p_regime?: string
+          p_tipo?: string
+        }
+        Returns: {
+          categoria_nome: string
+          data: string
+          descricao: string
+          grupo_linha: string
+          invoice_id: number
+          pessoa_nome: string
+          pessoa_tipo: string
+          valor_item: number
+        }[]
+      }
+      ia_pacientes: {
+        Args: { p_fim: string; p_inicio: string; p_tipo?: string }
+        Returns: {
+          bairro: string
+          cidade: string
+          nome: string
+          paciente_id: number
+          primeira_consulta: string
+          qtd: number
+          ultima_consulta: string
+        }[]
+      }
+      ia_producao: {
+        Args: {
+          p_agrupar?: string
+          p_convenio?: string
+          p_fim: string
+          p_grupo?: string
+          p_inicio: string
+          p_profissional?: string
+        }
+        Returns: {
+          chave: string
+          faturado: number
+          qtd: number
+          recebido: number
+          ticket_medio: number
+        }[]
+      }
       lab_comparativo_mensal: {
         Args: {
           p_convenio?: string
