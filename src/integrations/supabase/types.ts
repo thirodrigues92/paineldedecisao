@@ -1874,6 +1874,18 @@ export type Database = {
         }
         Relationships: []
       }
+      vw_producao_duplicados: {
+        Row: {
+          agendamento_id: number | null
+          data_execucao: string | null
+          id: string | null
+          id_transacao: string | null
+          motivo: string | null
+          procedimento_id: number | null
+          valor: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       dre_classificar: { Args: { cat: string }; Returns: string }
@@ -2083,6 +2095,11 @@ export type Database = {
       }
       lab_enriquecer_faturamento: { Args: never; Returns: Json }
       lab_popular_dimensoes: { Args: never; Returns: undefined }
+      lab_producao_origem: {
+        Args: { p_convenio_id?: number; p_nome: string }
+        Returns: string
+      }
+      lab_producao_texto: { Args: { s: string }; Returns: string }
       normalizar_nome_medico: { Args: { s: string }; Returns: string }
       refresh_dashboard_views: { Args: never; Returns: undefined }
     }

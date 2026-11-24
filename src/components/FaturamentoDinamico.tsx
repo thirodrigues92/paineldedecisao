@@ -21,6 +21,7 @@ import { FaturamentoProfissionalComparativo } from "@/components/FaturamentoProf
 import { ComparativoMensal } from "@/components/ComparativoMensal";
 import { ComparativoPeriodosProfissionalCategoria } from "@/components/ComparativoPeriodosProfissionalCategoria";
 import { AnalistaIA } from "@/components/AnalistaIA";
+import { nomeConvenioProducao } from "@/lib/lab-producao";
 
 type Dimensao = "profissional" | "convenio" | "grupo_procedimento" | "procedimento" | "mes_ano";
 type Metrica = "valor_faturado" | "valor_recebido" | "quantidade";
@@ -121,7 +122,7 @@ export function FaturamentoDinamicoPage() {
       while (true) {
         let query = supabase
           .from("lab_producao_feegow")
-          .select("data_execucao, profissional_nome, procedimento_nome, grupo_nome, convenio_nome, valor, valor_pago")
+          .select("data_execucao, profissional_nome, procedimento_nome, grupo_nome, convenio_nome, convenio_id, valor, valor_pago")
           .gte("data_execucao", ds)
           .lte("data_execucao", de);
 
@@ -140,7 +141,7 @@ export function FaturamentoDinamicoPage() {
         }
 
         if (!data || data.length === 0) break;
-        allData = [...allData, ...data];
+        allData = [...allData, ...data.map(row => ({ ...row, convenio_nome: nomeConvenioProducao(row) }))];
 
         if (data.length < pageSize) break;
         from += pageSize;

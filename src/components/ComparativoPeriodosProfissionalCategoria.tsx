@@ -13,6 +13,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from "recharts";
 import { ArrowDownRight, ArrowUpRight, Check, Download, RefreshCw, Search, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { nomeConvenioProducao } from "@/lib/lab-producao";
 
 type Dim = "profissional" | "categoria";
 type Metrica = "valor_faturado" | "valor_recebido" | "quantidade";
@@ -145,6 +146,7 @@ export function ComparativoPeriodosProfissionalCategoria() {
     queryKey: ["comparativo-periodos", intervalo?.de, intervalo?.ate, filters.unidadeIds],
     enabled: !!intervalo,
     queryFn: async () => {
+      if (!intervalo) return [];
       const all: Row[] = [];
       let from = 0;
       const pageSize = 1000;
@@ -152,14 +154,14 @@ export function ComparativoPeriodosProfissionalCategoria() {
       while (true) {
         let query = supabase
           .from("lab_producao_feegow")
-          .select("data_execucao, profissional_nome, grupo_nome, procedimento_nome, convenio_nome, paciente_nome, valor, valor_pago")
-          .gte("data_execucao", intervalo!.de)
-          .lte("data_execucao", intervalo!.ate);
+          .select("data_execucao, profissional_nome, grupo_nome, procedimento_nome, convenio_nome, convenio_id, paciente_nome, valor, valor_pago")
+          .gte("data_execucao", intervalo.de)
+          .lte("data_execucao", intervalo.ate);
         if (filters.unidadeIds.length > 0) query = query.in("unidade_id", filters.unidadeIds);
         const { data, error } = await query.range(from, from + pageSize - 1);
         if (error) throw error;
         if (!data || data.length === 0) break;
-        all.push(...(data as Row[]));
+        all.push(...data.map(row => ({ ...row, convenio_nome: nomeConvenioProducao(row) })));
         if (data.length < pageSize) break;
         from += pageSize;
       }

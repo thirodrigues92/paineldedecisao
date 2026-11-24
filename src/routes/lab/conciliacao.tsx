@@ -17,8 +17,17 @@ import { getLabConciliacao, getLabFaturamentoItems, labSyncParticular, labSyncPr
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { brl } from "@/lib/format";
 import { toast } from "sonner";
+import { origemProducao } from "@/lib/lab-producao";
 
 export const Route = createFileRoute("/lab/conciliacao")({
+  head: () => ({ meta: [
+    { title: "Conciliação da Produção — Painel de Decisão" },
+    { name: "description", content: "Conciliação entre atendimentos, faturamento e recebimento." },
+    { property: "og:title", content: "Conciliação da Produção — Painel de Decisão" },
+    { property: "og:description", content: "Valores e origens dos itens da produção clínica." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: LabConciliacao,
 });
 
@@ -101,7 +110,7 @@ function LabConciliacao() {
       const unidadeMatch = unidadeFilter === "ALL" || item.unidade_nome === unidadeFilter;
       const convenioMatch = convenioFilter === "ALL" || item.convenio_nome === convenioFilter;
       const origemMatch = origemFilter === "ALL" || 
-        (origemFilter === "PARTICULAR" ? item.convenio_nome === "Particular" : item.convenio_nome !== "Particular");
+        (origemFilter === "PARTICULAR" ? origemProducao(item) === "Particular" : origemProducao(item) === "Convênio");
       
       return searchMatch && statusMatch && localMatch && unidadeMatch && convenioMatch && origemMatch;
     }).sort((a: any, b: any) => Math.abs(b.diferenca) - Math.abs(a.diferenca));

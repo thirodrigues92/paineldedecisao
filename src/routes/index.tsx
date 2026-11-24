@@ -3,6 +3,14 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/")({
   ssr: false,
+  head: () => ({ meta: [
+    { title: "Painel de Decisão — Acesso" },
+    { name: "description", content: "Acesso ao painel de gestão e decisão da clínica." },
+    { property: "og:title", content: "Painel de Decisão — Acesso" },
+    { property: "og:description", content: "Acesso aos indicadores e análises da clínica." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   beforeLoad: async () => {
     // Redireciona tudo para o Dashboard (que agora é a visão única)
     const { data } = await supabase.auth.getUser();

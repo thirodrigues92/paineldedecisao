@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { nomeConvenioProducao } from "@/lib/lab-producao";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +17,14 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export const Route = createFileRoute("/lab/relatorio")({
+  head: () => ({ meta: [
+    { title: "Relatório de Produção — Painel de Decisão" },
+    { name: "description", content: "Itens da produção Feegow e conciliação do faturamento." },
+    { property: "og:title", content: "Relatório de Produção — Painel de Decisão" },
+    { property: "og:description", content: "Atendimentos e itens de produção com origem do faturamento." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: LabRelatorio,
 });
 
@@ -148,7 +157,7 @@ function LabRelatorio() {
         .order('data_execucao', { ascending: false, nullsFirst: false });
 
       if (error) throw error;
-      return data || [];
+      return (data ?? []).map(row => ({ ...row, convenio_nome: nomeConvenioProducao(row) }));
     }
   });
 
@@ -553,7 +562,7 @@ function LabRelatorio() {
                             }`}
                             title={item.convenio_nome || undefined}
                           >
-                            {item.categoria_final === 'convenio' ? (item.convenio_nome || 'Convênio') : 'Particular'}
+                            {item.categoria_final === 'nao_faturado' ? 'Não faturado' : item.categoria_final === 'convenio' ? (item.convenio_nome || 'Convênio') : 'Particular'}
                           </Badge>
                         </TableCell>
 

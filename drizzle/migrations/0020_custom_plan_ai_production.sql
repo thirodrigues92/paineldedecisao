@@ -1,0 +1,1 @@
+ALTER FUNCTION public.ia_producao(date,date,text,text,text,text) SET plan_cache_mode = 'force_custom_plan';

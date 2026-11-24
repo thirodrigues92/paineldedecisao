@@ -1,3 +1,4 @@
+import { origemProducao, nomeConvenioProducao, resumoOrigensProducao } from "@/lib/lab-producao";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -203,14 +204,11 @@ function PublicDashboardContent() {
     .slice(0, 10)
     .map(([nome, d]) => ({ nome, total: d.total, valor: d.valor }));
 
-  const donut = [
-    { name: "Particular", value: labRows.filter((r: any) => r.convenio_nome === "Particular").reduce((s, r) => s + Number(r.valor || 0), 0) },
-    { name: "Convênio",   value: labRows.filter((r: any) => r.convenio_nome !== "Particular").reduce((s, r) => s + Number(r.valor || 0), 0) },
-  ];
+  const donut = resumoOrigensProducao(labRows);
 
   const byConvenio = new Map<string, { nome: string; valor: number; qtd: number }>();
   for (const r of labRows) {
-    const nome = (r.convenio_nome ?? "").trim() || "Particular";
+    const nome = nomeConvenioProducao(r);
     const cur = byConvenio.get(nome) ?? { nome, valor: 0, qtd: 0 };
     cur.valor += Number(r.valor || 0);
     cur.qtd += 1;
@@ -266,7 +264,8 @@ function PublicDashboardContent() {
       data: r.data_execucao,
       status: r.situacao || null,
       categoria: r.grupo_nome || null,
-      convenio: r.convenio_nome !== "Particular",
+      convenio: origemProducao(r) === "Convênio",
+      origem: origemProducao(r),
       profissionalNome: r.profissional_nome,
       formaPagamento: r.forma_pagamento,
       isNovo: r.is_novo_paciente,
@@ -295,9 +294,10 @@ function PublicDashboardContent() {
         if (detalhePagamento === "Múltiplas Formas") return raw.includes(",");
         return raw === detalhePagamento;
       }
-      if (detalheOrigem === "Particular") return r.convenio_nome === "Particular";
-      if (detalheOrigem === "Convênio") return r.convenio_nome !== "Particular";
-      return r.convenio_nome === detalheOrigem;
+      if (detalheOrigem === "Particular") return origemProducao(r) === "Particular";
+      if (detalheOrigem === "Convênio") return origemProducao(r) === "Convênio";
+      if (detalheOrigem === "Não faturado") return origemProducao(r) === "Não faturado";
+      return nomeConvenioProducao(r) === detalheOrigem;
     });
     
     for (const r of filteredRows) {
@@ -319,7 +319,8 @@ function PublicDashboardContent() {
         data: r.data_execucao,
         status: r.situacao || null,
         categoria: r.grupo_nome || null,
-        convenio: r.convenio_nome !== "Particular",
+        convenio: origemProducao(r) === "Convênio",
+      origem: origemProducao(r),
         profissionalNome: r.profissional_nome,
         formaPagamento: r.forma_pagamento,
         isNovo: r.is_novo_paciente,
@@ -451,7 +452,7 @@ function PublicDashboardContent() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2">
-          <CardHeader><CardTitle>Particular vs. Convênio (receita)</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Particular, Convênio e Não faturado</CardTitle></CardHeader>
           <CardContent>
             <div className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -465,21 +466,21 @@ function PublicDashboardContent() {
                   cursor="pointer"
                   onClick={(d: any) => setDetalheOrigem(d?.name ?? null)}
                 >
-                  {donut.map((_, i) => <Cell key={i} fill={i === 0 ? "var(--chart-1)" : "var(--chart-2)"} />)}
+                  {donut.map((_, i) => <Cell key={i} fill={`var(--chart-${i + 1})`} />)}
                 </Pie>
                 <Tooltip {...tooltipProps} formatter={(v: any) => brl(Number(v))} />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
             </div>
-            {donut.find((d: any) => d.name === "Particular")?.value! > 0 && (
+            {(donut.find((d: any) => d.name === "Particular")?.value ?? 0) > 0 && (
               <div className="mt-8 pt-6 border-t border-border">
                 <p className="text-[10px] text-muted-foreground uppercase font-semibold mb-4 text-center">Formas de Pagamento (Particular)</p>
                 <div className="w-full">
                   {(() => {
                     const paymentData = Array.from(
                       labRows
-                        .filter((r: any) => r.convenio_nome === "Particular")
+                        .filter((r: any) => origemProducao(r) === "Particular")
                         .reduce((acc, r) => {
                           const raw = (r.forma_pagamento as string) || "Não informado";
                           const category = raw.includes(",") ? "Múltiplas Formas" : raw;
@@ -776,7 +777,7 @@ function PublicDashboardContent() {
                                 {l.data ? new Date(`${l.data}T12:00:00`).toLocaleDateString("pt-BR") : "Sem data"}
                               </div>
                               <div className="truncate text-muted-foreground" title={l.categoria ?? ""}>
-                                {l.categoria ?? "Sem categoria"} · {l.convenio ? "Convênio" : "Particular"}
+                                {l.categoria ?? "Sem categoria"} · {l.origem ?? (l.convenio ? "Convênio" : "Particular")}
                                 {l.status ? ` · ${l.status}` : ""}
                                 {l.profissionalNome ? ` · ${l.profissionalNome}` : ""}
                                 {l.formaPagamento ? ` · ${l.formaPagamento}` : ""}

@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { RefreshCw, Play, History, AlertTriangle } from "lucide-react";
+import { ProducaoDuplicateAlert } from "./ProducaoDuplicateAlert";
 import {
   getSyncStatus, runSyncNow, runBackfillLote, criarBackfillJob, resetSyncJob, reprocessarBlocosComErro, runRepasseSync,
 } from "@/lib/lab-sync-admin.functions";
@@ -108,6 +109,7 @@ export function SyncAutomaticaPanel() {
           )}
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
+          <ProducaoDuplicateAlert />
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <Info label="Última execução" value={fmtDate(auto?.last_run_at)} />
             <Info label="Último sucesso" value={fmtDate(auto?.last_success_at)} />

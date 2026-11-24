@@ -1,3 +1,4 @@
+import { origemProducao, nomeConvenioProducao, resumoOrigensProducao } from "@/lib/lab-producao";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useFilters } from "@/lib/filters-context";
@@ -36,6 +37,10 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
     meta: [
       { title: "Visão Executiva — Painel Clínico" },
       { name: "description", content: "KPIs e evolução da clínica em tempo real." },
+      { property: "og:title", content: "Visão Executiva — Painel Clínico" },
+      { property: "og:description", content: "Indicadores e composição da produção clínica por origem." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: DashboardPage,
@@ -51,6 +56,7 @@ type LancamentoDetalhe = {
   status: string | null;
   categoria: string | null;
   convenio: boolean;
+  origem?: string;
   pacienteId: number | null;
   pacienteNome: string | null;
   profissionalNome?: string | null;
@@ -248,15 +254,12 @@ function DashboardPage() {
     .map(([nome, d]) => ({ nome, total: d.total, valor: d.valor }));
 
   // Donut particular vs convenio (por valor)
-  const donut = [
-    { name: "Particular", value: labRows.filter((r: any) => r.convenio_nome === "Particular").reduce((s, r) => s + Number(r.valor || 0), 0) },
-    { name: "Convênio",   value: labRows.filter((r: any) => r.convenio_nome !== "Particular").reduce((s, r) => s + Number(r.valor || 0), 0) },
-  ];
+  const donut = resumoOrigensProducao(labRows);
 
   // Faturamento por convênio específico
   const byConvenio = new Map<string, { nome: string; valor: number; qtd: number }>();
   for (const r of labRows) {
-    const nome = (r.convenio_nome ?? "").trim() || "Particular";
+    const nome = nomeConvenioProducao(r);
     const cur = byConvenio.get(nome) ?? { nome, valor: 0, qtd: 0 };
     cur.valor += Number(r.valor || 0);
     cur.qtd += 1;
@@ -319,7 +322,8 @@ function DashboardPage() {
       data: r.data_execucao,
       status: r.situacao || null,
       categoria: r.grupo_nome || null,
-      convenio: r.convenio_nome !== "Particular",
+      convenio: origemProducao(r) === "Convênio",
+      origem: origemProducao(r),
       profissionalNome: r.profissional_nome,
       formaPagamento: r.forma_pagamento,
       isNovo: r.is_novo_paciente,
@@ -350,9 +354,10 @@ function DashboardPage() {
         if (detalhePagamento === "Múltiplas Formas") return raw.includes(",");
         return raw === detalhePagamento;
       }
-      if (detalheOrigem === "Particular") return r.convenio_nome === "Particular";
-      if (detalheOrigem === "Convênio") return r.convenio_nome !== "Particular";
-      return r.convenio_nome === detalheOrigem;
+      if (detalheOrigem === "Particular") return origemProducao(r) === "Particular";
+      if (detalheOrigem === "Convênio") return origemProducao(r) === "Convênio";
+      if (detalheOrigem === "Não faturado") return origemProducao(r) === "Não faturado";
+      return nomeConvenioProducao(r) === detalheOrigem;
     });
     
     for (const r of filteredRows) {
@@ -377,7 +382,8 @@ function DashboardPage() {
         data: r.data_execucao,
         status: r.situacao || null,
         categoria: r.grupo_nome || null,
-        convenio: r.convenio_nome !== "Particular",
+        convenio: origemProducao(r) === "Convênio",
+      origem: origemProducao(r),
         profissionalNome: r.profissional_nome,
         formaPagamento: r.forma_pagamento,
         isNovo: r.is_novo_paciente,
@@ -526,7 +532,7 @@ function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2">
-          <CardHeader><CardTitle>Particular vs. Convênio (receita)</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Particular, Convênio e Não faturado</CardTitle></CardHeader>
           <CardContent>
             <div className="h-72 w-full">
             {donut.every((d) => d.value === 0) ? <EmptyState /> : (
@@ -541,7 +547,7 @@ function DashboardPage() {
                     cursor="pointer"
                     onClick={(d: any) => setDetalheOrigem(d?.name ?? null)}
                   >
-                    {donut.map((_, i) => <Cell key={i} fill={i === 0 ? "var(--chart-1)" : "var(--chart-2)"} />)}
+                    {donut.map((_, i) => <Cell key={i} fill={`var(--chart-${i + 1})`} />)}
                   </Pie>
                   <Tooltip {...tooltipProps} formatter={(v: any) => brl(Number(v))} />
                   <Legend wrapperStyle={{ fontSize: 12, color: "var(--muted-foreground)" }} />
@@ -549,14 +555,14 @@ function DashboardPage() {
               </ResponsiveContainer>
             )}
             </div>
-            {donut.find(d => d.name === "Particular")?.value! > 0 && (
+            {(donut.find(d => d.name === "Particular")?.value ?? 0) > 0 && (
               <div className="mt-8 pt-6 border-t border-border">
                 <p className="text-[10px] text-muted-foreground uppercase font-semibold mb-4 text-center">Formas de Pagamento (Particular)</p>
                 <div className="w-full">
                   {(() => {
                     const paymentData = Array.from(
                       labRows
-                        .filter((r: any) => r.convenio_nome === "Particular")
+                        .filter((r: any) => origemProducao(r) === "Particular")
                         .reduce((acc, r) => {
                           const raw = (r.forma_pagamento as string) || "Não informado";
                           const category = raw.includes(",") ? "Múltiplas Formas" : raw;
@@ -903,7 +909,7 @@ function DashboardPage() {
                                 {l.data ? new Date(`${l.data}T12:00:00`).toLocaleDateString("pt-BR") : "Sem data"}
                               </div>
                               <div className="truncate text-muted-foreground" title={l.categoria ?? ""}>
-                                {l.categoria ?? "Sem categoria"} · {l.convenio ? "Convênio" : "Particular"}
+                                {l.categoria ?? "Sem categoria"} · {l.origem ?? (l.convenio ? "Convênio" : "Particular")}
                                 {l.status ? ` · ${l.status}` : ""}
                                 {l.profissionalNome ? ` · ${l.profissionalNome}` : ""}
                                 {l.formaPagamento ? ` · ${l.formaPagamento}` : ""}

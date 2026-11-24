@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { feegowIntegerId } from "./feegow-identifiers";
+import { gravarProducao } from "./lab-producao-write.server";
 
 const FEEGOW_BASE = "https://api.feegow.com/v1/api";
 const FEEGOW_TOKEN = () => process.env['FEEGOW_API_TOKEN'] ?? "";
@@ -45,7 +46,7 @@ function hashToBigInt(s: string): bigint {
 function chunk<T>(arr: T[], n: number): T[][] {
   return arr.reduce<T[][]>((acc, v, i) => {
     if (i % n === 0) acc.push([]);
-    acc[acc.length - 1]!.push(v);
+    acc[acc.length - 1]?.push(v);
     return acc;
   }, []);
 }
@@ -144,13 +145,9 @@ export async function syncProducaoRange(start: string, end: string) {
     return item;
   });
 
-  for (const bloco of chunk(records, 50)) {
-    const { error } = await supabaseAdmin
-      .from("lab_producao_feegow")
-      .upsert(bloco as any, { onConflict: "id_transacao,n_guia_prestador,procedimento_id,agendamento_id" });
-    if (error) resumo.erros.push(error.message);
-    else resumo.gravados += bloco.length;
-  }
+  const gravacao = await gravarProducao(records);
+  resumo.erros.push(...gravacao.erros);
+  resumo.gravados = gravacao.gravados;
 
   return resumo;
 }
@@ -295,6 +292,8 @@ export async function syncSafetyNetRange(start: string, end: string) {
 
       const toInsert = buracos.map((b: any) => ({
         feegow_id: hashToBigInt(`FALLBACK-${b.agendamento_id}`),
+        id_transacao: `ATEFALLBACK-${b.agendamento_id}`,
+        n_guia_prestador: "",
         agendamento_id: BigInt(b.agendamento_id),
         paciente_id: b.paciente_id ? BigInt(b.paciente_id) : null,
         paciente_nome: pacienteNomeMap.get(Number(b.paciente_id)) || null,
@@ -304,18 +303,17 @@ export async function syncSafetyNetRange(start: string, end: string) {
         data_execucao: dia,
         hora_inicio: b.horario || null,
         valor: parseValorAppoints(b.valor_total_agendamento || b.valor),
-        situacao: "Faturado",
+        situacao: "Não Faturado",
+        convenio_nome: "Não faturado",
         convenio_id: b.convenio_id ? Number(b.convenio_id) : null,
         unidade_id: b.unidade_id ? BigInt(b.unidade_id) : null,
         tipo_procedimento: "Fallback appoints/search",
         payload_raw: { ...b, _fonte: "appoints_search_fallback" },
       }));
 
-      const { error } = await supabaseAdmin
-        .from("lab_producao_feegow")
-        .upsert(toInsert as any, { onConflict: "id_transacao,n_guia_prestador,procedimento_id,agendamento_id" });
-      if (error) resumo.erros.push(`${dia}: ${error.message}`);
-      else resumo.preenchidos += toInsert.length;
+      const gravacao = await gravarProducao(toInsert);
+      resumo.erros.push(...gravacao.erros.map(erro => `${dia}: ${erro}`));
+      resumo.preenchidos += gravacao.gravados;
     } catch (e: any) {
       resumo.erros.push(`${dia}: ${e.message}`);
     }

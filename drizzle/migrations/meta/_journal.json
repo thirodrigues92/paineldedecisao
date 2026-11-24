@@ -113,6 +113,41 @@
       "when": 1795523600662,
       "tag": "0015_ia_conversas",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1795526695993,
+      "tag": "0016_guard_production_transactions_and_audit",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1795527223182,
+      "tag": "0017_optimize_production_duplicate_audit",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1795527392893,
+      "tag": "0018_accelerate_ai_production_filters",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1795527474056,
+      "tag": "0019_index_ai_production_name_search",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1795527552214,
+      "tag": "0020_custom_plan_ai_production",
+      "breakpoints": true
     }
   ]
 }

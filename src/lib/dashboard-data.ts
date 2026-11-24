@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { DashboardFilters } from "@/lib/filters-context";
+import { nomeConvenioProducao } from "./lab-producao";
 
 export type DashboardAppointment = {
   agendamento_id: number;
@@ -286,14 +287,16 @@ export async function fetchLabProducaoRows(f: DashboardFilters, limit = 30_000):
     
     if (f.convenioTipo === "particular") {
       q = q.or("convenio_id.is.null,convenio_id.eq.0,convenio_nome.eq.Particular");
+      q = q.or("convenio_nome.is.null,convenio_nome.not.ilike.Não Faturado");
     } else if (f.convenioTipo === "convenio") {
       q = q.not("convenio_nome", "eq", "Particular").not("convenio_id", "is", null).not("convenio_id", "eq", 0);
+      q = q.not("convenio_nome", "ilike", "Não Faturado");
     }
 
 
     const { data, error } = await q;
     if (error) throw error;
-    all.push(...((data ?? []) as LabProducaoRow[]));
+    all.push(...(data ?? []).map(row => ({ ...row, convenio_nome: nomeConvenioProducao(row) })) as LabProducaoRow[]);
     if (!data || data.length < pageSize) break;
   }
 

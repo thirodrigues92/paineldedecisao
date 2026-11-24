@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { feegowIntegerId } from "./feegow-identifiers";
+import { nomeConvenioProducao, origemProducao } from "./lab-producao";
 
 // --- UTILITÁRIOS ---
 
@@ -552,12 +553,12 @@ export const getLabRelatorio = createServerFn({ method: "GET" })
       valor_recebido: r.valor_pago || 0,
       is_cancelado: r.situacao === 'Cancelado',
       origem: r.situacao_conta === 'Em aberto' && (r.valor_pago || 0) === 0 ? 'convenio_pendente_preco' : 'faturado',
-      categoria_final: r.convenio_id ? 'convenio' : 'particular',
+      categoria_final: origemProducao(r) === "Não faturado" ? "nao_faturado" : origemProducao(r) === "Convênio" ? "convenio" : "particular",
       // Mock objects para o componente que espera relações .pacientes.nome etc
       pacientes: { nome: r.paciente_nome },
       procedimentos: { nome: r.procedimento_nome },
       profissionais: { nome: r.profissional_nome },
-      convenios: { nome: r.convenio_nome }
+      convenios: { nome: nomeConvenioProducao(r) }
     }));
   });
 
@@ -679,23 +680,12 @@ export const labSyncProducao = createServerFn({ method: "POST" })
       });
 
       if (!dry_run && records.length > 0) {
-        const chunk = <T,>(arr: T[], n: number) => arr.reduce<T[][]>((acc, v, i) => {
-          if (i % n === 0) acc.push([]);
-          acc[acc.length - 1].push(v);
-          return acc;
-        }, []);
-
-        for (const bloco of chunk(records, 50)) {
-          const { error: fErr } = await supabaseAdmin
-            .from("lab_producao_feegow")
-            .upsert(bloco, { onConflict: "id_transacao,n_guia_prestador,procedimento_id,agendamento_id" });
-          if (fErr) {
-            resumo.erros += bloco.length;
-            resumo.logs.push(`Erro DB: ${fErr.message}`);
-          } else {
-            resumo.inseridos += bloco.length;
-          }
-        }
+        const { gravarProducao } = await import("./lab-producao-write.server");
+        const gravacao = await gravarProducao(records);
+        resumo.inseridos += gravacao.gravados;
+        resumo.erros += gravacao.erros.length;
+        resumo.logs.push(...gravacao.erros.map(erro => `Erro DB: ${erro}`));
+        if (gravacao.ignorados) resumo.logs.push(`${gravacao.ignorados} itens vazios ou provisórios substituídos ignorados.`);
       }
     } else {
       resumo.logs.push(`API retornou success=false ou data vazio/inválido. Resposta: ${JSON.stringify(reportRes).slice(0, 500)}`);
@@ -793,6 +783,8 @@ export const labSyncSafetyNet = createServerFn({ method: "POST" })
             const chaveNatural = `FALLBACK-${agId}`;
             return {
               feegow_id: hashToBigInt(chaveNatural),
+              id_transacao: `ATEFALLBACK-${agId}`,
+              n_guia_prestador: "",
               agendamento_id: BigInt(agId),
               paciente_id: b.paciente_id ? BigInt(b.paciente_id) : null,
               paciente_nome: pacienteNomeMap.get(Number(b.paciente_id)) || null,
@@ -802,7 +794,8 @@ export const labSyncSafetyNet = createServerFn({ method: "POST" })
               data_execucao: dia,
               hora_inicio: b.horario || null,
               valor: parseValorAppoints(b.valor_total_agendamento || b.valor),
-              situacao: "Faturado",
+              situacao: "Não Faturado",
+              convenio_nome: "Não faturado",
               convenio_id: b.convenio_id ? Number(b.convenio_id) : null,
               unidade_id: b.unidade_id ? BigInt(b.unidade_id) : null,
               tipo_procedimento: "Fallback appoints/search",
@@ -810,15 +803,10 @@ export const labSyncSafetyNet = createServerFn({ method: "POST" })
             };
           });
 
-          const { error: insErr } = await supabaseAdmin
-            .from("lab_producao_feegow")
-            .upsert(toInsert, { onConflict: "id_transacao,n_guia_prestador,procedimento_id,agendamento_id" });
-
-          if (insErr) {
-            resumo.erros.push(`Erro ao inserir buracos do dia ${dia}: ${insErr.message}`);
-          } else {
-            resumo.buracos_preenchidos += toInsert.length;
-          }
+          const { gravarProducao } = await import("./lab-producao-write.server");
+          const gravacao = await gravarProducao(toInsert);
+          resumo.erros.push(...gravacao.erros.map(erro => `Erro ao inserir buracos do dia ${dia}: ${erro}`));
+          resumo.buracos_preenchidos += gravacao.gravados;
         }
       } catch (err: any) {
         resumo.erros.push(`Erro no dia ${dia}: ${err.message}`);
@@ -899,10 +887,10 @@ export const getLabConciliacao = createServerFn({ method: "GET" })
         status: status,
         situacao: r.situacao,
         situacao_conta: r.situacao_conta,
-        convenio_nome: r.convenio_nome,
+        convenio_nome: nomeConvenioProducao(r),
         local_nome: (r.payload_raw as any)?.NomeLocal || (r.payload_raw as any)?.UnidadeNome || "—",
         unidade_nome: (r.payload_raw as any)?.UnidadeNome || "—",
-        formas_pagamento: r.forma_pagamento ? [r.forma_pagamento] : (r.convenio_id ? ["Convênio"] : ["Particular"])
+        formas_pagamento: r.forma_pagamento ? [r.forma_pagamento] : [origemProducao(r)]
       };
     });
   });

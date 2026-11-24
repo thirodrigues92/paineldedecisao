@@ -28,3 +28,8 @@
 - [x] Test chart filtering/comparisons (18 tests passed) and verify real chart month clicks, category/group drawers, Others and desktop/mobile public DRE with no runtime errors or mobile page overflow; operational toggle leaves the table identical.
 - [x] Add independent month/year comparison with root impact chart, category drill-down and Excel using shared DRE reads; existing chart panel/table untouched.
 - [x] Verify B-minus-A rules (26 tests passed), 2025 extra-year loading, B-year/month drawer, 10/all toggle, 139-row Excel and desktop/mobile public DRE; no runtime errors and no mobile page overflow.
+- [x] Remove the two approved production duplicate groups and reconcile Cardiologia (R$ 965.422,51), October (R$ 620.944,95) and November (R$ 199.879,43); stored production ends November 11.
+- [x] Prevent stale ATE and empty transaction writes across every production sync path with a database advisory-lock guard; 20 PostgreSQL/presentation tests passed (concurrency mechanism installed, parallel race not exercised).
+- [x] Classify Não Faturado separately from Particular/Convênio in production screens and ia_producao; authenticated November origin RPC verified.
+- [x] Add the invoker-secured duplicate view and last-sync alert; authenticated count is zero, simulated nonzero alert and origin drawer verified, mobile layout has no page overflow.
+- [ ] Annual filtered ia_producao request still exceeds its eight-second timeout despite search indexes; November origin queries and direct Cardiologia total reconciliation succeed. Requires a separate query-plan investigation.
