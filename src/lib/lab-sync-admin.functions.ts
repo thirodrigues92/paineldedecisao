@@ -9,14 +9,15 @@ const isoDate = (v: unknown) => {
 
 export const getSyncStatus = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async () => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: locks } = await supabaseAdmin.from("lab_sync_lock").select("*");
-    const { data: batches } = await supabaseAdmin
+  .handler(async ({ context }) => {
+    const { data: locks, error: lockError } = await context.supabase.from("lab_sync_lock").select("*");
+    if (lockError) throw lockError;
+    const { data: batches, error: batchError } = await context.supabase
       .from("lab_backfill_jobs")
-      .select("batch_id, status, registros, data_inicio, data_fim, erro, tentativas")
+      .select("batch_id, etapa, status, registros, data_inicio, data_fim, erro, tentativas")
       .order("data_inicio", { ascending: false })
       .limit(400);
+    if (batchError) throw batchError;
 
     const porStatus: Record<string, number> = {};
     for (const j of (batches ?? []) as any[]) porStatus[j.status] = (porStatus[j.status] ?? 0) + 1;
@@ -61,7 +62,7 @@ export const criarBackfillJob = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     if (data.fim < data.inicio) throw new Error("Data final anterior à inicial");
     const core = await import("@/lib/lab-sync-core.server");
-    return await core.criarBackfill(data.inicio, data.fim, 7);
+    return await core.criarBackfill(data.inicio, data.fim, 3);
   });
 
 export const resetSyncJob = createServerFn({ method: "POST" })
@@ -71,7 +72,7 @@ export const resetSyncJob = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("lab_sync_lock")
-      .update({ paused: false, pause_reason: null, consecutive_failures: 0, running: false, lease_until: null } as any)
+      .update({ paused: false, paused_until: null, pause_reason: null, consecutive_failures: 0, running: false, lease_until: null } as any)
       .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };

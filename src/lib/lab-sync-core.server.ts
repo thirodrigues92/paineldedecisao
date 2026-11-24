@@ -1,6 +1,8 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { feegowIntegerId } from "./feegow-identifiers";
 import { gravarProducao } from "./lab-producao-write.server";
+import { PAUSE_HOURS, RETRY_DELAY_MS, appointmentWindow, pauseExpired, isolatedStage } from "./sync-policy";
+import { syncAgendamentosRange, fetchAppointments } from "./agendamentos-sync.server";
 
 const FEEGOW_BASE = "https://api.feegow.com/v1/api";
 const FEEGOW_TOKEN = () => process.env['FEEGOW_API_TOKEN'] ?? "";
@@ -65,7 +67,7 @@ export function todayISO(): string {
 
 // --- PRODUÇÃO (reports/generate) ---
 
-export async function syncProducaoRange(start: string, end: string) {
+async function syncProducaoAttempt(start: string, end: string) {
   const resumo = { total: 0, gravados: 0, erros: [] as string[] };
   const ds = toFeegowDate(start, "/");
   const de = toFeegowDate(end, "/");
@@ -83,7 +85,11 @@ export async function syncProducaoRange(start: string, end: string) {
     }),
   });
 
-  if (!res.ok) throw new Error(`Feegow HTTP ${res.status} em reports/generate (${ds} a ${de})`);
+  if (!res.ok) {
+    const responseBody = await res.text();
+    await supabaseAdmin.from("lab_sync_log").insert({ endpoint: "reports/generate:erro", parametros: { inicio:start, fim:end }, http_status:res.status, api_success:false, registros:0, erro:`HTTP ${res.status}`, amostra_raw:{body:responseBody.slice(0,16000)} });
+    throw Object.assign(new Error(`Feegow HTTP ${res.status} em reports/generate (${ds} a ${de})`), {status:res.status});
+  }
   const body = await res.json();
   // A Feegow responde success:true com data:false quando o período não tem
   // nenhum atendimento (dias sem movimento). Isso não é erro: é zero registros.
@@ -150,6 +156,22 @@ export async function syncProducaoRange(start: string, end: string) {
   resumo.gravados = gravacao.gravados;
 
   return resumo;
+}
+
+export async function syncProducaoRange(start: string, end: string) {
+  try { return await syncProducaoAttempt(start,end); }
+  catch(error: any) {
+    if (error.status !== 403 && error.status !== 429) throw error;
+    const result = {total:0,gravados:0,erros:[] as string[]};
+    for(let day=start;day<=end;day=addDaysISO(day,1)) {
+      await new Promise(resolve=>setTimeout(resolve,RETRY_DELAY_MS));
+      try {
+        const r=await syncProducaoAttempt(day,day);
+        result.total+=r.total; result.gravados+=r.gravados; result.erros.push(...r.erros);
+      } catch(e:any) { result.erros.push(`${day}: ${e.message}`); }
+    }
+    return result;
+  }
 }
 
 // --- REPASSE MÉDICO (reports/generate: medical-transfer) ---
@@ -259,13 +281,7 @@ export async function syncSafetyNetRange(start: string, end: string) {
   for (let dia = start; dia <= end; dia = addDaysISO(dia, 1)) {
     resumo.dias++;
     try {
-      const diaFeegow = toFeegowDate(dia, "-");
-      const url = new URL(`${FEEGOW_BASE}/appoints/search`);
-      url.searchParams.set("data_start", diaFeegow);
-      url.searchParams.set("data_end", diaFeegow);
-      const res = await fetch(url.toString(), { headers: { "x-access-token": FEEGOW_TOKEN() } });
-      const body = await res.json();
-      const agendamentos = body?.content?.appointments || body?.content || [];
+      const agendamentos = await fetchAppointments(dia,dia);
       if (!Array.isArray(agendamentos) || agendamentos.length === 0) continue;
 
       const { data: existentes } = await supabaseAdmin
@@ -323,6 +339,7 @@ export async function syncSafetyNetRange(start: string, end: string) {
 
 export async function enriquecer() {
   try {
+    await supabaseAdmin.rpc("lab_refresh_grupo_catalogo");
     await supabaseAdmin.rpc("lab_enriquecer_faturamento" as any);
   } catch {
     /* enriquecimento é best-effort */
@@ -339,17 +356,19 @@ export async function getJobState(id: string) {
 export async function acquireLock(id: string): Promise<{ ok: boolean; reason?: string; state?: any }> {
   const state = await getJobState(id);
   if (!state) return { ok: false, reason: "job_inexistente" };
-  if (state.paused) return { ok: false, reason: "pausado", state };
+  if (state.paused && !pauseExpired(state.paused_until ?? null)) return { ok:false, reason:"pausado", state };
+  if(state.paused) await supabaseAdmin.from("lab_sync_lock").update({paused:false,paused_until:null,consecutive_failures:0,pause_reason:null}).eq("id",id);
   const leaseAtivo = state.running && state.lease_until && new Date(state.lease_until) > new Date();
   if (leaseAtivo) return { ok: false, reason: "em_execucao", state };
 
   const leaseUntil = new Date(Date.now() + LEASE_MINUTES * 60 * 1000).toISOString();
-  const { error } = await supabaseAdmin
+  const { error, data: claimed } = await supabaseAdmin
     .from("lab_sync_lock")
     .update({ running: true, lease_until: leaseUntil, last_run_at: new Date().toISOString() } as any)
-    .eq("id", id);
+    .eq("id", id).or(`running.eq.false,lease_until.lt.${new Date().toISOString()},lease_until.is.null`).select("id");
   if (error) return { ok: false, reason: error.message };
-  return { ok: true, state };
+  if (!claimed?.length) return {ok:false,reason:"em_execucao"};
+  return { ok: true, state: {...state,consecutive_failures:state.paused?0:state.consecutive_failures} };
 }
 
 export async function releaseLock(
@@ -365,6 +384,7 @@ export async function releaseLock(
       lease_until: null,
       consecutive_failures: falhas,
       paused: pausar,
+      paused_until: pausar ? new Date(Date.now()+PAUSE_HOURS*3600000).toISOString() : null,
       pause_reason: pausar ? `Pausado após ${falhas} falhas seguidas: ${outcome.error ?? ""}`.slice(0, 500) : null,
       last_success_at: outcome.ok ? new Date().toISOString() : undefined,
       last_result: outcome.result ?? null,
@@ -387,57 +407,47 @@ async function logSync(endpoint: string, params: any, ok: boolean, registros: nu
 
 export async function runIncrementalSync(diasJanela = 3) {
   const lock = await acquireLock("auto_sync");
-  if (!lock.ok) return { skipped: true, reason: lock.reason };
+  if (!lock.ok) return { skipped: true as const, reason: lock.reason };
 
   const falhasAnteriores = lock.state?.consecutive_failures ?? 0;
   const fim = todayISO();
   const inicio = addDaysISO(fim, -Math.max(0, diasJanela - 1));
 
+  const run = async (etapa:string,a:string,b:string,task:()=>Promise<any>) => {
+    const outcome = await isolatedStage(async()=>{
+      const r=await task();
+      if(r.erros?.length) throw new Error(r.erros.join(" | "));
+      return r;
+    });
+    await logSync(`sync:${etapa}`,{inicio:a,fim:b},outcome.ok,outcome.ok?(outcome.result.gravados ?? outcome.result.preenchidos ?? outcome.result.pagamentos ?? 0):0,outcome.ok?undefined:outcome.erro);
+    return outcome.ok?{...outcome.result,ok:true}:{ok:false,erro:outcome.erro};
+  };
   try {
-    const producao = await syncProducaoRange(inicio, fim);
-    const safety = await syncSafetyNetRange(inicio, fim);
-    let repasse: any = null;
-    try { repasse = await syncRepasseRange(inicio, fim); } catch (e: any) { repasse = { erro: e.message }; }
-    let receita: any = null;
-    try {
-      const { syncReceitaBaixada } = await import("./financeiro-receita.server");
-      // Revisit the last month of invoices to discover later settlements.
-      receita = await syncReceitaBaixada(addDaysISO(fim,-30),fim);
-      await logSync("financial/list-invoice:receita-baixada", { inicio: addDaysISO(fim,-30), fim }, true, receita.pagamentos);
-    } catch (e: any) {
-      receita = { erro: e.message };
-      await logSync("financial/list-invoice:receita-baixada", { fim }, false, 0, e.message);
-    }
+    const producao=await run("producao",inicio,fim,()=>syncProducaoRange(inicio,fim));
+    const safety=await run("safety",inicio,fim,()=>syncSafetyNetRange(inicio,fim));
+    const repasse=await run("repasse",inicio,fim,()=>syncRepasseRange(inicio,fim));
+    const receita=await run("receita",addDaysISO(fim,-30),fim,async()=>{
+      const {syncReceitaBaixada}=await import("./financeiro-receita.server");
+      return syncReceitaBaixada(addDaysISO(fim,-30),fim);
+    });
+    const itens=await run("itens",addDaysISO(fim,-6),fim,async()=>{
+      const {syncFinItens}=await import("./fin-itens.server");
+      return syncFinItens(addDaysISO(fim,-6),fim);
+    });
+    const window=appointmentWindow(fim);
+    const agendamentos=await run("agendamentos",window.inicio,window.fim,()=>syncAgendamentosRange(window.inicio,window.fim));
     await enriquecer();
-    let itens: any = null;
-    try {
-      const { syncFinItens } = await import("./fin-itens.server");
-      itens = await syncFinItens(addDaysISO(fim, -6), fim);
-      await logSync("financial/list-invoice:itens", { inicio: addDaysISO(fim, -6), fim }, true, itens.gravados);
-    } catch (e: any) {
-      itens = { erro: e.message };
-      await logSync("financial/list-invoice:itens", { fim }, false, 0, e.message);
-    }
-    const result = { inicio, fim, producao, safety, repasse, receita, itens };
-    await logSync("auto-sync:30min", { inicio, fim }, true, producao.gravados + safety.preenchidos);
-
-    await releaseLock("auto_sync", { ok: true, result, falhasAnteriores });
-
-    // Se houver carga histórica pendente, aproveita a execução para adiantar 2 blocos.
-    let backfill: any = null;
-    const { count } = await supabaseAdmin
-      .from("lab_backfill_jobs")
-      .select("id", { count: "exact", head: true })
-      .in("status", ["pendente", "erro"])
-      .lt("tentativas", 3);
-    if ((count ?? 0) > 0) {
-      try { backfill = await processBackfillQueue(2); } catch (e: any) { backfill = { erro: e.message }; }
-    }
-
-    return { skipped: false, ...result, backfill };
-  } catch (e: any) {
-    await logSync("auto-sync:30min", { inicio, fim }, false, 0, e.message);
-    await releaseLock("auto_sync", { ok: false, error: e.message, falhasAnteriores });
+    const result={inicio,fim,producao,safety,repasse,receita,itens,agendamentos};
+    const stages=[producao,safety,repasse,receita,itens,agendamentos];
+    const ok=stages.some(s=>s.ok);
+    const errors=stages.filter(s=>!s.ok).map(s=>s.erro).join(" | ");
+    await logSync("auto-sync:30min",{inicio,fim},stages.every(s=>s.ok),producao.gravados ?? 0,errors || undefined);
+    // Only a cycle with no successful stage pauses the global worker.
+    await releaseLock("auto_sync",{ok,result,error:errors,falhasAnteriores});
+    const backfill=await isolatedStage(()=>processBackfillQueue(2));
+    return {skipped:false as const,...result,backfill};
+  } catch(e:any) {
+    await releaseLock("auto_sync",{ok:false,error:e.message,falhasAnteriores});
     throw e;
   }
 }
@@ -456,14 +466,14 @@ export async function processBackfillQueue(maxBlocos = 3) {
       .select("*")
       .in("status", ["pendente", "erro"])
       .lt("tentativas", 3)
-      .order("data_inicio", { ascending: false })
+      .order("created_at", { ascending: true })
       .limit(maxBlocos);
 
     for (const job of (pendentes ?? []) as any[]) {
       await supabaseAdmin.from("lab_backfill_jobs")
         .update({ status: "processando", tentativas: job.tentativas + 1 } as any).eq("id", job.id);
       try {
-        const registros = await processarBlocoFatiado(job.data_inicio, job.data_fim);
+        const registros = await processarBlocoFatiado(job.data_inicio, job.data_fim, job.etapa);
         await supabaseAdmin.from("lab_backfill_jobs").update({
           status: "concluido", registros, erro: null, processado_em: new Date().toISOString(),
         } as any).eq("id", job.id);
@@ -485,7 +495,7 @@ export async function processBackfillQueue(maxBlocos = 3) {
       .lt("tentativas", 3);
     resumo.restantes = count ?? 0;
 
-    await logSync("backfill:lote", resumo, true, resumo.registros);
+    await logSync("backfill:lote", resumo, resumo.falhas === 0, resumo.registros, resumo.falhas ? `${resumo.falhas} blocos com falha` : undefined);
     await releaseLock("backfill", { ok: true, result: resumo, falhasAnteriores });
     return { skipped: false, ...resumo };
   } catch (e: any) {
@@ -494,38 +504,46 @@ export async function processBackfillQueue(maxBlocos = 3) {
   }
 }
 
-/** Tenta o bloco inteiro; se a Feegow falhar, refatia em 3 dias e depois 1 dia. */
-async function processarBlocoFatiado(inicio: string, fim: string): Promise<number> {
-  const tentar = async (a: string, b: string) => (await syncProducaoRange(a, b)).gravados;
-  // O repasse do mesmo período é carregado junto (best-effort, em fatias de 3 dias).
-  try { await syncRepasseRange(inicio, fim); } catch { /* repasse é complementar */ }
-  try {
-    return await tentar(inicio, fim);
-  } catch {
-
-    let total = 0;
-    const erros: string[] = [];
-    for (let d = inicio; d <= fim; d = addDaysISO(d, 3)) {
-      const sub = addDaysISO(d, 2) > fim ? fim : addDaysISO(d, 2);
-      try {
-        total += await tentar(d, sub);
-      } catch {
-        for (let dd = d; dd <= sub; dd = addDaysISO(dd, 1)) {
-          try { total += await tentar(dd, dd); } catch (e: any) { erros.push(`${dd}: ${e.message}`); }
-        }
-      }
+/** A failed sub-day is never marked completed, even when other days succeeded. */
+async function processarBlocoFatiado(inicio:string,fim:string,etapa="producao_repasse"):Promise<number> {
+  const run = async (stage:string,a:string,b:string,task:()=>Promise<any>)=>{
+    try {
+      const r=await task();
+      if(r.erros?.length) throw new Error(r.erros.join(" | "));
+      await logSync(`sync:${stage}`,{inicio:a,fim:b,backfill:true},true,r.gravados ?? 0);
+      return r.gravados ?? 0;
+    } catch(e:any) {
+      await logSync(`sync:${stage}`,{inicio:a,fim:b,backfill:true},false,0,e.message);
+      throw e;
     }
-    if (erros.length > 0 && total === 0) throw new Error(erros.slice(0, 3).join(" | "));
+  };
+  const attempt=async(a:string,b:string)=>{
+    if(etapa==="agendamentos") return run("agendamentos",a,b,()=>syncAgendamentosRange(a,b));
+    if(etapa==="repasse") return run("repasse",a,b,()=>syncRepasseRange(a,b));
+    if(etapa==="producao") return run("producao",a,b,()=>syncProducaoRange(a,b));
+    const p=await isolatedStage(()=>run("producao",a,b,()=>syncProducaoRange(a,b)));
+    const r=await isolatedStage(()=>run("repasse",a,b,()=>syncRepasseRange(a,b)));
+    if(!p.ok || !r.ok) throw new Error([!p.ok?p.erro:'',!r.ok?r.erro:''].filter(Boolean).join(" | "));
+    return p.result+r.result;
+  };
+  try {return await attempt(inicio,fim);} catch(e) {
+    if(inicio===fim) throw e;
+    let total=0; const errors:string[]=[];
+    for(let day=inicio;day<=fim;day=addDaysISO(day,1)) {
+      await new Promise(resolve=>setTimeout(resolve,RETRY_DELAY_MS));
+      try {total+=await attempt(day,day);} catch(err:any) {errors.push(`${day}: ${err.message}`);}
+    }
+    if(errors.length) throw new Error(errors.join(" | "));
     return total;
   }
 }
 
-export async function criarBackfill(inicio: string, fim: string, blocoDias = 7) {
+export async function criarBackfill(inicio: string, fim: string, blocoDias = 3, etapa = "producao_repasse") {
   const batchId = crypto.randomUUID();
   const blocos: any[] = [];
   for (let d = inicio; d <= fim; d = addDaysISO(d, blocoDias)) {
     const b = addDaysISO(d, blocoDias - 1);
-    blocos.push({ batch_id: batchId, data_inicio: d, data_fim: b > fim ? fim : b });
+    blocos.push({ etapa, batch_id: batchId, data_inicio: d, data_fim: b > fim ? fim : b });
   }
   const { error } = await supabaseAdmin.from("lab_backfill_jobs").insert(blocos as any);
   if (error) throw new Error(error.message);

@@ -9,13 +9,16 @@ import { toast } from "sonner";
 import { LastSyncCard } from "@/components/LastSyncCard";
 import { SyncAutomaticaPanel } from "@/components/SyncAutomaticaPanel";
 import { useAppSettings, useUpdateSetting } from "@/lib/app-settings";
+import { useServerFn } from "@tanstack/react-start";
+import { runSyncNow } from "@/lib/lab-sync-admin.functions";
 
 export const Route = createFileRoute("/_authenticated/config")({
-  head: () => ({ meta: [{ title: "Configurações" }] }),
+  head: () => ({ meta: [{ title: "Configurações — Painel de Decisão" }, { name: "description", content: "Metas da clínica, sincronização e acompanhamento das atualizações Feegow." }, { property: "og:title", content: "Configurações — Painel de Decisão" }, { property: "og:description", content: "Controle das metas e do status de atualização da clínica." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   component: ConfigPage,
 });
 
 function ConfigPage() {
+  const syncIncremental = useServerFn(runSyncNow);
   const [busy, setBusy] = useState<string | null>(null);
   const settings = useAppSettings();
   const update = useUpdateSetting();
@@ -35,6 +38,13 @@ function ConfigPage() {
   const run = async (mode: "today" | "historical" | "support" | "financial" | "full") => {
     setBusy(mode);
     try {
+      if (mode === "today") {
+        const r = await syncIncremental({ data: { dias: 3 } });
+        if (r.skipped) toast.info(`Sincronização: ${r.reason}`);
+        else if ([r.producao,r.safety,r.repasse,r.receita,r.itens,r.agendamentos].some(s=>!s.ok)) toast.warning("Sincronização parcial; confira as etapas abaixo.");
+        else toast.success("Todas as etapas foram sincronizadas.");
+        return;
+      }
       const { data, error } = await supabase.functions.invoke("sync-feegow", { body: { mode } });
       if (error) throw error;
       if (data && data.ok === false) throw new Error(data.error ?? "Falha na sincronização");

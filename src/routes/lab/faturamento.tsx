@@ -1,3 +1,4 @@
+import { SyncHealthBanner } from "@/components/SyncHealth";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
 import { labDebugFeegow, labSyncParticular, labSyncConvenio, clearLabData, labSyncConvenioCatalog, labEnrichFaturamento, getLabEnrichmentStatus } from "@/lib/lab-faturamento.functions";
@@ -15,6 +16,7 @@ import { Progress } from "@/components/ui/progress";
 import { Check, X, Play, Square, TestTube2 } from "lucide-react";
 
 export const Route = createFileRoute("/lab/faturamento")({
+  head: () => ({meta:[{title:"Lab Faturamento x Recebimento — Painel de Decisão"},{name:"description",content:"Auditoria experimental de faturamento e recebimento Feegow."},{property:"og:title",content:"Lab Faturamento x Recebimento"},{property:"og:description",content:"Conciliação e sincronização dos lançamentos financeiros."},{property:"og:type",content:"website"},{name:"twitter:card",content:"summary"}]}),
   component: LabFaturamento,
 });
 
@@ -437,6 +439,7 @@ function LabFaturamento() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
+      <SyncHealthBanner />
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">🧪 Lab — Faturamento</h1>

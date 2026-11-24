@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProducaoDuplicateAlert } from "./ProducaoDuplicateAlert";
+import { SyncStageStatus } from "./SyncHealth";
 
 export function LastSyncCard() {
   const q = useQuery({
@@ -25,6 +26,7 @@ export function LastSyncCard() {
       <CardHeader><CardTitle>Sincronizações recentes</CardTitle></CardHeader>
       <CardContent className="space-y-2 max-h-80 overflow-auto">
         <ProducaoDuplicateAlert />
+        <SyncStageStatus />
         {q.isLoading && <Skeleton className="h-24 w-full" />}
         {!q.isLoading && (q.data ?? []).length === 0 && (
           <p className="text-sm text-muted-foreground">Nenhuma sincronização registrada.</p>

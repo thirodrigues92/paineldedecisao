@@ -15,7 +15,7 @@ import {
 } from "@/lib/lab-sync-admin.functions";
 
 
-const fmtDate = (v?: string | null) => (v ? new Date(v).toLocaleString("pt-BR") : "—");
+const fmtDate = (v?: string | null) => (v ? new Date(v).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "—");
 
 export function SyncAutomaticaPanel() {
   const qc = useQueryClient();
@@ -47,7 +47,9 @@ export function SyncAutomaticaPanel() {
   const mSync = useMutation({
     mutationFn: () => syncNow({ data: { dias: 3 } }),
     onSuccess: (r: any) => {
-      toast.success(r?.skipped ? `Ignorado: ${r.reason}` : `Sincronizado (${r?.producao?.gravados ?? 0} registros)`);
+      const falhas = ["producao", "safety", "repasse", "receita", "itens", "agendamentos"].filter(etapa => r?.[etapa]?.ok === false);
+      if (falhas.length) toast.warning(`Sincronização parcial — falha em: ${falhas.join(", ")}`);
+      else toast.success(r?.skipped ? `Ignorado: ${r.reason}` : `Sincronizado (${r?.producao?.gravados ?? 0} registros)`);
       invalidate();
     },
     onError: (e: any) => toast.error(e.message ?? "Falha na sincronização"),
@@ -97,6 +99,7 @@ export function SyncAutomaticaPanel() {
 
   return (
     <div className="space-y-4">
+      {q.error && <p role="alert" className="text-destructive">Não foi possível consultar o progresso da sincronização.</p>}
       <Card>
         <CardHeader className="flex-row items-center justify-between space-y-0">
           <CardTitle className="flex items-center gap-2">
@@ -110,6 +113,7 @@ export function SyncAutomaticaPanel() {
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
           <ProducaoDuplicateAlert />
+          {auto?.paused_until && <p className="text-destructive">Retomada automática após {fmtDate(auto.paused_until)}</p>}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <Info label="Última execução" value={fmtDate(auto?.last_run_at)} />
             <Info label="Último sucesso" value={fmtDate(auto?.last_success_at)} />
@@ -192,7 +196,7 @@ export function SyncAutomaticaPanel() {
             <table className="w-full text-xs">
               <thead className="bg-muted/40 sticky top-0">
                 <tr>
-                  <th className="text-left p-2">Período</th>
+                  <th className="text-left p-2">Etapa / Período</th>
                   <th className="text-left p-2">Situação</th>
                   <th className="text-right p-2">Registros</th>
                   <th className="text-left p-2">Erro</th>
@@ -202,6 +206,7 @@ export function SyncAutomaticaPanel() {
                 {(q.data?.blocos ?? []).map((b: any, i: number) => (
                   <tr key={i} className="border-t border-border">
                     <td className="p-2">
+                      <span className="block font-medium">{b.etapa ?? "producao_repasse"}</span>
                       {new Date(`${b.data_inicio}T00:00:00`).toLocaleDateString("pt-BR")} – {new Date(`${b.data_fim}T00:00:00`).toLocaleDateString("pt-BR")}
                     </td>
                     <td className="p-2">{b.status}</td>

@@ -1,3 +1,4 @@
+import { SyncHealthBanner } from "@/components/SyncHealth";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -236,6 +237,7 @@ function LabRelatorio() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
+      <SyncHealthBanner />
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">

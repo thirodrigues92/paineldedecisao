@@ -7,6 +7,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { brl, num } from "@/lib/format";
 import { ProductionGroupAudit } from "@/components/ProductionGroupAudit";
+import { SyncDailyAudit } from "@/components/SyncHealth";
+import { SyncAutomaticaPanel } from "@/components/SyncAutomaticaPanel";
+import { LastSyncCard } from "@/components/LastSyncCard";
 
 export const Route = createFileRoute("/_authenticated/auditoria")({
   head: () => ({
@@ -161,6 +164,9 @@ function AuditoriaPage() {
 
         <TabsContent value="especialidades"><ProductionGroupAudit /></TabsContent>
         <TabsContent value="sync" className="space-y-4">
+          <SyncAutomaticaPanel />
+          <LastSyncCard />
+          <SyncDailyAudit />
           <Card>
             <CardHeader><CardTitle>Últimas execuções</CardTitle></CardHeader>
             <CardContent className="overflow-x-auto">

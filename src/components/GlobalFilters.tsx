@@ -8,9 +8,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, X } from "lucide-react";
 import { DashboardDateFilter } from "./DashboardDateFilter";
+import { useServerFn } from "@tanstack/react-start";
+import { runSyncNow } from "@/lib/lab-sync-admin.functions";
+import { toast } from "sonner";
 
 export function GlobalFilters() {
   const f = useFilters();
+  const sync = useServerFn(runSyncNow);
   const [unidades, setUnidadesList] = useState<{ id: number; nome: string }[]>([]);
   const [especialidades, setEspecialidadesList] = useState<{ id: number; nome: string }[]>([]);
   const [profissionais, setProfissionaisList] = useState<{ id: number; nome: string }[]>([]);
@@ -32,8 +36,12 @@ export function GlobalFilters() {
   const syncNow = async () => {
     setSyncing(true);
     try {
-      await supabase.functions.invoke("sync-feegow", { body: { mode: "today" } });
-    } finally { setSyncing(false); window.location.reload(); }
+      const result = await sync({ data: { dias: 3 } });
+      if (result.skipped) toast.info(`Sincronização: ${result.reason}`);
+      else if ([result.producao, result.safety, result.repasse, result.receita, result.itens, result.agendamentos].some(stage => !stage.ok)) toast.warning("Sincronização parcial; confira as etapas na auditoria.");
+      else toast.success("Sincronização concluída; confira o resultado de cada etapa.");
+    } catch { toast.error("Não foi possível sincronizar. Confira os alertas na auditoria."); }
+    finally { setSyncing(false); }
   };
 
   return (

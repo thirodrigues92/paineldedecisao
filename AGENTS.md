@@ -31,3 +31,6 @@
 - Share production-origin classification between presentation and lab_producao_origem/ia_producao; the Não Faturado sentinel is its own group, never an insurance payer, and vw_producao_duplicados audits stale records with invoker permissions.
 - Use vw_lab_producao_classificada for specialty presentation: catalog ID/name matches must be unambiguous, manual mappings apply only to missing/manual groups, and nonempty source names remain unchanged.
 - ia_producao separates produced totals, exact Faturado/Não Faturado status sums and item valor_pago; dynamic parameter-bound filtering avoids generic annual query plans without changing RLS or the timeout.
+- Isolate incremental stages and log success only after every sub-window persists; automatic pauses expire after two hours. Track recovery per stage in three-day jobs with daily fallback, so partial failures cannot silently close gaps.
+- Share paginated appointment fetching between Safety Net and the modern incremental worker; preserve actual appointment values separately from reference estimates and retain existing settled financial accounting.
+- Cache unambiguous catalog group mappings for row-trigger lookups and refresh after synchronization; per-row scans of the production-derived catalog exceed write deadlines.

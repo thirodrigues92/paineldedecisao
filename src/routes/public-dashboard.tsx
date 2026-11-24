@@ -28,6 +28,7 @@ import {
 import { axisProps, gridProps, tooltipProps } from "@/lib/chart-theme";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LastSyncCard } from "@/components/LastSyncCard";
+import { SyncHealthBanner } from "@/components/SyncHealth";
 
 import { categoriaServico } from "@/lib/service-categories";
 import { differenceInDays, subDays, eachDayOfInterval, format } from "date-fns";
@@ -944,6 +945,7 @@ export const Route = createFileRoute("/public-dashboard")({
     <FiltersProvider>
       <div className="min-h-screen bg-background p-4 md:p-8">
         <main className="max-w-7xl mx-auto">
+          <div className="mb-4"><SyncHealthBanner /></div>
           <Tabs defaultValue="visao-executiva" className="w-full" onValueChange={(v) => setIA({ aba: v })}>
             <div className="mb-6 max-w-3xl overflow-x-auto">
             <TabsList className="grid grid-cols-4 w-full min-w-[700px] max-w-3xl">

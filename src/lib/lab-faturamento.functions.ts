@@ -567,6 +567,12 @@ export const labSyncProducao = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { start_date, end_date, dry_run = false } = data;
     const resumo = { total: 0, inseridos: 0, erros: 0, logs: [] as string[] };
+    if (!dry_run) {
+      const { syncProducaoRange } = await import("./lab-sync-core.server");
+      const result = await syncProducaoRange(start_date, end_date);
+      await supabaseAdmin.from("lab_sync_log").insert({ endpoint: "sync:producao", parametros: { inicio: start_date, fim: end_date, manual: true }, api_success: result.erros.length === 0, registros: result.gravados, erro: result.erros.join(" | ") || null });
+      return { total: result.total, inseridos: result.gravados, erros: result.erros.length, logs: result.erros };
+    }
 
     const ds = toFeegowDate(start_date, "/");
     const de = toFeegowDate(end_date, "/");
@@ -709,6 +715,12 @@ export const labSyncSafetyNet = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { start_date, end_date, dry_run = false } = data;
     const resumo = { dias_verificados: 0, buracos_encontrados: 0, buracos_preenchidos: 0, erros: [] as string[] };
+    if (!dry_run) {
+      const { syncSafetyNetRange } = await import("./lab-sync-core.server");
+      const result = await syncSafetyNetRange(start_date,end_date);
+      await supabaseAdmin.from("lab_sync_log").insert({endpoint:"sync:safety",parametros:{inicio:start_date,fim:end_date,manual:true},api_success:result.erros.length===0,registros:result.preenchidos,erro:result.erros.join(" | ") || null});
+      return {dias_verificados:result.dias,buracos_encontrados:result.preenchidos,buracos_preenchidos:result.preenchidos,erros:result.erros};
+    }
 
     const parseValorAppoints = (v: any): number => {
       if (v === null || v === undefined || v === "") return 0;

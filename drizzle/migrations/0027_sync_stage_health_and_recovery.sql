@@ -1,0 +1,18 @@
+ALTER TABLE public.lab_sync_lock ADD COLUMN paused_until timestamptz;
+ALTER TABLE public.lab_backfill_jobs ADD COLUMN etapa text NOT NULL DEFAULT 'producao_repasse';
+CREATE INDEX IF NOT EXISTS lab_sync_log_stage_time_idx ON public.lab_sync_log(endpoint,executado_em DESC) WHERE api_success;
+CREATE OR REPLACE VIEW public.lab_vw_sync_etapas WITH (security_invoker=true) AS
+WITH etapas(etapa,nome,endpoint) AS (VALUES ('producao','Produção','sync:producao'),('safety','Rede de segurança','sync:safety'),('repasse','Repasse','sync:repasse'),('receita','Receita baixada','sync:receita'),('itens','Itens financeiros','sync:itens'),('agendamentos','Agendamentos','sync:agendamentos')),
+logs AS (SELECT CASE WHEN endpoint LIKE 'agendamentos%' THEN 'sync:agendamentos' WHEN endpoint='financial/list-invoice:receita-baixada' THEN 'sync:receita' WHEN endpoint='financial/list-invoice:itens' THEN 'sync:itens' ELSE endpoint END endpoint,executado_em momento,api_success sucesso,registros FROM public.lab_sync_log UNION ALL SELECT 'sync:agendamentos',iniciado_em,sucesso,registros FROM public.sync_logs WHERE endpoint LIKE 'agendamentos%')
+SELECT e.etapa,e.nome,max(l.momento) FILTER(WHERE l.sucesso) ultimo_sucesso,max(l.momento) ultima_tentativa,coalesce((SELECT x.registros FROM logs x WHERE x.endpoint=e.endpoint AND x.sucesso ORDER BY x.momento DESC LIMIT 1),0) registros_ultimo_sucesso,coalesce(max(l.momento) FILTER(WHERE l.sucesso)<now()-interval '2 hours',true) atrasada FROM etapas e LEFT JOIN logs l ON l.endpoint=e.endpoint GROUP BY e.etapa,e.nome,e.endpoint;
+REVOKE ALL ON public.lab_vw_sync_etapas FROM anon; GRANT SELECT ON public.lab_vw_sync_etapas TO authenticated,service_role;
+CREATE OR REPLACE VIEW public.vw_saude_sync WITH (security_invoker=true) AS
+WITH dias AS (SELECT generate_series((CURRENT_DATE-59)::timestamp,CURRENT_DATE::timestamp,interval '1 day')::date dia),
+a AS (SELECT data dia,count(*) agendamentos,count(*) FILTER(WHERE status_id=3 OR status_id IN (SELECT status_id FROM public.status_agendamento WHERE lower(categoria) IN ('realizado','atendido'))) atendidos FROM public.agendamentos WHERE data>=CURRENT_DATE-59 GROUP BY data),
+p AS (SELECT data_execucao dia,count(*) producao_qtd,sum(valor) producao_valor FROM public.lab_producao_feegow WHERE data_execucao>=CURRENT_DATE-59 GROUP BY data_execucao),
+r AS (SELECT data_repasse dia,count(*) repasses,sum(valor_repassado) repasse_valor FROM public.lab_repasse_feegow WHERE data_repasse>=CURRENT_DATE-59 GROUP BY data_repasse),
+f AS (SELECT data_pagamento dia,count(*) receita_itens FROM public.fin_itens WHERE tipo_transacao='C' AND data_pagamento>=CURRENT_DATE-59 GROUP BY data_pagamento),
+base AS (SELECT d.dia,coalesce(a.agendamentos,0) agendamentos,coalesce(a.atendidos,0) atendidos,coalesce(p.producao_qtd,0) producao_qtd,coalesce(p.producao_valor,0) producao_valor,coalesce(f.receita_itens,0) receita_itens,coalesce(r.repasses,0) repasses,coalesce(r.repasse_valor,0) repasse_valor FROM dias d LEFT JOIN a USING(dia) LEFT JOIN p USING(dia) LEFT JOIN r USING(dia) LEFT JOIN f USING(dia)),
+medias AS (SELECT b.*,(SELECT avg(x.producao_qtd) FROM base x WHERE x.dia<b.dia AND extract(isodow FROM x.dia)=extract(isodow FROM b.dia)) media_dia_semana FROM base b)
+SELECT *,extract(isodow FROM dia)<=5 AND ((atendidos>0 AND producao_qtd=0) OR (media_dia_semana>0 AND producao_qtd<media_dia_semana*0.5)) alerta FROM medias;
+REVOKE ALL ON public.vw_saude_sync FROM anon; GRANT SELECT ON public.vw_saude_sync TO authenticated,service_role;

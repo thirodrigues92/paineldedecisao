@@ -4,9 +4,11 @@ export const Route = createFileRoute("/api/public/hooks/sync-feegow")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        const { authenticateCronRequest } = await import("@/integrations/supabase/cron-auth");
+        const cronRefusal = await authenticateCronRequest(request);
         const provided = request.headers.get("x-cron-secret") ?? "";
         const envSecret = process.env['CRON_SYNC_SECRET'] ?? "";
-        let autorizado = provided.length > 0 && provided === envSecret;
+        let autorizado = cronRefusal === null || (provided.length > 0 && provided === envSecret);
 
         if (!autorizado && provided.length > 0) {
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

@@ -675,6 +675,7 @@ export type Database = {
           data_fim: string
           data_inicio: string
           erro: string | null
+          etapa: string
           id: string
           processado_em: string | null
           registros: number
@@ -688,6 +689,7 @@ export type Database = {
           data_fim: string
           data_inicio: string
           erro?: string | null
+          etapa?: string
           id?: string
           processado_em?: string | null
           registros?: number
@@ -701,6 +703,7 @@ export type Database = {
           data_fim?: string
           data_inicio?: string
           erro?: string | null
+          etapa?: string
           id?: string
           processado_em?: string | null
           registros?: number
@@ -980,6 +983,24 @@ export type Database = {
         }
         Relationships: []
       }
+      lab_grupo_catalogo_cache: {
+        Row: {
+          chave: string
+          grupo_nome: string
+          tipo: string
+        }
+        Insert: {
+          chave: string
+          grupo_nome: string
+          tipo: string
+        }
+        Update: {
+          chave?: string
+          grupo_nome?: string
+          tipo?: string
+        }
+        Relationships: []
+      }
       lab_invoice_header: {
         Row: {
           criado_em: string | null
@@ -1256,6 +1277,7 @@ export type Database = {
           lease_until: string | null
           pause_reason: string | null
           paused: boolean
+          paused_until: string | null
           running: boolean
           updated_at: string
         }
@@ -1270,6 +1292,7 @@ export type Database = {
           lease_until?: string | null
           pause_reason?: string | null
           paused?: boolean
+          paused_until?: string | null
           running?: boolean
           updated_at?: string
         }
@@ -1284,6 +1307,7 @@ export type Database = {
           lease_until?: string | null
           pause_reason?: string | null
           paused?: boolean
+          paused_until?: string | null
           running?: boolean
           updated_at?: string
         }
@@ -1660,6 +1684,17 @@ export type Database = {
         Row: {
           grupo_nome: string | null
           procedimento_chave: string | null
+        }
+        Relationships: []
+      }
+      lab_vw_sync_etapas: {
+        Row: {
+          atrasada: boolean | null
+          etapa: string | null
+          nome: string | null
+          registros_ultimo_sucesso: number | null
+          ultima_tentativa: string | null
+          ultimo_sucesso: string | null
         }
         Relationships: []
       }
@@ -2048,6 +2083,21 @@ export type Database = {
         }
         Relationships: []
       }
+      vw_saude_sync: {
+        Row: {
+          agendamentos: number | null
+          alerta: boolean | null
+          atendidos: number | null
+          dia: string | null
+          media_dia_semana: number | null
+          producao_qtd: number | null
+          producao_valor: number | null
+          receita_itens: number | null
+          repasse_valor: number | null
+          repasses: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       dre_classificar: { Args: { cat: string }; Returns: string }
@@ -2265,6 +2315,7 @@ export type Database = {
         Returns: string
       }
       lab_producao_texto: { Args: { s: string }; Returns: string }
+      lab_refresh_grupo_catalogo: { Args: never; Returns: undefined }
       normalizar_nome_medico: { Args: { s: string }; Returns: string }
       refresh_dashboard_views: { Args: never; Returns: undefined }
     }

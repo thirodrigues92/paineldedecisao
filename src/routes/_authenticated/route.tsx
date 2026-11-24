@@ -5,6 +5,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { GlobalFilters } from "@/components/GlobalFilters";
 import { FiltersProvider } from "@/lib/filters-context";
 import { IAAssistente } from "@/components/IAAssistente";
+import { SyncHealthBanner } from "@/components/SyncHealth";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -30,6 +31,7 @@ function AuthenticatedLayout() {
               <SidebarTrigger />
               <span className="text-sm text-muted-foreground">Painel de Decisão Clínica</span>
             </header>
+            <SyncHealthBanner />
             {exibirFiltrosGlobais && <GlobalFilters />}
             <main className="flex-1 p-6">
               <Outlet />

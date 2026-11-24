@@ -190,6 +190,20 @@
       "when": 1795528868968,
       "tag": "0026_store_specialty_display_for_fast_authenticated_reads",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1795553080051,
+      "tag": "0027_sync_stage_health_and_recovery",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1795553328480,
+      "tag": "0028_cache_production_group_catalog_for_sync",
+      "breakpoints": true
     }
   ]
 }

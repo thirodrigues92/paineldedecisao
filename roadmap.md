@@ -20,7 +20,7 @@
 - [x] Verify DRE filters, drill-down and Excel export in the public dashboard, original financial route and mobile tab scrolling; nine tree tests passed. Existing financial authentication remains required (public admin-only access does not grant financial data permissions).
 - [x] Replace public panel's local-only login with email/password authentication and sign-out with cache cleanup; keep database permissions unchanged.
 - [x] Test failed password login, fake session marker rejection, production/DRE reads with the requester's real Auth session and sign-out; 14 tests passed, no runtime errors. Successful password entry with the dedicated account remains unverified until it is supplied.
-- [ ] Create and verify the dedicated public panel account after receiving its email and a securely supplied password; no profile data required.
+- [x] Create and verify the supplied dedicated public panel account; no profile data required.
 - [x] Persist Feegow account-person associations and complete up to 300 missing pairs per financial sync with 150ms API spacing and patient lookup first; legacy sync deployed and modern sync shares the same helper.
 - [x] Add admin-only historical name completion and enrich DRE detail names/types/documents without changing calculations; history exhausted all pending pairs (7,168 cached, seven failed lookups retained as null).
 - [x] Update DRE drawer search and Excel, verify desktop/mobile and document search/export, and run 22 tests; authenticated 2026 competency counts: revenue 47,384/47,607 named, expenses 4,253/4,254 named. Original item amounts and counts unchanged.
@@ -32,8 +32,12 @@
 - [x] Prevent stale ATE and empty transaction writes across every production sync path with a database advisory-lock guard; 20 PostgreSQL/presentation tests passed (concurrency mechanism installed, parallel race not exercised).
 - [x] Classify Não Faturado separately from Particular/Convênio in production screens and ia_producao; authenticated November origin RPC verified.
 - [x] Add the invoker-secured duplicate view and last-sync alert; authenticated count is zero, simulated nonzero alert and origin drawer verified, mobile layout has no page overflow.
-- [ ] Annual filtered ia_producao request still exceeds its eight-second timeout despite search indexes; November origin queries and direct Cardiologia total reconciliation succeed. Requires a separate query-plan investigation.
-- [ ] Separate production/billed/unbilled/received metrics in ia_producao and explain chart inclusion in the cited screens.
-- [ ] Resolve missing production groups by catalog IDs then unambiguous normalized names; add editable manual mappings in Auditoria.
-- [ ] Standardize displayed specialty names without rewriting existing nonempty originals and add monthly missing-group alert above R$ 1.000.
-- [ ] Verify classifications, metric and 10% rules, audit editing, alerts and real 2026 specialty totals.
+- [x] Replace generic annual ia_producao plans with parameter-bound filtering while preserving permissions and timeout.
+- [x] Separate production/billed/unbilled/received metrics in ia_producao and explain chart inclusion in the cited screens.
+- [x] Resolve missing production groups by catalog IDs then unambiguous normalized names; add editable manual mappings in Auditoria.
+- [x] Standardize displayed specialty names without rewriting existing nonempty originals and add monthly missing-group alert above R$ 1.000.
+- [x] Verify classifications, metric and 10% rules, audit editing, alerts and real 2026 specialty totals.
+- [x] Resume automatic sync with isolated stages, bounded pause, production retries and appointment windows; managed callback returns 200 and unauthenticated calls 401.
+- [x] Recover production/transfers in November, transfers September–October and appointments September 23–November 24: all 58 jobs completed; Feegow returned no November transfers; duplicate audit remains zero.
+- [x] Add per-stage freshness banners, last-success status and daily 60-day audit; authenticated UI and callback verified, 45 targeted tests passed; daily and specialty reports delivered.
+- [ ] Publish the updated sync handler and freshness UI, then verify a scheduled production run; publishing has not been requested.
