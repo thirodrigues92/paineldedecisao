@@ -232,6 +232,13 @@
       "when": 1795555265731,
       "tag": "0032_cached_patient_coordinate_validation",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1795604240012,
+      "tag": "0033_tighten_permissive_policies",
+      "breakpoints": true
     }
   ]
 }
