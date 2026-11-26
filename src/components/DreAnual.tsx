@@ -11,6 +11,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DreItemDrawer, type ItemTarget } from "@/components/DreItemDrawer";
 import { fetchDreAccounts, fetchItemDre } from "@/lib/dre-items-client";
+import { DreFeegow } from "@/components/DreFeegow";
 import { annual, buildDreTree, DRE_MONTHS, flattenTree, revenuePercent, type ItemRegime, type TreeRow } from "@/lib/dre-tree";
 import { brl, pct } from "@/lib/format";
 import { DreChartControls, DreChartPanel } from "@/components/DreChartPanel";
@@ -46,6 +47,7 @@ export function DreAnual() {
   const [year, setYear] = useState(currentYear);
   const [regime, setRegime] = useState<ItemRegime>("pagamento");
   const [unit, setUnit] = useState("all");
+  const [model, setModel] = useState<"feegow" | "detalhado">("feegow");
   useEffect(() => { setIA({ dreFiltros: { ano: year, regime, unidade: unit } }); return () => setIA({ dreFiltros: null }); }, [year, regime, unit]);
   const [focusMonth, setFocusMonth] = useState<number | null | undefined>(undefined);
   const [operational, setOperational] = useState(false);
@@ -94,6 +96,8 @@ export function DreAnual() {
       <div className="space-y-2"><div className="text-xs font-medium text-muted-foreground">Regime</div><ToggleGroup type="single" value={regime} onValueChange={v => { if (v === "pagamento" || v === "competencia") { setRegime(v); reset(); } }} variant="outline"><ToggleGroupItem value="pagamento">Pagamento</ToggleGroupItem><ToggleGroupItem value="competencia">Competência</ToggleGroupItem></ToggleGroup></div>
       <div className="min-w-0 space-y-2"><label className="text-xs font-medium text-muted-foreground">Unidade</label><Select value={unit} onValueChange={v => { setUnit(v); reset(); }}><SelectTrigger aria-label="Unidade da DRE" className="w-64 max-w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Todas as unidades</SelectItem><SelectItem value="0">Sem unidade na origem</SelectItem>{lookup.data?.units.filter(u => u.unidade_id !== 0).map(u => <SelectItem key={u.unidade_id} value={String(u.unidade_id)}>{u.nome_fantasia}</SelectItem>)}</SelectContent></Select></div>
     </div>
+    <div className="space-y-2"><div className="text-xs font-medium text-muted-foreground">Modelo</div><ToggleGroup type="single" value={model} onValueChange={v => { if (v === "feegow" || v === "detalhado") setModel(v); }} variant="outline"><ToggleGroupItem value="feegow">Igual ao Feegow</ToggleGroupItem><ToggleGroupItem value="detalhado">Plano de contas detalhado</ToggleGroupItem></ToggleGroup></div>
+    {model === "feegow" ? <DreFeegow year={year} regime={regime} /> : <>
     {admin.data && <div className="flex flex-wrap items-center gap-3"><Button variant="outline" disabled={completing} onClick={completeNames}>{completing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />} {completing ? "Completando nomes…" : "Completar nomes"}</Button>{completionMessage && <p role="status" className="text-sm text-muted-foreground">{completionMessage}</p>}</div>}
     {exportError && <p role="alert" className="text-sm text-destructive">Não foi possível exportar o Excel. Tente novamente.</p>}
     {q.isPending || lookup.isPending ? <Skeleton className="h-96 w-full" /> : q.isError || lookup.isError ? <div role="alert" className="space-y-3 text-destructive"><p>Não foi possível carregar a DRE.</p><Button variant="outline" onClick={() => { q.refetch(); lookup.refetch(); }}>Tentar novamente</Button></div> : <>
@@ -105,6 +109,7 @@ export function DreAnual() {
       </div>
       <DreChartPanel tree={tree} {...(previousTree ? { previousTree } : {})} month={month} onMonth={setFocusMonth} operational={operational} onTarget={setTarget} year={year} />
       <DreMonthComparison key={`${year}-${regime}-${unit}`} tree={tree} accounts={lookup.data?.accounts ?? []} year={year} month={month} regime={regime} unit={unit} operational={operational} />
+    </>}
     </>}
     <DreItemDrawer key={`${target?.row.id}-${target?.month}-${year}-${regime}-${unit}`} target={target} year={year} regime={regime} unit={unit} onClose={() => setTarget(null)} />
   </div>;

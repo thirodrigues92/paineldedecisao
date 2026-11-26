@@ -239,6 +239,27 @@
       "when": 1795604240012,
       "tag": "0033_tighten_permissive_policies",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1795698750724,
+      "tag": "0034_fn_dre_feegow",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1795698844628,
+      "tag": "0035_fn_dre_feegow_fast",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1795698899314,
+      "tag": "0036_fn_dre_feegow_total_sem_repasse",
+      "breakpoints": true
     }
   ]
 }

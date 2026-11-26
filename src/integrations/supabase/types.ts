@@ -2255,6 +2255,16 @@ export type Database = {
           valor: number
         }[]
       }
+      fn_dre_feegow: {
+        Args: { p_ano: number; p_regime?: string }
+        Returns: {
+          linha: string
+          mes: number
+          ordem: number
+          tipo: string
+          valor: number
+        }[]
+      }
       fn_dre_tela: {
         Args: { p_ano: number; p_regime?: string; p_unidade?: number }
         Returns: {
